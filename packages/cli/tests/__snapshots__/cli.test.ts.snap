@@ -1,0 +1,51 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CLI generates an embedded client 1`] = `
+"import { buildEmbeddedContext } from \\"embracesql\\";
+import { EmbraceSQL } from \\"./client/node-inprocess\\";
+
+/**
+ * Use this to access the database.
+ */
+export const EmbraceSQLEmbedded = async () => {
+  // the package itself has the configuration and is the root
+  const context = await buildEmbeddedContext(__dirname);
+  return EmbraceSQL(context);
+};
+"
+`;
+
+exports[`CLI initializes 1`] = `Array []`;
+
+exports[`CLI initializes 2`] = `
+Object {
+  "stderr": Array [],
+  "stdout": Array [],
+}
+`;
+
+exports[`CLI migrates 1`] = `
+Object {
+  "stderr": Array [],
+  "stdout": Array [
+    "version: '3.0'
+services:
+  embracesql:
+    command: start /var/embracesql 8765
+    image: embracesql/server
+    ports:
+    - \\"8765:8765\\"
+    volumes:
+    - .:/var/embracesql",
+    "[999D[K",
+    "  [2mconsole.info[22m
+    beginning migration .tests/migrate
+[2m[22m
+[2m      [2mat Command.<anonymous> ([22m[2msrc/migrate.ts[2m:25:15)[22m[2m[22m
+
+",
+  ],
+}
+`;
+
+exports[`CLI migrates 2`] = `""`;

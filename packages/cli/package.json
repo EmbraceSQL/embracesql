@@ -1,0 +1,21 @@
+{
+  "name": "@embracesql/cli",
+  "version": "1.0.0",
+  "license": "MIT",
+  "bin": "./src/bin/index.js",
+  "dependencies": {
+    "@embracesql/console": "^1.0.0",
+    "@embracesql/engine": "^1.0.0",
+    "@zeit/ncc": "^0.22.3",
+    "commander": "^5.1.0",
+    "expand-home-dir": "^0.0.3",
+    "ts-node": "^8.10.2"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "fs-extra": "^9.0.1",
+    "std-mocks": "^1.0.1"
+  }
+}
