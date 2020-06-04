@@ -1,0 +1,12 @@
+{
+  "name": "@embracesql/console",
+  "version": "1.0.0",
+  "main": "src/structured.ts",
+  "license": "MIT",
+  "dependencies": {
+    "stacktrace-parser": "^0.1.10"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

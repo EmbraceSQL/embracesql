@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`structured console logging captures debug 1`] = `
+Object {
+  "stderr": Array [],
+  "stdout": Array [
+    "{\\"logLevel\\":\\"debug\\",\\"source\\":\\"tests/structured-console.test.ts#13\\",\\"message\\":\\"Hello World\\",\\"additional\\":[[]]}",
+    "
+",
+  ],
+}
+`;
+
+exports[`structured console logging captures error 1`] = `
+Object {
+  "stderr": Array [
+    "{\\"logLevel\\":\\"error\\",\\"source\\":\\"tests/structured-console.test.ts#25\\",\\"message\\":\\"Hello World\\",\\"additional\\":[[]]}",
+    "
+",
+  ],
+  "stdout": Array [],
+}
+`;
+
+exports[`structured console logging captures info 1`] = `
+Object {
+  "stderr": Array [],
+  "stdout": Array [
+    "{\\"logLevel\\":\\"info\\",\\"source\\":\\"tests/structured-console.test.ts#17\\",\\"message\\":\\"Hello World\\",\\"additional\\":[[]]}",
+    "
+",
+  ],
+}
+`;
+
+exports[`structured console logging captures log 1`] = `
+Object {
+  "stderr": Array [],
+  "stdout": Array [
+    "{\\"logLevel\\":\\"info\\",\\"source\\":\\"tests/structured-console.test.ts#9\\",\\"message\\":\\"Hello World\\",\\"additional\\":[[]]}",
+    "
+",
+  ],
+}
+`;
+
+exports[`structured console logging captures warn 1`] = `
+Object {
+  "stderr": Array [],
+  "stdout": Array [
+    "{\\"logLevel\\":\\"warn\\",\\"source\\":\\"tests/structured-console.test.ts#21\\",\\"message\\":\\"Hello World\\",\\"additional\\":[[]]}",
+    "
+",
+  ],
+}
+`;
