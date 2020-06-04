@@ -33,7 +33,7 @@ Internally EmbraceSQL uses Git to checkout and cache requested versions and dyna
 
 Care must be taken that your database won't have branch schema capability -- unfortunately such a thing does not yet exist.
 To make working with versioned code easier, Embrace SQL knows which migrations are logically with a given branch/tag/sha and will warn you if they are not applied.
-Even smarter -- EmbraceSQL, for each database, for each schema, keeps track of the schema after each migration and will warn you if the schema does no match the expectations, and raise and event containing the schema diff. 
+Even smarter -- EmbraceSQL, for each database, for each schema, keeps track of the schema after each migration and will warn you if the schema does no match the expectations, and raise and event containing the schema diff.
 Embrace SQL will still try to run your SQL modules even if there is a mismatch, but having the mismatch schema output will greatly aid your comfort with versioning.
 
 ## Logging

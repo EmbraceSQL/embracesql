@@ -33,10 +33,9 @@ describe("CLI", () => {
     const command = await migrate.parseAsync(["node", "migrate", root]);
     // trick needed to wait out
     await Promise.all(command.parent?._actionResults || []);
-    expect(stdMocks.flush()).toMatchSnapshot();
     // and some files to exist
     expect(
-      await fs.readFile(path.join(root, "index.ts"), "utf8")
+      await fs.readFile(path.join(root, "openapi.yaml"), "utf8")
     ).toMatchSnapshot();
   });
 });

@@ -84,7 +84,7 @@ type Context<DatabaseNames extends string, ParameterNames extends string> = {
   parameters: ContextParameters<ParameterNames>;
 
   /**
-   * Git branch, SHA, or tag used to control the version of code run. 
+   * Git branch, SHA, or tag used to control the version of code run.
    * This allows user controlled versioned queries for parallel live testing as well
    * as classical dev/test/stage/prod promotion cycles.
    */

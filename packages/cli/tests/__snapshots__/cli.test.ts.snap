@@ -25,27 +25,51 @@ Object {
 `;
 
 exports[`CLI migrates 1`] = `
-Object {
-  "stderr": Array [],
-  "stdout": Array [
-    "version: '3.0'
-services:
-  embracesql:
-    command: start /var/embracesql 8765
-    image: embracesql/server
-    ports:
-    - \\"8765:8765\\"
-    volumes:
-    - .:/var/embracesql",
-    "[999D[K",
-    "  [2mconsole.info[22m
-    beginning migration .tests/migrate
-[2m[22m
-[2m      [2mat Command.<anonymous> ([22m[2msrc/migrate.ts[2m:25:15)[22m[2m[22m
+"# THIS FILE IS GENERATED -- edits will be lost
 
-",
-  ],
-}
+openapi: 3.0.0
+info:
+  title: --
+  description: --
+  version: --
+
+paths:
+  /default/hello:
+    get:
+      operationId: get__default_hello
+      description: Read data
+      responses:
+        \\"200\\":
+          description: Sucess
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hello_world:
+                      type: string
+    post:
+      operationId: post__default_hello
+      description: Read data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        \\"200\\":
+          description: Sucess
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hello_world:
+                      type: string
+"
 `;
-
-exports[`CLI migrates 2`] = `""`;

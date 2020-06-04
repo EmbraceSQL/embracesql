@@ -34,7 +34,6 @@ docker run -v ${PWD}:/var/embracesql embracesql/server migrate
 
 You can have database specific migrations by simply making a folder for each database, with sql inside. Let’s have our `other` database be different.
 
-
 ```yml title="embracesql.yaml"
 databases:
   default: sqlite:embracesql.db

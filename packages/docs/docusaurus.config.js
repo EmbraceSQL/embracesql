@@ -45,7 +45,7 @@ module.exports = {
       "@docusaurus/preset-classic",
       {
         docs: {
-          remarkPlugins: [remarkImport, [remarkMermaid, {simple: true}]],
+          remarkPlugins: [remarkImport, [remarkMermaid, { simple: true }]],
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
           editUrl:

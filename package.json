@@ -21,7 +21,7 @@
   },
   "scripts": {
     "bootstrap": "lerna bootstrap --use-workspaces",
-    "pretty": "prettier --write packages tests",
+    "pretty": "prettier --write packages/**/*.ts",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "lerna run test"
   }
