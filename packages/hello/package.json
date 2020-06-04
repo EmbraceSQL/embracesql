@@ -1,0 +1,13 @@
+{
+  "name": "hello",
+  "version": "0.0.0",
+  "license": "MIT",
+  "dependencies": {
+    "@embracesql/engine": "*",
+    "databases": "*",
+    "ts-node": "*"
+  },
+  "scripts" : {
+    "hello": "ts-node hello.ts"
+  }
+}
