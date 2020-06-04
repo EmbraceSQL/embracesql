@@ -1,0 +1,3 @@
+embedded: true
+databases:
+  default: sqlite:embracesql.db

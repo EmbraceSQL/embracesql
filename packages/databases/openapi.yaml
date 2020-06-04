@@ -1,0 +1,46 @@
+# THIS FILE IS GENERATED -- edits will be lost
+
+openapi: 3.0.0
+info:
+  title: --
+  description: --
+  version: --
+
+paths:
+  /default/hello:
+    get:
+      operationId: get__default_hello
+      description: Read data
+      responses:
+        "200":
+          description: Sucess
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hello_world:
+                      type: string
+    post:
+      operationId: post__default_hello
+      description: Read data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Sucess
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hello_world:
+                      type: string
