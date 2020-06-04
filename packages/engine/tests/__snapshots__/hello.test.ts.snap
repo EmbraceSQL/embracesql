@@ -1,0 +1,241 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`hello world configuration! exposes methods to run hello sql 1`] = `"SELECT \\"hello world\\""`;
+
+exports[`hello world configuration! generates an open api doc 1`] = `
+"# THIS FILE IS GENERATED -- edits will be lost
+
+openapi: 3.0.0
+info:
+  title: --
+  description: --
+  version: --
+
+paths:
+  /default/hello:
+    get:
+      operationId: get__default_hello
+      description: Read data
+      responses:
+        \\"200\\":
+          description: Sucess
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hello_world:
+                      type: string
+    post:
+      operationId: post__default_hello
+      description: Read data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        \\"200\\":
+          description: Sucess
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hello_world:
+                      type: string
+"
+`;
+
+exports[`hello world configuration! reads a config 1`] = `
+Object {
+  "databases": Object {
+    "default": Object {
+      "auth": "",
+      "hash": "",
+      "host": "",
+      "hostname": "",
+      "href": "sqlite:embracesql.db",
+      "origin": "null",
+      "password": "",
+      "pathname": "embracesql.db",
+      "port": "",
+      "protocol": "sqlite:",
+      "query": "",
+      "slashes": false,
+      "username": "",
+    },
+  },
+  "embedded": false,
+  "embraceSQLRoot": ".tests/hello",
+  "logLevels": Array [
+    "error",
+  ],
+}
+`;
+
+exports[`hello world configuration! will make a runnable server 1`] = `"[{\\"\\\\\\"hello world\\\\\\"\\":\\"hello world\\"}]"`;
+
+exports[`hello world configuration! will make a runnable server 2`] = `
+Array [
+  Object {
+    "\\"hello world\\"": "hello world",
+  },
+]
+`;
+
+exports[`hello world configuration! will make an embeddable engine 1`] = `
+Array [
+  Object {
+    "\\"hello world\\"": "hello world",
+  },
+]
+`;
+
+exports[`hello world configuration! will run a query in context 1`] = `
+Array [
+  Object {
+    "\\"hello world\\"": "hello world",
+  },
+]
+`;
+
+exports[`hello world configuration! will watch for changes and create a new context 1`] = `
+Object {
+  "close": [Function],
+  "configuration": Object {
+    "databases": Object {
+      "default": Object {
+        "auth": "",
+        "hash": "",
+        "host": "",
+        "hostname": "",
+        "href": "sqlite:embracesql.db",
+        "origin": "null",
+        "password": "",
+        "pathname": "embracesql.db",
+        "port": "",
+        "protocol": "sqlite:",
+        "query": "",
+        "slashes": false,
+        "username": "",
+      },
+    },
+    "embedded": false,
+    "embraceSQLRoot": ".tests/hello",
+    "logLevels": Array [
+      "error",
+    ],
+  },
+  "databases": Object {
+    "default": Object {
+      "SQLModules": Object {
+        "hello": Object {
+          "afterHandlerPaths": Array [
+            "default",
+          ],
+          "ast": Object {
+            "columns": Array [
+              Object {
+                "as": null,
+                "expr": Object {
+                  "type": "string",
+                  "value": "hello world",
+                },
+              },
+            ],
+            "distinct": null,
+            "from": null,
+            "groupby": null,
+            "having": null,
+            "limit": null,
+            "options": null,
+            "orderby": null,
+            "type": "select",
+            "where": null,
+            "with": null,
+          },
+          "beforeHandlerPaths": Array [
+            "default",
+          ],
+          "cacheKey": "4726f48a1467bab00568c7c5b8610040",
+          "canModifyData": false,
+          "contextName": "default_hello",
+          "fullPath": ".tests/hello/default/hello.sql",
+          "namedParameters": Array [],
+          "restPath": "default/hello",
+          "resultsetMetadata": Array [
+            Object {
+              "name": "hello_world",
+              "type": "string",
+            },
+          ],
+          "sql": "SELECT \\"hello world\\"",
+        },
+        "yo": Object {
+          "afterHandlerPaths": Array [
+            "default",
+          ],
+          "ast": Object {
+            "columns": Array [
+              Object {
+                "as": null,
+                "expr": Object {
+                  "type": "single_quote_string",
+                  "value": "yo",
+                },
+              },
+            ],
+            "distinct": null,
+            "from": null,
+            "groupby": null,
+            "having": null,
+            "limit": null,
+            "options": null,
+            "orderby": null,
+            "type": "select",
+            "where": null,
+            "with": null,
+          },
+          "beforeHandlerPaths": Array [
+            "default",
+          ],
+          "cacheKey": "54d6f4897bf10f8219c6fc94e11bf7a4",
+          "canModifyData": false,
+          "contextName": "default_yo",
+          "fullPath": ".tests/hello/default/yo.sql",
+          "namedParameters": Array [],
+          "restPath": "default/yo",
+          "resultsetMetadata": Array [
+            Object {
+              "name": "yo",
+              "type": "string",
+            },
+          ],
+          "sql": "SELECT 'yo'",
+        },
+      },
+      "analyze": [Function],
+      "close": [Function],
+      "execute": [Function],
+      "migrate": [Function],
+      "name": "default",
+      "parse": [Function],
+      "transactions": Object {
+        "begin": [Function],
+        "commit": [Function],
+        "rollback": [Function],
+      },
+    },
+  },
+  "directQueryExecutors": Object {
+    "default_hello": [Function],
+    "default_yo": [Function],
+  },
+}
+`;

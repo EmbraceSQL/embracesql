@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`hello world with a handler will honor handlers over an HTTP call - GET - nested 1`] = `"[{\\"echo\\":\\"zzzooom\\"},{\\"echo\\":\\"zzzooom\\"}]"`;
+
+exports[`hello world with a handler will honor handlers over an HTTP call - GET 1`] = `"[{\\"message\\":\\"whirled!!!\\"},{\\"message\\":\\"whirled!!!\\"},{\\"message\\":\\"whirled!!!\\"},{\\"message\\":\\"whirled!!!\\"}]"`;
+
+exports[`hello world with a handler will honor handlers over an HTTP call - POST 1`] = `"[{\\"message\\":\\"amazing!!!\\"},{\\"message\\":\\"amazing!!!\\"},{\\"message\\":\\"amazing!!!\\"},{\\"message\\":\\"amazing!!!\\"}]"`;
+
+exports[`hello world with a handler will honor handlers over an HTTP call - POST 2`] = `"[{\\"echo\\":\\"marklar\\"},{\\"echo\\":\\"marklar\\"}]"`;
+
+exports[`hello world with a handler will honor handlers with a client call 1`] = `
+Array [
+  Object {
+    "message": "nodey thing!!!",
+  },
+  Object {
+    "message": "nodey thing!!!",
+  },
+  Object {
+    "message": "nodey thing!!!",
+  },
+  Object {
+    "message": "nodey thing!!!",
+  },
+]
+`;
+
+exports[`hello world with a handler will honor handlers with an embeddable engine 1`] = `
+Array [
+  Object {
+    "message": "hole!!!",
+  },
+  Object {
+    "message": "hole!!!",
+  },
+  Object {
+    "message": "hole!!!",
+  },
+  Object {
+    "message": "hole!!!",
+  },
+]
+`;
+
+exports[`hello world with a handler will return errors via HTTP - GET 1`] = `
+Object {
+  "status": 500,
+  "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#8\\",\\"message\\":\\"Error: Simulated Error\\",\\"additional\\":[]}",
+}
+`;
+
+exports[`hello world with a handler will return errors via HTTP - POST 1`] = `
+Object {
+  "status": 500,
+  "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#8\\",\\"message\\":\\"Error: Simulated Error\\",\\"additional\\":[]}",
+}
+`;

@@ -1,0 +1,93 @@
+---
+to: "{{configuration.embraceSQLRoot}}/openapi.yaml"
+---
+
+# THIS FILE IS GENERATED -- edits will be lost
+
+openapi: 3.0.0
+info:
+  title: --
+  description: --
+  version: --
+
+paths:
+{{#eachInMap databases}}
+{{#eachInMap value.SQLModules}}
+  /{{value.restPath}}:
+    {{> get module=value}}
+{{/eachInMap}}
+{{/eachInMap}}
+
+
+{{#*inline "get"}}
+{{#if module.canModifyData}}
+{{else}}
+get:
+  operationId: get__{{module.contextName}}
+  description: Read data
+  {{> parameters module=module}}
+  responses:
+    '200':
+      description: Sucess
+      {{> resultset module=module}}
+{{/if}}
+post:
+  operationId: post__{{module.contextName}}
+  {{#if module.resultsetMetadata.length}}
+  description: Read data
+  {{else}}
+  description: Write data
+  {{/if}}
+  {{> request module=module}}
+  responses:
+    '200':
+      description: Sucess
+      {{> resultset module=module}}
+{{/inline}}
+
+{{#*inline "post"}}
+{{/inline}}
+
+{{#*inline "resultset"}}
+{{#if module.resultsetMetadata.length}}
+content:
+  application/json:
+    schema:
+      type: array
+      items: 
+        type: object
+        properties: 
+        {{#each module.resultsetMetadata}}
+          {{name}}:
+            type: {{type}}
+        {{/each}}
+{{/if}}
+{{/inline}}
+
+{{#*inline "parameters"}}
+{{#if module.namedParameters.length}}
+parameters:
+  {{#each module.namedParameters}}
+  - in: query
+    name: {{name}}
+    schema:
+      type: {{type}}
+  {{/each}}
+{{/if}}
+{{/inline}}
+
+{{#*inline "request"}}
+requestBody:
+  required: true
+  content: 
+    application/json:
+      schema:
+        type: object
+        {{#if module.namedParameters.length}}
+        properties: 
+        {{#each module.namedParameters}}
+          {{name}}:
+            type: {{type}}
+        {{/each}} 
+        {{/if}}
+{{/inline}}

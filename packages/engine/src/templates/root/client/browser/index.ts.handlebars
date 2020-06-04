@@ -1,0 +1,10 @@
+---
+to: "{{configuration.embraceSQLRoot}}/client/browser/index.ts"
+---
+/* eslint-disable @typescript-eslint/camelcase */
+
+import * as context from "../../context";
+
+{{> shared-browser-client.ts }}
+{{> partials/fetch-client.handlebars }}
+

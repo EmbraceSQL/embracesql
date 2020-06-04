@@ -1,0 +1,11 @@
+---
+to: "{{folderPath}}/before.ts"
+---
+
+/* eslint-disable @typescript-eslint/camelcase */
+import * as types from "{{relativeToRoot}}/context";
+
+export const before : types.FolderHandler = async (context) => {
+// handle me!
+return context;
+}

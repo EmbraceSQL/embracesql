@@ -1,0 +1,21 @@
+---
+to: "{{configuration.embraceSQLRoot}}/tsconfig.json"
+---
+
+{
+  "compilerOptions": {
+    "lib": ["es2016", "dom"],
+    "removeComments": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
+    "target": "es2016",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "baseUrl": "{{configuration.embraceSQLRoot}}"
+  },
+  "include": ["./client/**/*.ts"],
+}

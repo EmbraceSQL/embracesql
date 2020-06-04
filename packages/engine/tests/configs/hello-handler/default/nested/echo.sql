@@ -1,0 +1,1 @@
+SELECT :stuff as echo

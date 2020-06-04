@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`hello world with a parameter will make a runnable server - GET 1`] = `"[{\\"message\\":\\"whirled\\"}]"`;
+
+exports[`hello world with a parameter will make a runnable server - POST 1`] = `"[{\\"message\\":\\"amazing\\"}]"`;
+
+exports[`hello world with a parameter will make a runnable server - node client 1`] = `
+Array [
+  Object {
+    "message": "nodey thing",
+  },
+]
+`;
+
+exports[`hello world with a parameter will make an embeddable engine 1`] = `
+Array [
+  Object {
+    "message": "hole",
+  },
+]
+`;
+
+exports[`hello world with a parameter will run a query in context 1`] = `
+Array [
+  Object {
+    "message": "Whirled",
+  },
+]
+`;

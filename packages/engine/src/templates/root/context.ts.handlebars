@@ -1,0 +1,105 @@
+---
+to: "{{configuration.embraceSQLRoot}}/context.ts"
+---
+/* eslint-disable @typescript-eslint/camelcase */
+
+/**
+* THIS FILE IS GENERATED -- edits will be lost
+*/
+
+{{> shared-context.ts}}
+
+// Generation starts here
+
+// All named databases
+export type AvailableDatabaseNames = 
+  {{#eachInMap databases}}
+  "{{@key}}" {{#if @last}};{{else}}|{{/if}}
+  {{/eachInMap}}
+
+// each SQLModule  gets a context type with parameters (if present) and results
+{{#eachInMap databases}}
+// database {{@key}}
+{{#eachInMap value.SQLModules}}
+// module {{value.restPath}}
+{{> resultsetMetadata value}}
+{{> parametersMetadata value}}
+export type {{value.contextName}}Context = 
+  Context<{{value.contextName}}Row> & { 
+    parameters: {{value.contextName}}Parameters
+  };
+export type {{value.contextName}}Handler = 
+  (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>;
+{{/eachInMap}}
+{{/eachInMap}}
+
+export type FolderHandler = (context: Context<SQLRow>) => Promise<Context<SQLRow>>;
+
+
+{{#*inline "resultsetMetadata"}}
+export type {{contextName}}Row = 
+SQLRow & {
+  {{#each resultsetMetadata}}
+    {{name}}: {{type}}
+  {{/each}}
+};
+{{/inline}}
+
+{{#*inline "parametersMetadata"}}
+export type {{contextName}}Parameters = 
+SQLParameters & {
+  {{#each namedParameters}}
+    {{name}}: {{type}}
+  {{/each}}
+};
+{{/inline}}
+
+
+// each SQL Module has a direct execution decorator to attach handlers both before and after
+// wrapping the direct executor that just interacts with the underlying database
+export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: SQLModuleDirectExecutors) => {
+{{#eachInMap databases}}
+  return {
+    // database {{@key}}
+    {{#eachInMap value.SQLModules}}
+      {{value.contextName}}:  async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
+        const {afterError} = require("./{{value.restPath}}.sql.afterError");
+        try {
+          {{#each value.beforeHandlerPaths}}
+          const before{{@index}} = require("./{{this}}/before").before;
+          await before{{@index}}(context);
+          {{/each}}
+          const before = require("./{{value.restPath}}.sql.before").before;
+          await before(context);
+          const executor = directQueryExecutors["{{value.contextName}}"];
+          const results = executor ? await executor(context.parameters) : [];
+          context.results = results as {{value.contextName}}Row[];
+          const after = require("./{{value.restPath}}.sql.after").after;
+          await after(context);
+          {{#each value.afterHandlerPaths}}
+          const after{{@index}} = require("./{{this}}/after").after;
+          await after{{@index}}(context);
+          {{/each}}
+          return context;
+        } catch (error) {
+          context.error = error;
+          if (afterError) afterError(context);
+          throw error;
+        }
+      },
+    {{/eachInMap}}
+  }
+{{/eachInMap}}
+};
+
+// combine the results of generated code -- handlers, parameters, and results
+// with an existing direct executor -- which is going to be an internal context
+// this is now a full featured EmbraceSQL that can be mounted in process or
+// in an OpenAPI server to invoke a SQLModule with a context, handle it, execute it, an return
+
+export const decorateInternalContext = (internalContext: SQLModuleDirectExecutors) => {
+  return {
+    ...internalContext,
+    contextualSQLModuleExecutors: SQLModuleExecutorsWithHandlers(internalContext),
+  };
+}

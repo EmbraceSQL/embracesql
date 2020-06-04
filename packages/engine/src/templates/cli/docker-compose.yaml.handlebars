@@ -1,0 +1,13 @@
+---
+to: "/dev/stdout"
+---  
+
+version: '3.0'
+services:
+  embracesql:
+    command: start /var/embracesql 8765
+    image: embracesql/server
+    ports:
+    - "8765:8765"
+    volumes:
+    - .:/var/embracesql

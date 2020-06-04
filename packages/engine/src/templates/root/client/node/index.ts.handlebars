@@ -1,0 +1,9 @@
+---
+to: "{{configuration.embraceSQLRoot}}/client/node/index.ts"
+---
+/* eslint-disable @typescript-eslint/camelcase */
+
+import * as context from "../../context";
+
+{{> shared-node-client.ts }}
+{{> partials/fetch-client.handlebars }}
