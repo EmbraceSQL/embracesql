@@ -1,0 +1,54 @@
+---
+title: Deploying
+---
+
+## Getting Started
+
+Embrace SQL lets you package itself, the server, along with your configuration, custom SQL, and handlers with one command:
+
+```shell
+docker run embrace-sql build my-embrace-sql-image
+```
+
+This will take the core EmbraceSQL server container, and overlay the current directory into a new Docker image.
+From there you can push your image to any container registry or hosting tool you like, as well as convert from Docker to other container formats.
+
+## Online Versioning
+
+Dev/Test/Stage as well as beta testing can be a challenge, so Embrace SQL provides out of the box support for versioned APIs. When your local directory is a Git repository, Embrace SQL has the ability to let you run any branch, tag, or SHA for any given query.
+
+You can do this on the fly with REST by appending `#branch` or `#tag` or `#sha` to the end of an URL.
+
+Similarly in code, in a handler, say you want to set all queries to be served from the `stage` branch, which means the most recent commit on this branch.
+
+```javascript title="./before.js"
+export const before = async (context) => {
+  context.version = "stage";
+};
+```
+
+You can get pretty creative with these handlers, and set the version based on the user token, or environment variables, or even rest calls to external confguration services.
+
+Internally EmbraceSQL uses Git to checkout and cache requested versions and dynamically sets itself up to process SQL modules with the SQL and handlers specified at that version. Separate event queues and handler registrations are used for each version, so there is no risk of mismatch between your SQL and your handlers.
+
+Care must be taken that your database won't have branch schema capability -- unfortunately such a thing does not yet exist.
+To make working with versioned code easier, Embrace SQL knows which migrations are logically with a given branch/tag/sha and will warn you if they are not applied.
+Even smarter -- EmbraceSQL, for each database, for each schema, keeps track of the schema after each migration and will warn you if the schema does no match the expectations, and raise and event containing the schema diff. 
+Embrace SQL will still try to run your SQL modules even if there is a mismatch, but having the mismatch schema output will greatly aid your comfort with versioning.
+
+## Logging
+
+EmbraceSQL writes out informative messages to `stdout` and error messages to `stderr`. Every message is written as a single line JSON with escaped linefeeds in an attempt to make the logs easier to parse and process with your favoite log and event management tool.
+
+Four log levels are enumerated: `DEBUG`, `INFO`, `WARN`, `ERROR`.
+
+## Metrics
+
+EmbraceSQL exports metrics in Prometheus format at a well known URL `http://server:port/metrics`. In addition to default Prometheus metrics, you will find:
+
+- Per SQL Module
+  - Counters for every event
+  - Histogram for every event handler run duration
+- Per Database
+  - Counters for every event
+  - Histogram for every event handler run duration

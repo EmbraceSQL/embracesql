@@ -1,0 +1,154 @@
+---
+title: Security
+---
+
+## Getting Started
+
+EmbraceSQL supports JWT in the `Authorization: Bearer <token>` header, passed in with each API call, and made available through the context without any additional work on your part.
+
+JWT tokens need to be decoded, and verified. EmbraceSQL supports public key signatures for verification. What it does not do -- is create or issue tokens, you get these from your identity provider.
+
+You can also use handlers to intercept API calls and do you own authentication and identity management if you aren't . JWT fan.
+
+## Cryptographic Keys
+
+Configuration is file based, with keys stored as `.pem` files. When using public key encryption, to verify a token from your identity provider, you create a `.pem` file with the matching public key, and put it in the `./keys` folder. You can have multiple `.pem` files, and EmbraceSQL will try them for you, allowing multiple key providers if needed.
+
+You can also use symmetric key, shared secret, encryption on JWT. Just store the secret key in a `.pem`.
+
+## Accessing Tokens
+
+Once a token is decoded and verified, it is added to the context as `context.token`, you can get all the claims from a JWT token inline in any handler. For example:
+
+```javascript title="./default/things/all.sql.before.js"
+export const before = async (context) => {
+  console.log(context.token);
+  // destructure the token if you like
+  const { sub, iat } = context.token;
+};
+```
+
+## Allow and Deny Access
+
+In any given handler, you can `context.allow()` or `context.deny()` access at any location in code. This sets internal state, and makes a record on the context each time it is called.
+
+You can pass any object you like to `context.allow()` and `context.deny()`, these passed objects are recorded and appended to an array `context.grants[]` that you can use in later event handlers, and as messages back to calling clients.
+
+OK -- here is how this works, when you call `context.deny()`, the current access state of the context is set to prevent any query from executing.
+When you call `context.allow()`, query execution is allowed. So rather than devise a 'security markup language', EmbraceSQL just has you decide if you want to deny or allow access inside handlers.
+
+To set up a secure by default system, you just create one root handler:
+
+```javascript title="./before.js"
+export const before = async (context) => {
+  context.deny({});
+};
+```
+
+And that is it -- no query will run. Let's further assume you have set up Google OpenID Connect to authenticate your users, and you are passing that id token in your `Authorization: Bearer ...` on requests to EmbraceSQL. Google tokens have an `iss` issuer property that EmbraceSQL uses to automatically find the matching publc key, decodes, and verifies the token. No need to store the public key in a `.pem`, it'll happen for you with a compliance OpenID Connect provider.
+
+In the case that a token is valid, it is made available to your handlers. In the case that a token is not valid, it simply is not available. So checking authentication is checking for token existence.
+
+```javascript title="./all.before.js"
+export const before = async (context) => {
+  // a token, and from a specific domain
+  if (context.token && /.*@yourdomain.com$/.test(context.token.email)) {
+    // note you can pass 'any' object, string, array, or object with key/value
+    // here we use a string
+    context.allow("user from yourdomain granted");
+  }
+  // if there is no context, or no match, we stick with the root deny
+};
+```
+
+This security models gives you complete control, using appliation code.
+
+## Row Security
+
+Assume you have a multi-tenant, or multi-user database and you want to limit which rows can be seen.
+
+One way to do this -- but you have a lot of flexibility with code and handlers, is to set up a domain tenant table, and have a tenant identifier on each row in other tables.
+
+Here is a sample migration:
+
+```sql title="./migrations/default/000_multitenant.sql"
+-- SQLite style
+CREATE TABLE tenants (
+  tenant_id INTEGER PRIMARY KEY,
+  domain TEXT NOT NULL,
+  UNIQUE(domain)
+);
+
+CREATE TABLE multi_tenant_things (
+  thing_id INTEGER PRIMARY KEY,
+  thing_value TEXT NOT NULL,
+  tenant_id INTEGER NOT NULL,
+  FOREIGN KEY(tenant_id) REFERENCES tenants(tenant_id)
+)
+```
+
+Here is the SQL you need to make this work:
+
+```sql title="./default/tenant.sql"
+SELECT tenant_id WHERE domain = :domain
+```
+
+```sql title="./default/my_things.sql"
+SELECT thing_id, thing_value
+FROM multi_tenant_things
+WHERE tenant_id = :tenant_id
+```
+
+And some handlers, we'll limit access to known domains, and be secure by default. Remember you will need to pass a bearer token that will decode and validate. Remember that this is a root folder hook, so you only need to have this one time in your whole system.
+
+```javascript title="./before.js"
+export const before = (context) => {
+  context.deny({});
+  if (context.token) {
+    // pick off the back half of the email, and throw an exception otherwise
+    const domain = context.token.email.split("@")[1];
+    // issue a query to get the tenant
+    // and add it to the context parameters -- matching the named parameter in my_things.sql
+    // notice you don't need to tell it a row, or iterate rows here -- just a little convenience!
+    const tenant_id = await context.databases.default.tenant.sql({domain}).tenant_id;
+    context.parameters.tenant_id = tenant_id;
+    context.allow({ domain, tenant_id });
+  }
+};
+```
+
+And that is it -- now every query will be passed a `tenant_id` parameter, validated against a control table of known domains, authenticated by a third party OpenID Connect provider.
+
+What you'll need to remember to do:
+
+- Put the `:tenant_id` in your where clauses
+- Authenticate your users with OpenID Connect
+- Pass the `Authorization: Bearer ...` header
+
+## PostgreSQL Row Security
+
+Integrating with PostgreSQL [row level security](https://www.postgresql.org/docs/12/ddl-rowsecurity.html) is even easier. You set your policies in SQL as specified by PostgreSQL, and all you need to do is tell EmbraceSQL who is the current user. Note that you don't need to create a database user for each possible user in PostgreSQL.
+
+```javascript title="./before.js"
+export const before = async (context) => {
+  context.deny({});
+  if (context.token) {
+    // something simple, email is the user identity
+    const current_user = context.token.email;
+    // and we will use the domain as the role
+    const domain = context.token.email.split("@")[1];
+    // let PostgreSQL know...
+    context.current_user = current_user;
+    context.role = domain;
+    context.allow({ current_user, role: domain });
+  }
+};
+```
+
+And that is it, EmbraceSQL will call `SET LOCAL SESSION AUTHORIZATION ${context.current_user}` and `SET LOCAL ROLE ${context.role}` for you, bridging in to the native access control concepts in PostgreSQL.
+
+## SQL Security
+
+The database account you use for EmbraceSQL can have any access level you like, but know that if you limit access, some features may not work. For example, if you do not grant `DELETE` to your database account, AutoCRUD cannot delete.
+
+Migration support requires EmbraceSQL to create one table `_embrace_sql_migrations_` in each database. You can run without using migrations or schema warnings if you wish.

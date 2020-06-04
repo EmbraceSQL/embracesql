@@ -1,0 +1,68 @@
+---
+title: Configuration
+---
+
+## Environment Variables
+
+You can have any environment variables you like to be interpolated in your `embracesql.yaml` config.
+
+### EMBRACEQL_ROOT
+
+By default, this is the current working directory, but you can set any directory you like to be the root.
+EmbraceSQL will look in this directory for its configuration and write generated files here.
+
+## Example Confguration
+
+Best way to understand the configuration is with a full sample.
+
+Databases are 'named', names such as `default`, `other`, and these names are used
+in the generation of clients and typed context.
+
+```yaml title="./embracesql.yml"
+databases:
+  default: sqlite:embracesql.db
+  other: sqlite:other.db
+  postgres: postgresql://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB}
+twinCommandsTo: kafka:hostname:port/topic
+```
+
+## File Tree
+
+You run EmbraceSQL in any folder you like -- this is the root.
+A root folder should look like:
+
+```bash title="/"
+after.js
+afterBatch.js
+afterError.js
+afterMigration.js
+before.js
+beforeBatch.js
+beforeMigration.js
+beforeStreamMessage.js
+embracesql.yml
+default/
+    things/
+        all.sql
+        all.sql.before.js
+        all.sql.beforeBatch.js
+        all.sql.after.js
+        all.sql.afterBatch.js
+        all.sql.afterError.js
+        add.sql
+        add.sql.before.js
+        add.sql.beforeBatch.js
+        add.sql.after.js
+        add.sql.afterBatch.js
+        add.sql.afterError.js
+migrations/
+    000.sql
+    001.sql
+resolveSQL.js
+validateToken.js
+```
+
+You can make any folders you like to organize your SQL, starting with a folder per database, and then organizing as you see fit. 
+In this example, `default`
+The path on disk becomes the relative path to invoke via REST with `/`, and via SDK client libraries via '.'. 
+Within each database folder, organize by use case or topic area of your application.

@@ -1,0 +1,84 @@
+---
+title: Introduction
+---
+
+EmbraceSQL for data access -- you write the SQL -- we’ll do the REST!
+
+Learn about the [Problems](./problems) with data access. Then [Get Started](#getting-started).
+
+## Getting Started
+
+You'll need to have Docker [installed](https://docs.docker.com/get-docker/).
+
+Run the EmbraceSQL Docker container with our sample SQLite database. You can do
+this in any directory you like, just know that files will be created there!
+
+```shell
+docker pull embracesql/server
+docker run embracesql/server init > docker-compose.yaml
+docker-compose up
+```
+
+Now you'll see some output from EmbraceSQL starting. `docker-compose` is used to get access to the current directory and the port 8765.
+
+Check out the OpenAPI at http://localhost:8765/ with a browser, notice the `hello` route, GET it!
+
+```shell
+curl http://localhost:8765/default/hello
+```
+
+In your shell in the current directory where you ran EmbraceSQL, do a quick `ls`.
+
+- Notice the ./docker-compose.yaml -- that’s to make it easy to use EmbraceSQL+Docker in development
+- Notice the ./Dockerfile -- that's going to be used to build and deploy your server
+- Notice the ./embracesql.yaml -- that’s the config
+- Notice the ./embracesql.db -- that’s a sample database, in SQLite
+- Notice the ./default/hello.sql -- that’s what just ran
+- Notice the ./migrations -- we’ll get to that
+- Notice the ./client -- that's where generated client library modules live
+
+Replace the contents of `hello.sql`.
+
+```sql title="./default/hello.sql"
+SELECT :stuff AS message
+```
+
+EmbraceSQL
+
+And now use that parameter, just set it on the query string by name.
+
+```shell
+curl http://localhost:8765/default/hello?stuff=world
+```
+
+And of course, you can post your parameters. We're not being pedantic about REST!
+
+```shell
+curl --request POST --data '{"stuff": "world"}' -H "Content-Type: application/json" http://localhost:8765/default/hello
+```
+
+And that's it -- you have just created a REST API with nothing but SQL.
+
+Not only a REST API -- but you have generated a complete JavaScript/TypeScript client library with autocomplete, and [AutoCRUD](./sqlmodules#autocrud).
+
+Create a file in the current directory -- right next to the
+
+```javascript title="./hello.ts"
+import {EmbraceSQL}  from "./client/node";
+
+const client = EmbraceSQL("http://localhost:8765");
+
+const example = async () : Promise<void> => {
+  const echoed = await client.databases.default.hello.sql({ stuff: "world" });
+  console.log(echoed);
+};
+example();
+```
+
+And now run it!
+
+```shell
+npx ts-node ./hello.ts
+```
+
+From here, let's make something more sophisticated with [Databases](./databases), [Tables](./tables), and [SQL Modules](./sqlmodules).

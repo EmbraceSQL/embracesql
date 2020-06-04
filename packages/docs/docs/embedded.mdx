@@ -1,0 +1,102 @@
+---
+title: Embedded
+---
+
+## Getting Started
+
+EmbraceSQL can run in _embedded mode_, which is aimed at two use cases:
+
+- Making a React Native application with inline SQLite
+- Making a Node command line program for database interaction
+- Making a Node server program with inline database access
+
+In all cases, it is recommended that you set up a multiple package repo, with a minimum of two pacakges:
+
+- The EmbraceSQL root package
+- Your app (1+ packages at your discretion)
+
+So, here is a handy skeleton you can start from:
+
+```shell
+yarn add -g https://github.com/embracesql/embracesql.git
+git clone https://github.com/wballard/skeleton.git
+cd skeleton
+yarn
+yarn test
+```
+
+And now -- configure EmbraceSQL -- this will start from an empty directory
+and get everything in place for you to start working.
+
+```shell
+yarn install -g @embracesql/cli
+mkdir packages/databases
+embracesql embedded packages/databases --nowatch
+yarn
+```
+
+This does something a little different -- rather than run a server, this generates a package with EmbraceSQL inside.
+
+Now when you are developing, you can keep the code generator running:
+
+```shell
+npx run embracesql embedded --nowatch packages/databases
+```
+
+This will watching will look out for any `.sql` or `.ts` file changes and regenerate.
+This is how you generally will want to proceed for development.
+
+If you are scripting up as part of a one time build -- you can run with the `--nowatch` option.
+
+## Adding a CLI
+
+Now it's time to make a super simple database driven hello world. Make a new package:
+
+```shell
+mkdir packages/hello
+```
+
+Add in a package.
+
+```json title="packages/hello/package.json"
+{
+  "name": "hello",
+  "version": "0.0.0",
+  "license": "MIT",
+  "dependencies": {
+    "@embracesql/engine": "*",
+    "databases": "*",
+    "ts-node": "*"
+  },
+  "scripts" : {
+    "hello": "ts-node hello.ts"
+  }
+}
+```
+
+And we'll need to link up our multirepo.
+
+```shell
+yarn
+```
+
+We'll code up a simple hello world. You are welcome to copy and paste this code!
+But if you type it -- you'll get a feel for the autocomplete!
+
+```typescript title="packages/hello/hello.ts"
+// this is our actual embedded database.
+import { EmbraceSQLEmbedded } from "databases";
+
+const main = async () => {
+  const embedded = await EmbraceSQLEmbedded();
+  console.log(await embedded.databases.default.hello.sql({}));
+};
+main();
+```
+
+And now run it!
+
+```shell
+cd packages/hello
+yarn hello
+```

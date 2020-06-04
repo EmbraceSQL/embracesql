@@ -1,0 +1,359 @@
+---
+title: SQL Modules
+---
+
+import Mermaid from "../src/mermaid";
+
+## Getting Started
+
+A given SQL file defines a new Modules, which exposes an API, automatically sets up [event queues](./events), generates Data Handlers templates, and [Generated Client Libraries](./clients).
+You just type SQL, EmbraceSQL does the rest.
+This is a different approach than ORMs, which generate a meta schema, or a mapping, which you then use in application code, which then generates SQL at runtime.
+This is a SQL first approach, and you are going to type a whole lot less to use it, as well as be able to access legacy databases.
+
+The SQL you write is the SQL that is going to run. You are in full control and will not need to learn a new way to write SQL.
+
+As a simple example, let's make two new API endpoints in a directory by creating some sql files. These are tucked under the `./default` meaning they are for the defatult database.
+
+```sql title="migrations/default/001.sql"
+CREATE TABLE things(
+  id integer PRIMARY KEY,
+  name text NOT NULL
+);
+```
+
+```sql title="migrations/default/002.sql"
+INSERT INTO things(id, name) values(1, "planes");
+INSERT INTO things(id, name) values(2, "trains");
+```
+
+```shell
+docker run -v ${PWD}:/var/embracesql embracesql/server migrate
+```
+
+And now the sql scripts to define the sql modules.
+
+```sql title="./default/things/all.sql"
+SELECT * FROM things;
+```
+
+```sql title="./default/things/add.sql"
+INSERT INTO things(id, name) VALUES(:id, :name);
+```
+
+Notice the named parameters.
+You can set up named parameters using `:name` where `name` can be any continuous string you like. 
+This format is as raw a sql as possible, with the specific idea that you can open and edit an SQL file using your favorite SQL editor or IDE to interactively test and build your query. 
+EmbraceSQL doesn't dictate any particular developer tools.
+
+Go to your directory and start the server.
+
+```shell
+docker-compose up
+```
+
+If you open a browser to http://localhost:8765/ you will see EmbraceSQL has picked up your new files and there are now new APIs.
+
+--todo--screenshot
+
+Go ahead and give these APIs a test. This will give you a before and after look.
+
+```shell
+curl http://localhost:8765/default/things/all
+curl --request POST --data '{"id": 100, "name": "cake"}' -H "Content-Type: application/json" http://localhost:8765/default/things/add
+curl http://localhost:8765/default/things/all
+```
+
+## Data Handlers
+
+Data Handlers are an opportunity for you to add bits of code to handle events in the EmbraceSQL SQL module lifecycle. Data access can _almost always_ be pulled of with straight SQL, but sometimes you need a little adjustment.
+
+Back in the local directory do `ls things/default` -- notice a few new files:
+
+```
+all.sql.before.ts
+all.sql.after.ts
+all.sql.afterError.ts
+add.sql.before.ts
+add.sql.after.ts
+add.sql.afterError.ts
+```
+
+Take a look inside -- these are data handlers, generated in TypeScript. `before` provides the ability to intercept a query on the way in, and `after` results on the way out.
+
+You are really limited only by your imagination, but some suggestions for `before` handlers:
+
+- Check security with code (more on our security model later)
+- Re-write or replace parameter values
+
+And for `after` handlers:
+
+- Remove or obfuscate secure data at the row/column level
+- Make an additional query for more or associated data with EmbraceSQL
+
+Data Handlers are hierarchical, to allow defaults, and to cut down copy and paste programming.
+Starting from a like-named foo.sql, EmbraceSQL looks for `foo.sql.[event].[extension]` for a given event, across all extensions. From there, the local directory `[event].[extension]`, and repeatedly up each directoy to the root directory where EmbraceSQL is running. This is the event handler chain.
+
+OK -- so _resolution_, handlers run in order from root to child, so `./before.js` then `./default/before.js`, then `./default/things/all.before.js`. If at any point you throw an exception, this will make it all the way back to your calling client as an error message.
+
+This means handlers are a chain:
+
+<Mermaid
+  chart={`
+stateDiagram
+  br: Root level before handler
+  bf: Folder level before handler
+  bff: File level before handler
+  aff: File level after handler
+  af: Folder level after handler
+  ar: Root level after handler
+  [*] --> br
+  br --> bf
+  bf --> bff
+  bff --> aff
+  aff --> af
+  af --> ar
+  ar --> [*]
+`}
+/>
+
+Let’s look inside the `add` handlers, and tweak some parameters.
+
+```javascript title="./default/things/add.sql.before.js"
+export const before = async (context) => {
+  // modify a passed in parameter by name
+  context.parameters.name = context.parameters.name + “-ahoy”;
+}
+```
+
+```javascript title="./default/things/add.sql.after.js"
+export const after = async (context) => {
+  // run a different SQL module inline, no parameters, grabbing the results
+  context.results = await context.databases.default.things.all.sql({});
+};
+```
+
+And now -- give it a try, not only will you have a slightly different name than what you sent in -- you will get rows back as well, with one API call, instead of the two we previously ran.
+
+```shell
+curl --request POST --data '{"id": 200, "name": "ahoy"}' http://localhost:8765/default/things/add
+```
+
+The advantage here is you can batch up multiple interactions, even with multiple databases, behind a single trip over the network.
+
+### Context
+
+The Data Handler execution model relies on a context, which is shared between all handlers in a chain. This is the _one parameter_ passed to each handler, potentialy modified by a handler, and is available subsequent handlers.
+
+EmbraceSQL itself creates this context when an SQL module call starts, and augments this context when running the SQL through to the database, adding the results from the database.
+
+This shared context, and single parameter call signature for handlers makes handlers more consistent and affords easy access to object destructuring syntax features to pick out the bits of context you find interesting in your application.
+
+### Using Multiple Databases
+
+We've seen in [Databases](./databases) that you can have multiple databases -- so then -- how does an API -- an .sql file -- know which database to use?
+
+The answer is -- folders. Each folder under root correspondes to a named database.
+
+## SQL Dialect
+
+EmbraceSQL does not define a new SQL dialect, it passes your SQL through directly to each database. This lets you use SQL fully, along with all the advanced features of your database, without the traditional limits created by ORM style query generators. It also lets you write SQL files with your existing favorite SQL editing tools.
+
+The trade-off is of couse, you need to know the SQL of you database! The good news is you won't need to learn yet another query language, or an API that generates a quey language and keep _that_ mapping in your head.
+
+## Transactions
+
+For any given database, you can begin, commit, or rollback a transaction at any time in any handler. You can do this in SQL, and you can do this in handler code.
+
+Any transaction that was not committed by the time data is returned is automatically rolled back, meaning and `INSERT` `UPDATE` or `DELETE` will have no permanent effect.
+Data can still return, which can let you do somewhat clever things like, insert data, read it back, and then an automatic roll back happen. This is a handy trick for database testing, where you can let transactions ‘undo’ the test data changes for you, restoring your database to a pristine state.
+
+For example, let's modify a previous handler:
+
+```javascript title="./things/add.sql.before.js"
+export const before = async (context) => {
+  // start a database transaction
+  await context.databases.default.transactions.begin();
+  // modify a passed in parameter by name
+  context.parameters.name = context.parameters.name + “-ahem”;
+}
+```
+
+```javascript title="./things/add.sql.after.js"
+export const after = async (context) => {
+  // run a SQL module inline, no parameters
+  context.results = await context.invoke.things.all.sql({});
+  // do not commit, as this is commented out
+  // note that by this time we have already done the insert
+  // and queried the database
+  // await context.databases.default.transactions.commit();
+  // we could also explicitly rollback, but this will happen on its own
+  // await context.databases.default.transactions.rollback();
+};
+```
+
+And behold the rollback, which you can see in your shell.
+
+```shell
+curl http://localhost:8765/things/all
+curl --request POST --data '{"id": 100, "name": "cough"}' http://localhost:8765/things/add
+curl http://localhost:8765/things/all
+```
+
+This will show the table, then a modified table, then back to the original table.
+
+## AutoCRUD
+
+It's great to be able to have the full power of SQL when you need it -- but sometimes you just need to do some basic CRUD. EmbraceSQL automatically inspects your databases and creates default SQL Modules for your tables for working with single and multiple records operations by key, eliminating a big pile of very tedious coding and testing.
+
+Let's set up some tables for a really vanilla shopping cart, in our default testing SQLite database and see how this works. We'll have a pretty normal set or orders, items to order, and an association table to put items in an order.
+
+```sql title="./migrations/default/002.sql"
+CREATE TABLE orders(
+  order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL
+);
+CREATE TABLE items(
+  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  description TEXT NOT NULL
+);
+CREATE TABLE order_items(
+  order_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER NOT NULL,
+  item_id INTEGER NOT NULL,
+  quantity INTEGER NOT NULL,
+  FOREIGN KEY(order_id) REFERENCES orders(order_id),
+  FOREIGN KEY(item_id) REFERENCES items(item_id)
+);
+```
+
+```shell
+docker run embrace-sql migrate
+```
+
+Without writing any SQL at all, you get a REST interface for these tables.
+
+- `POST` new rows to tables to Create
+- `GET` table rows by key to Read
+- `UPDATE` particular fields to values to Update
+- `DELETE` by key to Delete
+
+You can also make `before` and `after` handlers for these automatically generated SQL modules, without needing to write the SQL.
+The way to think about it is -- EmbraceSQL has a lot of SQL built in for the common cases, and you can write any SQL you like for more complex cases. Whether you write the sql, or EmbraceSQL has it built in, you can always create event handlers to intercept query results and modify them as needed.
+
+Even more powerful, with [Generated Client Libraries](./clients), you have typing and autocompletion available for you for every API. Let's see how AutoCRUD looks from TypeScript. So you can get a lot of data access without any SQL or mapping at all.
+
+```typescript
+import EmbraceSQL from "./embrace-sql";
+
+const client = new EmbraceSQL("http://localhost:8765");
+
+const example = async () => {
+
+  // little shortcut to type less...
+  const db = client.databases.default;
+
+  // make some items we can order
+  const item_key = await db.items.create({description: "Paper"});
+
+  // and array valued, make a few records in one shot...
+  const more_item_keys = await db.items.create([
+    {description: "Can"},
+    {description: "Loaf"},
+  ]);
+
+  // no need to pass in the key, it is an auto increment, but you
+  // sure will need it to put in order items, so let's capture the created key
+  // whih EmbraceSQL thought of for you
+  const order_key = await db.orders.create({name: "Sample"});
+
+  // now join items and orders with one of each
+  // again notice we don't need to mention the autoincrement
+  await db.order_items.create([item_key, ...more_item_keys].map(
+    (item_key) => ({order_key.order_id, item_key.item_id, quantity: 1})
+  ));
+
+  // You can use that created key to 'read back' a record, kinda handy
+  // oh -- and it pulls back the whole associated referential graph
+  // your reward for embracing sql and referential integrity is not needing
+  // to query to get child records like order_items or lookup data like items
+  const my_order = await db.orders.read(order_key);
+
+  // notice three tables are joined automatically and you can get the description
+  // EmbraceSQL inside created a query batch to pull in all this data
+  // -- in one trip to the database, so it's not a chatterbox like ORMs
+  console.log(my_order.name, my_order.order_items, my_order.order_items[0].description);
+
+  // hmm -- I really want two of that... let's update, passing in all the order items
+  // and using nice object spread with one property of overwrite
+  await db.order_items.update({...my_order.order_items, quantity: 2});
+
+  // nope -- I don't want it at all
+  // delete the whole thing down the referentia graph
+  await db.orders.delete(order_key);
+
+  // but the items aren't deleted -- they are lookup data!
+  // EmbraceSQL is smart enough to only delete children
+  console.log(await db.items.all());
+
+  // clean up the items
+  await db.items.all.delete();
+};
+example();
+```
+
+So, every SQL module has event handlers, and pure SQL inside. So you
+can actually spy on EmbraceSQL -- even change the SQL for AutoCRUD on the fly if you really wish it!
+
+```javascript title="./default/items/before.js"
+export const before = (context) => {
+  // look inside EmbraceSQL and see what it is doing!
+  // this will run for the folder items, corresponding to the table items
+  // so will run for create, read, update and delete
+  console.log(context.sql, context.parameters);
+};
+```
+
+### Error Handling
+
+Some errors are more critical than others. Sometimes you want to keep going, sometimes you want to abort. EmbraceSQL is a bit of a perfectionist, and aborts the entire request on any unhandled error. You can be more forgiving though, and decide to keep going by creating an error handler:
+
+```javascript title="./things/add.sql.error.js"
+export const error = (context) => {
+  // see what happened and print it out, the error is on the context
+  console.log(context.error);
+  // do nothing and the error 'counts'
+
+  // optionally 'eat' the error
+  context.error = undefined;
+
+  // raise it again -- or any error and the transaction aborts
+  // throw "Oh! Noes!";
+};
+```
+
+You can also `try/catch` in your handler code, so in practice the `error` event handlers are useful to capture errors coming back from your database engine.
+
+### Supported Formats
+
+- TSV/CSV, parameter names are extracted from the 0th row
+- JSONS - one JSON per line, each line is self describing with parameter names
+
+## Invoking SQL Modules
+
+There are three styles of invocation:
+
+- Request/Response via REST
+- Request/Response via generated client libraries
+- Fire and Forget via messages
+
+### REST
+
+Every SQL Module is exposed via REST, as shown in examples.
+These work until complete and return to the caller, transactions roll back automatically if any timeout occurs.
+
+### Cient Library
+
+Client libraries are typed wrappers that support auto-complete, but are really just REST.
+
+Having an API is great, now let's add [Security](./security).

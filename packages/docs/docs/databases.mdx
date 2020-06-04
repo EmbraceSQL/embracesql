@@ -1,0 +1,73 @@
+---
+title: Databases
+---
+
+## Getting Started
+
+EmbraceSQL not only works with multiple database flavors, it works with multiple databases. Embrace SQL lets you start from scratch with a new database, and lets you work with your existing databases. All you need to do is tell EmbraceSQL an URL to allow connection.
+
+By default, there is one database named `default`, which points to the local sqlite. So -- no config at all is equivalent to:
+
+```yaml title="embracesql.yaml"
+databases:
+  default: sqlite:embracesql.db
+```
+
+If you haven't already, generate a new config in any directory you like now:
+
+```shell
+docker pull embracesql/server
+docker run embracesql/server init > docker-compose.yaml
+docker-compose up
+```
+
+## Adding a Database
+
+You can add as many databases as you like.
+
+Let’s add a new database, again using sqlite. Just paste in this config file:
+
+```yml title="embracesql.yaml"
+databases:
+  default: sqlite:embracesql.db
+  other: sqlite:other.db
+```
+
+Using the EmbraceSQL Docker, do a `reload`. 
+
+This will create the new database, do an `ls` and see there will be two local db files.
+
+You can exit -- `ctrl-c` in your shell and then start again.
+
+```shell
+docker-compose up
+```
+
+## Remote Databases
+
+It's fun to use SQLite to learn, but it's probably not what you are really running. So EmbraceSQL lets you connect to remote databases that you already have running. Let's say you have PostgreSQL running on some host:
+
+```yaml title="embracesql.yaml"
+databases:
+  default: postgresql://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB}
+```
+
+And yes -- those are environment variables, so you can put in plain strings if you like, or have those environment variables set -- actually any environment variables you like -- set before EmbraceSQL starts up. These environment variables let you manage secrets and database locations any way you like, and work well with Kubernetes, ECS, and docker-compose.
+
+## Supported Databases
+
+- SQLite: by file path
+- PostgreSQL: by network
+- MySQL: by network
+- RedShift: by network
+
+## Database URLs
+
+You connect to databases by URL:
+
+- network format `flavor://user:password@host:port/database`
+- local file format `flavor:filename`
+
+You can harcode anything you like, but environment variables are suppoted in URLs and will be replaced automatically.
+
+While it's cool that you can have multiple, and mixed flavor of -- databases, you probably want to put something in there, so let's talk about [Tables](./tables).

@@ -1,0 +1,31 @@
+---
+title: Problems
+---
+
+## Overview
+
+Data access has a problems, this is the catalog of problems EmbraceSQL is trying to solve.
+
+* The majority of your data is stored in relational databases.
+* Accessing data via API is repetitive work:
+  * Mapping data from queries to runtime data structures requires coding.
+  * Connecting, configuring, preparing statements, submitting queries, pickout out results require coding.
+* Accessing data via ORMs have two broad categories that create repetitive work:
+  * Those that require you to build with them from scratch, or worse -- start over.
+  * Those that require mapping from database data to runtime data.
+* ORMs and data access layers attempt to, and ultimately fail to eliminate SQL from application programming.
+* Data access fails to generate meaningful business events required to integrate multiple systems into a cohesive business.
+* Databases live longer than applications, and over time multiple applications emerge with nearly redundant data access TO the same database, just in different languages and styles.
+* Data access strategies do nothing to reduce the number of data models, which typically include a database (absolutely required if you want to restart your app, ever) and multiple (technically optional) runtime data models including 1 or more of:
+  * Business Objects Models
+  * Data Transfer Objects Models
+  * View Models
+* Expressing graph data, even with GraphQL, even in the simple case of master-detail relationships, requires multiple queries as well as application code to resolve a graph.
+* Row and column, or object and property level access control and visibility is left to application code leading to redundant implementation.
+* The code editing experience in application code when working with database data, lacks type awareness and auto complete.
+* No data access exists that is comfortable and safe “for security” to use directly from a client application, leading to additional middleware services and servers.
+* Data access tends to consider the one database, or application use case, and fails to deal with the common case of bringing together multiple databases and file stores.
+* Stored procedures and function in the databases do not deal with versions/branches/promotion models.
+* Data access tools are language specific, while the programming market at large is clearly polyglot with Python, JavaScript, Java, and C# being dominant. 
+* Typical data access coding, particularly with ORMs, leads to excessive querying, such as the master-loop-query-detail which generates N database trips instead of the 1 that would be optimal.
+* Typical data access keeps the user identity in application code, and the database has no contextual notion of the end user.

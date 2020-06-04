@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+USE_SSH=true GIT_USER=wballard yarn deploy

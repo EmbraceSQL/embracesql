@@ -1,0 +1,125 @@
+---
+title: Events
+---
+
+import Mermaid from "../src/mermaid";
+
+## Getting Started
+
+One of the big choices in system design is CRUD or some form of EventSourcing / CQRS setup. EmbraceSQL -- embraces SQL -- C’s are UPDATE/INSERT/DELETE and Q’s are SELECT. They are separated by SQL itself. So CQRS is ‘free’, in fact SQL has had this notion all along.
+
+Now for the event sourcing part.
+By default every command generates an event internal to the EmbraceSQL event processing system. EmbraceSQL itself uses an event driven architecture, starting with an API request, running through multiple event handlers, and finally returning results or an error.
+Commands - INSERT/UPDATE/DELETE -- can be twinned to a Kafka topic, so that any time the database is to be modified, other services can be informed. When one of these commands is detected, the entire originating request, encoded as JSON is placed in the topic as a message, along with the SQL. These events let you see:
+
+- Who: the originating request context contains a user token if authenticated
+- What: the resulting SQL and Parameters
+- When: total ordering of events in Kafka
+- Why: the originating request and paramters resulting from an API call or REST
+
+```yaml title="./embracesql.yml"
+twinCommandsTo: kafka:hostname:port/topic
+```
+
+There is actually a bit more than that -- EmbraceSQL internally runs off message streams, when you call an API, the inputs are enqueued, and run through each handler, as well as for the database query itself.
+EmbraceSQL is itself a SQL EventSourcing system -- where the events _are_ the SQL modules, and the handlers are handling events.
+
+## Event Flow
+
+### SQL Modules
+
+<Mermaid
+  chart={`
+sequenceDiagram
+  participant Client
+  participant EmbraceSQL
+  participant Handler
+  participant Database
+  participant Kafka
+  Client->>+EmbraceSQL: SQLAPI or AutoCRUD at URL with parameters
+  EmbraceSQL->>+Handler: validateToken
+  Handler-->-EmbraceSQL: ...
+  EmbraceSQL->>+Handler: resolveSQL
+  Handler-->-EmbraceSQL: ...
+  EmbraceSQL->>+Handler: beforeStreamMessage
+  Handler-->-EmbraceSQL: ...
+  EmbraceSQL-xKafka: stream context as message
+  EmbraceSQL->>Database: transaction begin
+  activate Database
+  EmbraceSQL->>+Handler: before chain
+  Handler-->-EmbraceSQL: ...
+  EmbraceSQL->>Database: sql + parameters
+  Database-->>EmbraceSQL: results returned
+  EmbraceSQL->>+Handler: after chain
+  Handler-->-EmbraceSQL: ...
+  opt Errors
+    EmbraceSQL->>+Handler: afterError chain
+    Handler-->-EmbraceSQL: ...
+  end
+  alt error unhandled
+    EmbraceSQL->>Database: transaction rollback
+  else
+    EmbraceSQL->>Database: transaction commit
+  end
+  deactivate Database
+  EmbraceSQL-->>Client: context.results returned
+`}
+/>
+
+## Data Events
+
+Data events are the main point you can customize SQL modules. All data handlers are hierarchial, with two chains 'before' and 'after'. Before chains run from the root folder down the file hierarchy toward your SQL file, after chains run from the final folder with the SQL up the file hierarchy.
+
+### `before`
+
+Each of the folder hierarchy based `before` handlers has a service queue, automatically defined, so that each folder, and each sql file has a before handling queue. Messages are placed in the root folder before handler, handled, and then passed down the folder hierarchy until a query is reached.
+
+After the `before` handlers are processed, the resulting `context` is presented to a pool of SQL processing queues for each attached database. This allows concurrent data access without resorting to multithreading or traditional connection pooling.
+
+When a query completes, the resulting data is attached to the context and passed back up the chain as `after` events.
+
+### `after`
+
+Each folder in the hierarchy, and the sql file itself has an automatically defined `after` event queue, which run in the reverse order as `before` events, from the sql file back to the root directory. Each handler runs, and passed up to the subsequent queue.
+
+### `afterError`
+
+Unhandled exceptions raised in any handler in a chain, including coming from the supporting database engine, are handed here. You can do nothing, which continues the exception.
+If you handle an exception, and do not raise another, and set `context.error = null`, EmbraceSQL treats it like no error happened, just like if you had wrapped your handler code in `try{} catch{}` and caught it.
+
+You can also handle exceptions normally in handler code as you see fit. This event acts as a backstop.
+
+There is no `beforeError`, EmbraceSQL is not psychic 🔮.
+
+## System Events
+
+While data events fire in response to SQL module invocations, system events can fire at any time.
+
+### `validateToken`
+
+OpenID Connect authorization tokens are decoded and validated by default. But you can provide your own event handler that does your own token validation.
+
+### `resolveSQL`
+
+SQL module inovcations resovle to chain of event handlers and associated SQL. The `resolve` event lets you tap into this and replace any handler or SQL you like, running _before_ the first `before` handler.
+
+### `beforeStreamMessage`
+
+When connected to an external message stream, just before a message is to be sent to an external message stream, you have a chance to intercept it.
+
+### `beforeMigration`
+
+Just before a migration is going to start, this event is fired for each distinct migration SQL script that will run.
+
+### `afterMigration`
+
+After the migration, this event is fired for each distinct migration SQL.
+
+## Handlers
+
+Handlers are `async` JavaScript or TypeScript functions, that receive a `context`, run code as you see fit, and either throw an error or return.
+The `context` is modified in place, and serves as a shared blackboard for each request.
+
+Handlers go one per file, with the file ending in [event-name].[js|ts], exporting a single function named by [event-name].
+
+EmbraceSQL will generate empty handlers for you for each folder, for each sql file, and for the system level event handlers.
