@@ -33,11 +33,11 @@ docker run -v ${PWD}:/var/embracesql embracesql/server migrate
 
 And now the sql scripts to define the sql modules.
 
-```sql title="./default/things/all.sql"
+```sql title="./default/all.sql"
 SELECT * FROM things;
 ```
 
-```sql title="./default/things/add.sql"
+```sql title="./default/add.sql"
 INSERT INTO things(id, name) VALUES(:id, :name);
 ```
 
@@ -94,9 +94,7 @@ And for `after` handlers:
 Data Handlers are hierarchical, to allow defaults, and to cut down copy and paste programming.
 Starting from a like-named foo.sql, EmbraceSQL looks for `foo.sql.[event].[extension]` for a given event, across all extensions. From there, the local directory `[event].[extension]`, and repeatedly up each directoy to the root directory where EmbraceSQL is running. This is the event handler chain.
 
-OK -- so _resolution_, handlers run in order from root to child, so `./before.js` then `./default/before.js`, then `./default/things/all.before.js`. If at any point you throw an exception, this will make it all the way back to your calling client as an error message.
-
-This means handlers are a chain:
+Here is a picture of the event handler chain:
 
 <Mermaid
   chart={`
@@ -119,7 +117,7 @@ stateDiagram
 
 Let’s look inside the `add` handlers, and tweak some parameters.
 
-```javascript title="./default/things/add.sql.before.js"
+```typescript title="./default/things/add.sql.before.ts"
 export const before = async (context) => {
   // modify a passed in parameter by name
   context.parameters.name = context.parameters.name + “-ahoy”;

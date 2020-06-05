@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`hello world of migrations reads and writes things 1`] = `
+Array [
+  Object {
+    "id": 1,
+    "name": "planes",
+  },
+  Object {
+    "id": 2,
+    "name": "trains",
+  },
+]
+`;
+
+exports[`hello world of migrations reads and writes things 2`] = `
+Array [
+  Object {
+    "id": 1,
+    "name": "planes",
+  },
+  Object {
+    "id": 2,
+    "name": "trains",
+  },
+  Object {
+    "id": 3,
+    "name": "automobiiles",
+  },
+]
+`;
