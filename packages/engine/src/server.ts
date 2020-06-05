@@ -5,7 +5,7 @@ import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
 import readFile from "read-file-utf8";
 import path from "path";
-import { HasContextualSQLModuleExecutors, SQLModule } from "./shared-context";
+import { HasContextualSQLModuleExecutors } from "./shared-context";
 import { restructure } from "../../console/src/structured";
 
 /**
@@ -30,69 +30,61 @@ export const createServer = async (
       path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml")
     )
   );
-  // all the modules by context name -- this is a global unique name that means
-  // we don't need to mess with file paths to get the module/handler
-  const allSQLModules = new Map<string, SQLModule>();
-  for (const databaseName of Object.keys(rootContext.databases)) {
-    for (const moduleName of Object.keys(
-      rootContext.databases[databaseName].SQLModules
-    )) {
-      const sqlModule =
-        rootContext.databases[databaseName].SQLModules[moduleName];
-      allSQLModules[sqlModule.contextName] = sqlModule;
-    }
-  }
 
   // the handlers that wrap modules -- for GET and POST
   const handlers = {};
 
   // go ahead and make a handler for both GET and POST
-  Object.keys(rootContext.directQueryExecutors).forEach((contextName) => {
-    if (!allSQLModules[contextName].canModifyData) {
-      handlers[`get__${contextName}`] = async (
+  Object.keys(rootContext.contextualSQLModuleExecutors).forEach(
+    (contextName) => {
+      if (rootContext.readOnlyContextualSQLModuleExecutors[contextName]) {
+        handlers[`get__${contextName}`] = async (
+          _openAPI,
+          httpContext
+        ): Promise<void> => {
+          try {
+            // parameters from the query
+            const context = {
+              parameters: httpContext.request.query,
+              results: [],
+            };
+            await rootContext.contextualSQLModuleExecutors[contextName](
+              context
+            );
+            httpContext.body = context.results;
+            httpContext.status = 200;
+          } catch (e) {
+            // this is the very far edge of the system, time for a log
+            if (rootContext.configuration.logLevels.includes("error"))
+              console.error(e);
+            // send the full error to the client
+            httpContext.status = 500;
+            httpContext.body = restructure("error", e);
+          }
+        };
+      }
+      handlers[`post__${contextName}`] = async (
         _openAPI,
         httpContext
       ): Promise<void> => {
         try {
-          // parameters from the query
+          // parameters from the body
           const context = {
-            parameters: httpContext.request.query,
+            parameters: httpContext.request.body,
             results: [],
           };
           await rootContext.contextualSQLModuleExecutors[contextName](context);
           httpContext.body = context.results;
           httpContext.status = 200;
         } catch (e) {
-          // this is the very far edge of the system, time for a log
           if (rootContext.configuration.logLevels.includes("error"))
             console.error(e);
-          // send the full error to the client
           httpContext.status = 500;
           httpContext.body = restructure("error", e);
         }
       };
     }
-    handlers[`post__${contextName}`] = async (
-      _openAPI,
-      httpContext
-    ): Promise<void> => {
-      try {
-        // parameters from the body
-        const context = {
-          parameters: httpContext.request.body,
-          results: [],
-        };
-        await rootContext.contextualSQLModuleExecutors[contextName](context);
-        httpContext.body = context.results;
-        httpContext.status = 200;
-      } catch (e) {
-        if (rootContext.configuration.logLevels.includes("error"))
-          console.error(e);
-        httpContext.status = 500;
-        httpContext.body = restructure("error", e);
-      }
-    };
-  });
+  );
 
   // merge up all the handlers just created with the OpenAPI definition
   // and we are ready to go -- this counts on OpenAPI doing some validation

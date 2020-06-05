@@ -296,7 +296,7 @@ export type SQLModuleDirectExecutors = {
 
 export type DefaultContext = Context<SQLRow>;
 export type DefaultContextualExecutor = (
-  context: Context<DefaultContext>
+  context: DefaultContext
 ) => Promise<DefaultContext>;
 /**
  * A map of named, fully contextualized executors, complete
@@ -317,4 +317,9 @@ export type HasContextualSQLModuleExecutors = {
    * run a a SQLModule.
    */
   contextualSQLModuleExecutors: ContextualSQLModuleExecutors;
+  /**
+   * `contextName` to function mapping for read only execution that is
+   * suitable for a GET.
+   */
+  readOnlyContextualSQLModuleExecutors: ContextualSQLModuleExecutors;
 };

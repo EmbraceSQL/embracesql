@@ -11,13 +11,32 @@ to: "{{configuration.embraceSQLRoot}}/context.ts"
 
 // Generation starts here
 
-// All named databases
-export type AvailableDatabaseNames = 
+// tree structure of the entire set of databases and handlers
+export type SQLModuleTree = {
+  databases: {
   {{#eachInMap databases}}
-  "{{@key}}" {{#if @last}};{{else}}|{{/if}}
+    {{@key}}: {
+    {{#treeAMap value.SQLModules database=value}}
+      {{#each value}}
+      {{> moduleTree this database=@database }}
+      {{/each}}
+    {{/treeAMap}}
+    },
   {{/eachInMap}}
+  }
+};
+{{#*inline "moduleTree"}}
+{{name}}: {
+  {{#if value}}
+  sql: (parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
+  {{/if}}
+  {{#each children}}
+    {{> moduleTree this database=database}}
+  {{/each}}
+},
+{{/inline}}
 
-// each SQLModule  gets a context type with parameters (if present) and results
+// each SQLModule gets its own unique context type
 {{#eachInMap databases}}
 // database {{@key}}
 {{#eachInMap value.SQLModules}}
@@ -25,7 +44,7 @@ export type AvailableDatabaseNames =
 {{> resultsetMetadata value}}
 {{> parametersMetadata value}}
 export type {{value.contextName}}Context = 
-  Context<{{value.contextName}}Row> & { 
+  SQLModuleTree & Context<{{value.contextName}}Row> & { 
     parameters: {{value.contextName}}Parameters
   };
 export type {{value.contextName}}Handler = 
@@ -33,9 +52,12 @@ export type {{value.contextName}}Handler =
 {{/eachInMap}}
 {{/eachInMap}}
 
+// handle a folder, thse use the base types for rows and parameters
+// to allow them to be maximally generic
 export type FolderHandler = (context: Context<SQLRow>) => Promise<Context<SQLRow>>;
 
 
+// each sql module will have a row return type, adding required properties to the base
 {{#*inline "resultsetMetadata"}}
 export type {{contextName}}Row = 
 SQLRow & {
@@ -45,6 +67,7 @@ SQLRow & {
 };
 {{/inline}}
 
+// each sql module will have a set of parameters, adding required parameters to the base
 {{#*inline "parametersMetadata"}}
 export type {{contextName}}Parameters = 
 SQLParameters & {
@@ -55,11 +78,12 @@ SQLParameters & {
 {{/inline}}
 
 
-// each SQL Module has a direct execution decorator to attach handlers both before and after
-// wrapping the direct executor that just interacts with the underlying database
+// each SQL Module has a direct execution decorator  -- this just talks to the database
+// this attaches handlers both before and after wrapping the direct executor
+// this ends up being a decorated map of handler+query execution capability
 export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: SQLModuleDirectExecutors) => {
-{{#eachInMap databases}}
   return {
+  {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.SQLModules}}
       {{value.contextName}}:  async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
@@ -88,18 +112,8 @@ export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: SQLModule
         }
       },
     {{/eachInMap}}
+    {{/eachInMap}}
   }
-{{/eachInMap}}
 };
 
-// combine the results of generated code -- handlers, parameters, and results
-// with an existing direct executor -- which is going to be an internal context
-// this is now a full featured EmbraceSQL that can be mounted in process or
-// in an OpenAPI server to invoke a SQLModule with a context, handle it, execute it, an return
-
-export const decorateInternalContext = (internalContext: SQLModuleDirectExecutors) => {
-  return {
-    ...internalContext,
-    contextualSQLModuleExecutors: SQLModuleExecutorsWithHandlers(internalContext),
-  };
-}
+export type SQLModuleExecutorsWithHandlers_T = ReturnType<typeof SQLModuleExecutorsWithHandlers>;

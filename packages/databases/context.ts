@@ -302,7 +302,7 @@ export type SQLModuleDirectExecutors = {
 
 export type DefaultContext = Context<SQLRow>;
 export type DefaultContextualExecutor = (
-  context: Context<DefaultContext>
+  context: DefaultContext
 ) => Promise<DefaultContext>;
 /**
  * A map of named, fully contextualized executors, complete
@@ -323,33 +323,56 @@ export type HasContextualSQLModuleExecutors = {
    * run a a SQLModule.
    */
   contextualSQLModuleExecutors: ContextualSQLModuleExecutors;
+  /**
+   * `contextName` to function mapping for read only execution that is
+   * suitable for a GET.
+   */
+  readOnlyContextualSQLModuleExecutors: ContextualSQLModuleExecutors;
 };
 
 // Generation starts here
 
-// All named databases
-export type AvailableDatabaseNames = "default";
+// tree structure of the entire set of databases and handlers
+export type SQLModuleTree = {
+  databases: {
+    default: {
+      hello: {
+        sql: (
+          parameters: default_helloParameters
+        ) => Promise<default_helloRow[]>;
+      };
+    };
+  };
+};
 
-// each SQLModule  gets a context type with parameters (if present) and results
+// each SQLModule gets its own unique context type
 // database default
 // module default/hello
 export type default_helloRow = SQLRow & {
   hello_world: string;
 };
 export type default_helloParameters = SQLParameters & {};
-export type default_helloContext = Context<default_helloRow> & {
-  parameters: default_helloParameters;
-};
+export type default_helloContext = SQLModuleTree &
+  Context<default_helloRow> & {
+    parameters: default_helloParameters;
+  };
 export type default_helloHandler = (
   context: default_helloContext
 ) => Promise<default_helloContext>;
 
+// handle a folder, thse use the base types for rows and parameters
+// to allow them to be maximally generic
 export type FolderHandler = (
   context: Context<SQLRow>
 ) => Promise<Context<SQLRow>>;
 
-// each SQL Module has a direct execution decorator to attach handlers both before and after
-// wrapping the direct executor that just interacts with the underlying database
+// each sql module will have a row return type, adding required properties to the base
+
+// each sql module will have a set of parameters, adding required parameters to the base
+
+// each SQL Module has a direct execution decorator  -- this just talks to the database
+// this attaches handlers both before and after wrapping the direct executor
+// this ends up being a decorated map of handler+query execution capability
 export const SQLModuleExecutorsWithHandlers = ({
   directQueryExecutors,
 }: SQLModuleDirectExecutors) => {
@@ -381,18 +404,6 @@ export const SQLModuleExecutorsWithHandlers = ({
   };
 };
 
-// combine the results of generated code -- handlers, parameters, and results
-// with an existing direct executor -- which is going to be an internal context
-// this is now a full featured EmbraceSQL that can be mounted in process or
-// in an OpenAPI server to invoke a SQLModule with a context, handle it, execute it, an return
-
-export const decorateInternalContext = (
-  internalContext: SQLModuleDirectExecutors
-) => {
-  return {
-    ...internalContext,
-    contextualSQLModuleExecutors: SQLModuleExecutorsWithHandlers(
-      internalContext
-    ),
-  };
-};
+export type SQLModuleExecutorsWithHandlers_T = ReturnType<
+  typeof SQLModuleExecutorsWithHandlers
+>;

@@ -74,15 +74,22 @@ export default async (
       parameters?: SQLParameters
     ): Promise<SQLRow[]> => {
       const statement = await database.prepare(sqlModule.sql);
-      if (parameters && Object.keys(parameters).length) {
-        // map to SQLite names
-        const withParameters = Object.fromEntries(
-          Object.keys(parameters).map((name) => [`:${name}`, parameters[name]])
-        );
-        statement.bind(withParameters);
-        return await statement.all();
-      } else {
-        return await statement.all();
+      try {
+        if (parameters && Object.keys(parameters).length) {
+          // map to SQLite names
+          const withParameters = Object.fromEntries(
+            Object.keys(parameters).map((name) => [
+              `:${name}`,
+              parameters[name],
+            ])
+          );
+          statement.bind(withParameters);
+          return await statement.all();
+        } else {
+          return await statement.all();
+        }
+      } finally {
+        await statement.finalize();
       }
     },
     analyze: async (
@@ -101,35 +108,38 @@ export default async (
         const create = `CREATE TABLE __analyze__ AS ${sql};`;
         const drop = `DROP TABLE __analyze__;`;
         const preparedCreate = await database.prepare(create);
-        const describe = `pragma table_info('__analyze__')`;
-        // run with all nulls for all parameters by default
-        if (sqlModule.namedParameters?.length) {
-          const withParameters = Object.fromEntries(
-            sqlModule.namedParameters?.map((p) => [`:${p.name}`, null])
-          );
-          await preparedCreate.bind(withParameters);
-          await preparedCreate.all();
-        } else {
-          await preparedCreate.all();
-        }
-        await preparedCreate.finalize();
-        const readDescribeRows = await database.all(describe);
-        await database.all(drop);
-        // OK so something to know -- columns with spaces in them are quoted
-        // by sqlite so if a column is named
-        // hi mom
-        // sqlite has that as 'hi mom'
-        // which makes the javascript key ...["'hi mom'"] -- oh yeah
-        // the ' is part of the key
+        try {
+          const describe = `pragma table_info('__analyze__')`;
+          // run with all nulls for all parameters by default
+          if (sqlModule.namedParameters?.length) {
+            const withParameters = Object.fromEntries(
+              sqlModule.namedParameters?.map((p) => [`:${p.name}`, null])
+            );
+            await preparedCreate.bind(withParameters);
+            await preparedCreate.all();
+          } else {
+            await preparedCreate.all();
+          }
+          const readDescribeRows = await database.all(describe);
+          await database.all(drop);
+          // OK so something to know -- columns with spaces in them are quoted
+          // by sqlite so if a column is named
+          // hi mom
+          // sqlite has that as 'hi mom'
+          // which makes the javascript key ...["'hi mom'"] -- oh yeah
+          // the ' is part of the key
 
-        /**
-         * One row per column, the name and type info are interesting,
-         * pick them out and normalize them.
-         */
-        return readDescribeRows.map((row) => ({
-          name: identifier(row.name.toString()),
-          type: typeMap(row.type),
-        }));
+          /**
+           * One row per column, the name and type info are interesting,
+           * pick them out and normalize them.
+           */
+          return readDescribeRows.map((row) => ({
+            name: identifier(row.name.toString()),
+            type: typeMap(row.type),
+          }));
+        } finally {
+          await preparedCreate.finalize();
+        }
       } else {
         return [];
       }
@@ -149,10 +159,10 @@ export default async (
       const migrated = await (
         await database.all("SELECT content FROM __embracesql_migrations__")
       ).map((row) => row.content.toString());
-      const markOff = await database.prepare(
-        "INSERT INTO __embracesql_migrations__(content, run_at) VALUES(:content, :run_at)"
-      );
       try {
+        const markOff = await database.prepare(
+          "INSERT INTO __embracesql_migrations__(content, run_at) VALUES(:content, :run_at)"
+        );
         await transactions.begin();
         if (migrated.indexOf(migrationFile.content) >= 0) {
           // already done!

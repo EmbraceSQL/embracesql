@@ -2,6 +2,7 @@
 import process from "process";
 import * as stackTraceParser from "stacktrace-parser";
 import path from "path";
+import chalk from "chalk";
 /**
  * Modification to console so that it will generate structured data.
  *
@@ -17,7 +18,23 @@ import path from "path";
 /**
  * Four levels.
  */
-export type LogLevel = "debug" | "info" | "error" | "warn" | "debug";
+export type LogLevel = "info" | "error" | "warn" | "debug";
+
+/**
+ * Oh, the pretty colors!
+ */
+const colorize = (logLevel: LogLevel): chalk.Chalk => {
+  switch (logLevel) {
+    case "debug":
+      return chalk.blue;
+    case "info":
+      return chalk.white;
+    case "warn":
+      return chalk.yellow;
+    case "error":
+      return chalk.red;
+  }
+};
 
 /**
  * Turn those arguments into an object.
@@ -52,21 +69,29 @@ const restructure = (
     }
   };
   const info = siteInfo();
-  // it is possible that the message is circular and cannot be sent to JSON
-  // this I wasn't expecting, JSON.stringify returning {} when there is an actual message
-  try {
-    if (JSON.stringify(message) === "{}") {
+  if (process.stdout.isTTY) {
+    const source = `${colorize(logLevel)(logLevel)} - ${chalk.whiteBright(
+      info.path
+    )}#${chalk.whiteBright(info.lineNumber)}`;
+    const fullMessage = colorize(logLevel)(message);
+    return `${source}\n${fullMessage}`;
+  } else {
+    // it is possible that the message is circular and cannot be sent to JSON
+    // this I wasn't expecting, JSON.stringify returning {} when there is an actual message
+    try {
+      if (JSON.stringify(message) === "{}") {
+        message = message.toString();
+      }
+    } catch {
       message = message.toString();
     }
-  } catch {
-    message = message.toString();
+    return JSON.stringify({
+      logLevel,
+      source: `${info.path}#${info.lineNumber}`,
+      message,
+      additional,
+    });
   }
-  return JSON.stringify({
-    logLevel,
-    source: `${info.path}#${info.lineNumber}`,
-    message,
-    additional,
-  });
 };
 
 /**

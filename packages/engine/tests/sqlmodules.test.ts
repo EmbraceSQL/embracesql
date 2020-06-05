@@ -5,9 +5,9 @@ import { buildInternalContext, InternalContext } from "../src/context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
 
-describe("hello world of migrations", () => {
+describe("sqlmodules provide handlers and autocrud", () => {
   let rootContext: InternalContext;
-  const root = path.relative(process.cwd(), "./.tests/sqlmodule");
+  const root = path.relative(process.cwd(), "./.tests/sqlmodules");
   beforeAll(async () => {
     // clean up
     await fs.ensureDir(root);
@@ -16,6 +16,7 @@ describe("hello world of migrations", () => {
     // get the configuration and generate - let's do this just the once
     // and have a few tests that asser things happened
     const configuration = await loadConfiguration(root);
+    configuration.embedded = true;
     rootContext = await buildInternalContext(configuration);
     await migrate(rootContext);
     // reset and go
@@ -24,17 +25,18 @@ describe("hello world of migrations", () => {
   });
   it("reads and writes things", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { EmbraceSQL } = require(path.join(
+    const { EmbraceSQLEmbedded } = require(path.join(
       process.cwd(),
-      rootContext.configuration.embraceSQLRoot,
-      "client",
-      "node-inprocess"
+      rootContext.configuration.embraceSQLRoot
     ));
-    const client = EmbraceSQL(rootContext);
+    const engine = await EmbraceSQLEmbedded();
     // initial values
-    expect(await client.databases.default.all.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.all.sql()).toMatchSnapshot();
     // add a thing
-    await client.databases.default.add.sql({ id: 3, name: "automobiiles" });
-    expect(await client.databases.default.all.sql()).toMatchSnapshot();
+    expect(
+      await engine.databases.default.add.sql({ id: 3, name: "automobiles" })
+    ).toMatchSnapshot();
+    // and read again
+    expect(await engine.databases.default.all.sql()).toMatchSnapshot();
   });
 });

@@ -26,13 +26,12 @@ declare global {
  * call APIs, -- just that configuration worked at all.
  */
 describe("hello world configuration!", () => {
+  const root = path.relative(process.cwd(), "./.tests/hello");
   let theConfig: Configuration = undefined;
   let rootContext: InternalContext;
-  let root = "";
   let listening: http.Server;
   let callback;
   beforeAll(async () => {
-    root = path.relative(process.cwd(), "./.tests/hello");
     // clean up
     await rmfr(root);
     // get the configuration and generate - let's do this just the once
@@ -40,12 +39,12 @@ describe("hello world configuration!", () => {
     const configuration = (theConfig = await loadConfiguration(root));
     rootContext = await buildInternalContext(configuration);
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { decorateInternalContext } = require(path.join(
+    const { EmbraceSQLEmbedded } = require(path.join(
       process.cwd(),
-      rootContext.configuration.embraceSQLRoot,
-      "context"
+      rootContext.configuration.embraceSQLRoot
     ));
-    const server = await createServer(decorateInternalContext(rootContext));
+    const engine = await EmbraceSQLEmbedded();
+    const server = await createServer(engine);
     callback = server.callback();
     listening = server.listen(4567);
   });
@@ -97,7 +96,6 @@ describe("hello world configuration!", () => {
   });
   it("generates client library for you", async () => {
     expect("client/node/index.ts").toExist();
-    expect("client/node-inprocess/index.ts").toExist();
     expect("client/browser/index.ts").toExist();
   });
   it("will run a query in context", async () => {
@@ -109,7 +107,6 @@ describe("hello world configuration!", () => {
   it("will make a runnable server", async () => {
     const response = await request(callback).get("/default/hello");
     expect(response.text).toMatchSnapshot();
-    // client
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
@@ -122,26 +119,28 @@ describe("hello world configuration!", () => {
   });
   it("will make an embeddable engine", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { EmbraceSQL } = require(path.join(
+    const { EmbraceSQLEmbedded } = require(path.join(
       process.cwd(),
-      rootContext.configuration.embraceSQLRoot,
-      "client",
-      "node-inprocess"
+      rootContext.configuration.embraceSQLRoot
     ));
-    const client = EmbraceSQL(rootContext);
-    expect(await client.databases.default.hello.sql()).toMatchSnapshot();
+    const engine = await EmbraceSQLEmbedded();
+    expect(await engine.databases.default.hello.sql()).toMatchSnapshot();
   });
   it("will watch for changes and create a new context", async (done) => {
-    const watcher = watchRoot(root);
-    watcher.emitter.on("reload", async (newContext: InternalContext) => {
-      // it's a new object
-      expect(newContext).not.toBe(rootContext);
-      // and it has the values we expect
-      expect(newContext).toMatchSnapshot();
-      await watcher.close();
-      // and let Jest finish
-      done();
-    });
+    const watcher = watchRoot(rootContext);
+    watcher.emitter.on(
+      "reload",
+      async (oldContext: InternalContext, newContext: InternalContext) => {
+        await oldContext.close();
+        // it's a new object
+        expect(newContext).not.toBe(rootContext);
+        // and it has the values we expect
+        expect(newContext).toMatchSnapshot();
+        await watcher.close();
+        // and let Jest finish
+        done();
+      }
+    );
     // adding a new file should trigger the watcher
     // calling back to the event, which should tell jest we are all done
     await fs.outputFile(

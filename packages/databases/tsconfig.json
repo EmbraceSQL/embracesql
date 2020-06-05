@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "declaration": true,
-    "baseUrl": "/Users/wballard/meh/skeleton/packages/databases"
+    "baseUrl": "/Users/wballard/embracesql/embracesql/packages/databases"
   },
   "include": ["./client/**/*.ts"]
 }

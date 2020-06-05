@@ -14,7 +14,9 @@ export type CloseableEventEmitter = {
 /**
  * Create a whole new context..
  */
-export const reload = async (embraceSQLRoot): Promise<InternalContext> => {
+export const reload = async (
+  embraceSQLRoot: string
+): Promise<InternalContext> => {
   const configuration = await loadConfiguration(embraceSQLRoot);
   const newRootContext = await buildInternalContext(configuration);
   return newRootContext;
@@ -26,17 +28,25 @@ export const reload = async (embraceSQLRoot): Promise<InternalContext> => {
  * Note -- no need to worry about race conditions `buildRootContext` has
  * a throttle inside.
  */
-export const watchRoot = (embraceSQLRoot: string): CloseableEventEmitter => {
+export const watchRoot = (
+  internalContext: InternalContext
+): CloseableEventEmitter => {
+  let oldInternalContext = internalContext;
   const emitter = new EventEmitter();
 
   // watch the whole directory
-  const watcher = chokidar.watch([`${embraceSQLRoot}/**/*.sql`]);
+  const watcher = chokidar.watch([
+    `${internalContext.configuration.embraceSQLRoot}/**/*.sql`,
+  ]);
 
   // this is super convenient to not drown in a pile of single file changes
   watcher.on("change", async () => {
-    console.info("reload needed", embraceSQLRoot);
-    const newRootContext = await reload(embraceSQLRoot);
-    emitter.emit("reload", newRootContext);
+    console.info("reload needed");
+    const newInternalContext = await reload(
+      internalContext.configuration.embraceSQLRoot
+    );
+    emitter.emit("reload", oldInternalContext, newInternalContext);
+    oldInternalContext = newInternalContext;
   });
   return {
     emitter,

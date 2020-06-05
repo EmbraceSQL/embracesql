@@ -89,7 +89,7 @@ export default new Command()
       // no watch -- bail
       if (cmd.nowatch) return;
 
-      const watcher = watchRoot(root);
+      const watcher = watchRoot(internalContext);
       watcher.emitter.on("reload", async (newContext: InternalContext) => {
         console.info("Reloading");
         // just needed for generation -- so close it off.

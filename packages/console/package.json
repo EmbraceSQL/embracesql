@@ -4,6 +4,7 @@
   "main": "src/structured.ts",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^4.0.0",
     "stacktrace-parser": "^0.1.10"
   },
   "scripts": {

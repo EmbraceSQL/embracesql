@@ -118,15 +118,19 @@ stateDiagram
 Let’s look inside the `add` handlers, and tweak some parameters.
 
 ```typescript title="./default/things/add.sql.before.ts"
-export const before = async (context) => {
-  // modify a passed in parameter by name
-  context.parameters.name = context.parameters.name + “-ahoy”;
-}
+import * as types from "../context";
+
+export const before: types.default_addHandler = async (context) => {
+  context.parameters.name = context.parameters.name + "-ahoy";
+  return context;
+};
+
 ```
+
+And after the query -- let's read back the rows
 
 ```javascript title="./default/things/add.sql.after.js"
 export const after = async (context) => {
-  // run a different SQL module inline, no parameters, grabbing the results
   context.results = await context.databases.default.things.all.sql({});
 };
 ```
@@ -134,7 +138,8 @@ export const after = async (context) => {
 And now -- give it a try, not only will you have a slightly different name than what you sent in -- you will get rows back as well, with one API call, instead of the two we previously ran.
 
 ```shell
-curl --request POST --data '{"id": 200, "name": "ahoy"}' http://localhost:8765/default/things/add
+curl --request POST --data '{"id": 200, "name": "ahoy"}' -H "Content-Type: application/json"
+ http://localhost:8765/default/things/add
 ```
 
 The advantage here is you can batch up multiple interactions, even with multiple databases, behind a single trip over the network.
@@ -194,7 +199,7 @@ And behold the rollback, which you can see in your shell.
 
 ```shell
 curl http://localhost:8765/things/all
-curl --request POST --data '{"id": 100, "name": "cough"}' http://localhost:8765/things/add
+curl --request POST --data '{"id": 100, "name": "cough"}' -H "Content-Type: application/json"  http://localhost:8765/things/add
 curl http://localhost:8765/things/all
 ```
 

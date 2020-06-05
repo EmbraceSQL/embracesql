@@ -1,11 +1,5 @@
 import { Command } from "commander";
-import {
-  loadConfiguration,
-  createServer,
-  watchRoot,
-  buildInternalContext,
-  InternalContext,
-} from "@embracesql/engine";
+import { createServer, watchRoot, InternalContext } from "@embracesql/engine";
 import { Server } from "http";
 import expandHomeDir from "expand-home-dir";
 import path from "path";
@@ -26,28 +20,32 @@ export default new Command()
         )
       );
       const port = parseInt(PORT || process.env.PORT || "8765");
-      const configuration = await loadConfiguration(root);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { EmbraceSQLEmbedded } = require(root);
 
-      const listen = async (rootContext: InternalContext): Promise<Server> => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { decorateInternalContext } = require(path.join(root, "context"));
-        const server = await createServer(decorateInternalContext(rootContext));
+      const listen = async (rootContext?: InternalContext): Promise<Server> => {
+        const server = await createServer(
+          await EmbraceSQLEmbedded(rootContext)
+        );
         console.info("Listening", {
-          EMBRACE_SQL_ROOT: configuration.embraceSQLRoot,
+          EMBRACE_SQL_ROOT: root,
           PORT: port,
         });
         return server.listen(port);
       };
-      let internalContext = await buildInternalContext(configuration);
-      let listener = await listen(internalContext);
-      const watcher = watchRoot(root);
-      watcher.emitter.on("reload", async (newContext: InternalContext) => {
-        console.info("Reloading");
-        listener.close(async () => {
-          await internalContext.close();
-          listener = await listen(newContext);
-          internalContext = newContext;
-        });
-      });
+      // start up an initial embeded context and listen
+      const initialContext = await EmbraceSQLEmbedded();
+      let listener = await listen(initialContext);
+      const watcher = watchRoot(initialContext);
+      watcher.emitter.on(
+        "reload",
+        async (oldContext: InternalContext, newContext: InternalContext) => {
+          console.info("Reloading");
+          listener.close(async () => {
+            await oldContext.close();
+            listener = await listen(newContext);
+          });
+        }
+      );
     }
   );

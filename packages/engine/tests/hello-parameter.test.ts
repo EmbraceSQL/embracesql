@@ -25,12 +25,12 @@ describe("hello world with a parameter", () => {
     await fs.copy(path.join(__dirname, "configs/hello-parameter"), root);
     rootContext = await buildInternalContext(configuration);
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { decorateInternalContext } = require(path.join(
+    const { EmbraceSQLEmbedded } = require(path.join(
       process.cwd(),
-      rootContext.configuration.embraceSQLRoot,
-      "context"
+      rootContext.configuration.embraceSQLRoot
     ));
-    const server = await createServer(decorateInternalContext(rootContext));
+    const engine = await EmbraceSQLEmbedded();
+    const server = await createServer(engine);
     callback = server.callback();
     listening = server.listen(45678);
   });
@@ -72,15 +72,13 @@ describe("hello world with a parameter", () => {
   });
   it("will make an embeddable engine", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { EmbraceSQL } = require(path.join(
+    const { EmbraceSQLEmbedded } = require(path.join(
       process.cwd(),
-      rootContext.configuration.embraceSQLRoot,
-      "client",
-      "node-inprocess"
+      rootContext.configuration.embraceSQLRoot
     ));
-    const client = EmbraceSQL(rootContext);
+    const engine = await EmbraceSQLEmbedded();
     expect(
-      await client.databases.default.hello.sql({ stuff: "hole" })
+      await engine.databases.default.hello.sql({ stuff: "hole" })
     ).toMatchSnapshot();
   });
 });
