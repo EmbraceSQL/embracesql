@@ -68,7 +68,7 @@ curl http://localhost:8765/default/all
 
 Data Handlers are an opportunity for you to add bits of code to handle events in the EmbraceSQL SQL module lifecycle. Data access can _almost always_ be pulled of with straight SQL, but sometimes you need a little adjustment.
 
-Back in the local directory do `ls things/default` -- notice a few new files:
+Back in the local directory do `ls default` -- notice a few new files:
 
 ```
 all.sql.before.ts
@@ -92,7 +92,9 @@ And for `after` handlers:
 - Make an additional query for more or associated data with EmbraceSQL
 
 Data Handlers are hierarchical, to allow defaults, and to cut down copy and paste programming.
-Starting from a like-named foo.sql, EmbraceSQL looks for `foo.sql.[event].[extension]` for a given event, across all extensions. From there, the local directory `[event].[extension]`, and repeatedly up each directoy to the root directory where EmbraceSQL is running. This is the event handler chain.
+Starting from a any `foo.sql`, EmbraceSQL looks for `foo.sql.[event].[extension]` for a given event, across all extensions. 
+From there, the local directory `[event].[extension]`, and repeatedly up each directory to the root directory where EmbraceSQL is running. 
+This is the event handler chain.
 
 Here is a picture of the event handler chain:
 
@@ -117,7 +119,7 @@ stateDiagram
 
 Let’s look inside the `add` handlers, and tweak some parameters.
 
-```typescript title="./default/things/add.sql.before.ts"
+```typescript title="./default/add.sql.before.ts"
 import * as types from "../context";
 
 export const before: types.default_addHandler = async (context) => {
@@ -127,9 +129,10 @@ export const before: types.default_addHandler = async (context) => {
 
 ```
 
-And after the query -- let's read back the rows
+And after the query -- let's read back the rows. 
+This pretty handy as a general trick by the way to read back a lookup table.
 
-```javascript title="./default/things/add.sql.after.js"
+```javascript title="./default/add.sql.after.js"
 export const after = async (context) => {
   context.results = await context.databases.default.things.all.sql({});
 };
@@ -139,24 +142,31 @@ And now -- give it a try, not only will you have a slightly different name than 
 
 ```shell
 curl --request POST --data '{"id": 200, "name": "ahoy"}' -H "Content-Type: application/json"
- http://localhost:8765/default/things/add
+ http://localhost:8765/default/add
 ```
 
 The advantage here is you can batch up multiple interactions, even with multiple databases, behind a single trip over the network.
 
 ### Context
 
-The Data Handler execution model relies on a context, which is shared between all handlers in a chain. This is the _one parameter_ passed to each handler, potentialy modified by a handler, and is available subsequent handlers.
+The Data Handler execution model relies on a `context`, which is shared between all handlers in a chain. 
+This is the _one parameter_ passed to each handler, potentialy modified by a handler, and is available subsequent handlers.
+This one parameter approach allows for a simple call signature, and a shared 'blackboard' pattern between your handlers and the EmbraceSQL engine itself.
 
 EmbraceSQL itself creates this context when an SQL module call starts, and augments this context when running the SQL through to the database, adding the results from the database.
 
 This shared context, and single parameter call signature for handlers makes handlers more consistent and affords easy access to object destructuring syntax features to pick out the bits of context you find interesting in your application.
 
+The actual `context` is typed, and generated based on the SQL you write and the schema of your database. 
+As you change the SQL, the type of the `parameters` and `results` properties in particular will change.
+This is particularly handy as it allows autocomplete while editing your handlers!
+
 ### Using Multiple Databases
 
 We've seen in [Databases](./databases) that you can have multiple databases -- so then -- how does an API -- an .sql file -- know which database to use?
 
-The answer is -- folders. Each folder under root correspondes to a named database.
+The answer is -- folders. i
+Each folder under the EmbraceSQL root correspondes to a named database, with the exception of the reserved folders under `migrations`;
 
 ## SQL Dialect
 

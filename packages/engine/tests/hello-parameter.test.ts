@@ -62,7 +62,6 @@ describe("hello world with a parameter", () => {
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
       rootContext.configuration.embraceSQLRoot,
-      "client",
       "node"
     ));
     const client = EmbraceSQL("http://localhost:45678");

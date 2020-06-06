@@ -23,7 +23,7 @@ export const post = async (
   serverUrl: string,
   apiPath: string,
   parameters = {}
-): Promise<Array<object>> => {
+): Promise<Array<Record<string, unknown>>> => {
   const cleaned = serverUrl.endsWith("/") ? serverUrl.slice(0, -1) : serverUrl;
   // let any exception leak out to the client
   const response = await fetch(`${cleaned}${apiPath}`, {

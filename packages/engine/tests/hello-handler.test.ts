@@ -73,7 +73,6 @@ describe("hello world with a handler", () => {
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
       rootContext.configuration.embraceSQLRoot,
-      "client",
       "node"
     ));
     const client = EmbraceSQL("http://localhost:45679");
@@ -110,7 +109,6 @@ describe("hello world with a handler", () => {
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
       rootContext.configuration.embraceSQLRoot,
-      "client",
       "node"
     ));
     const client = EmbraceSQL("http://localhost:45679");
@@ -125,7 +123,6 @@ describe("hello world with a handler", () => {
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
       rootContext.configuration.embraceSQLRoot,
-      "client",
       "node"
     ));
     const client = EmbraceSQL("http://localhost:45679");
