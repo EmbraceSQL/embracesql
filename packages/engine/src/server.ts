@@ -1,11 +1,13 @@
-import { InternalContext } from "./context";
 import Koa from "koa";
 import bodyparser from "koa-bodyparser";
 import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
 import readFile from "read-file-utf8";
 import path from "path";
-import { HasContextualSQLModuleExecutors } from "./shared-context";
+import {
+  HasContextualSQLModuleExecutors,
+  HasConfiguration,
+} from "./shared-context";
 import { restructure } from "../../console/src/structured";
 
 /**
@@ -19,7 +21,7 @@ import { restructure } from "../../console/src/structured";
  * @param executionMap - context name to execution function mapping to actually 'run' a query
  */
 export const createServer = async (
-  rootContext: InternalContext & HasContextualSQLModuleExecutors
+  rootContext: HasConfiguration & HasContextualSQLModuleExecutors
 ): Promise<Koa<Koa.DefaultState, Koa.DefaultContext>> => {
   const server = new Koa();
 
@@ -55,8 +57,7 @@ export const createServer = async (
             httpContext.status = 200;
           } catch (e) {
             // this is the very far edge of the system, time for a log
-            if (rootContext.configuration.logLevels.includes("error"))
-              console.error(e);
+            console.error(e);
             // send the full error to the client
             httpContext.status = 500;
             httpContext.body = restructure("error", e);
@@ -77,8 +78,7 @@ export const createServer = async (
           httpContext.body = context.results;
           httpContext.status = 200;
         } catch (e) {
-          if (rootContext.configuration.logLevels.includes("error"))
-            console.error(e);
+          console.error(e);
           httpContext.status = 500;
           httpContext.body = restructure("error", e);
         }

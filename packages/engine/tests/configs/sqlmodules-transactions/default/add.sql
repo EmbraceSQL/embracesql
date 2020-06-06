@@ -1,0 +1,1 @@
+INSERT INTO things(id, name) VALUES(:id, :name);

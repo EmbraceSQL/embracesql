@@ -1,45 +1,7 @@
 import { cosmiconfig } from "cosmiconfig";
-import Url from "url-parse";
 import { generateFromTemplates } from "./generator";
-import { LogLevel } from "../../console/src/structured";
 import path from "path";
-
-/**
- * Named URLs to databases.
- */
-type Databases = {
-  [index: string]: Url;
-};
-
-/**
- * The all important root configuration. This tells EmbraceSQL which databases to manage.
- */
-export type Configuration = {
-  /**
-   * The root directory used to start this config.
-   */
-  embraceSQLRoot: string;
-  /**
-   * URL identifying Kafka topic or REST endpoing to post commands.
-   */
-  twinCommandsTo?: string;
-  /**
-   * All available databases.
-   */
-  databases?: Databases;
-  /**
-   * Logging control
-   */
-  logLevels: LogLevel[];
-  /**
-   * Flag for embedded mode. This will be force set by the embedded cli.
-   */
-  embedded: boolean;
-  /**
-   * Optional name used in bootsrap code generation.
-   */
-  name?: string;
-};
+import { Configuration } from "./context";
 
 /**
  * Load up a configuration object.
@@ -62,7 +24,6 @@ export const loadConfiguration = async (
         name,
         embedded,
         embraceSQLRoot: root,
-        logLevels: ["info", "error"],
       },
       databases: undefined,
       directQueryExecutors: {},
@@ -80,16 +41,7 @@ export const loadConfiguration = async (
   const result = await explorer.search(root);
   const config = result.config as Configuration;
   config.embraceSQLRoot = root;
-  // pop in some types so we are working with actual URLs
-  const databases = Object.fromEntries(
-    Object.keys(result.config.databases).map((databaseName) => [
-      databaseName,
-      new Url(result.config.databases[databaseName]),
-    ])
-  );
   return {
     ...config,
-    logLevels: ["error"] || result.config.logLevels,
-    databases,
   };
 };

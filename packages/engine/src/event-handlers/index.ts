@@ -5,10 +5,6 @@ import path from "path";
 import md5 from "md5";
 import sqlModulePipeline from "./sqlmodule-pipeline";
 import contextPipeline from "./context-pipeline";
-import limit from "p-limit";
-
-// thottling
-const oneAtATime = limit(1);
 
 /**
  * Scrub up identifiers to be valid JavaScript names.
@@ -100,14 +96,10 @@ export const embraceEventHandlers = async (
         // one big transaction around all oof our module building
         // so we can roll back and know we didn't modify our database
         database.transactions.begin();
-        // one at a time iteration -- our database isn't re-entrant
         const waitForThem = Object.values(
           database.SQLModules
         ).map(async (sqlModule) =>
-          oneAtATime(
-            async () =>
-              await sqlModulePipeline(rootContext, database, sqlModule)
-          )
+          sqlModulePipeline(rootContext, database, sqlModule)
         );
         await Promise.all(waitForThem);
         return database;

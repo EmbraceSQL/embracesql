@@ -55,27 +55,10 @@ paths:
 exports[`hello world configuration! reads a config 1`] = `
 Object {
   "databases": Object {
-    "default": Object {
-      "auth": "",
-      "hash": "",
-      "host": "",
-      "hostname": "",
-      "href": "sqlite:embracesql.db",
-      "origin": "null",
-      "password": "",
-      "pathname": "embracesql.db",
-      "port": "",
-      "protocol": "sqlite:",
-      "query": "",
-      "slashes": false,
-      "username": "",
-    },
+    "default": "sqlite:embracesql.db",
   },
   "embedded": false,
   "embraceSQLRoot": ".tests/hello",
-  "logLevels": Array [
-    "error",
-  ],
 }
 `;
 
@@ -110,27 +93,10 @@ Object {
   "close": [Function],
   "configuration": Object {
     "databases": Object {
-      "default": Object {
-        "auth": "",
-        "hash": "",
-        "host": "",
-        "hostname": "",
-        "href": "sqlite:embracesql.db",
-        "origin": "null",
-        "password": "",
-        "pathname": "embracesql.db",
-        "port": "",
-        "protocol": "sqlite:",
-        "query": "",
-        "slashes": false,
-        "username": "",
-      },
+      "default": "sqlite:embracesql.db",
     },
     "embedded": false,
     "embraceSQLRoot": ".tests/hello",
-    "logLevels": Array [
-      "error",
-    ],
   },
   "databases": Object {
     "default": Object {

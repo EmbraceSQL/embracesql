@@ -119,23 +119,13 @@ stateDiagram
 
 Let’s look inside the `add` handlers, and tweak some parameters.
 
-```typescript title="./default/add.sql.before.ts"
-import * as types from "../context";
-
-export const before: types.default_addHandler = async (context) => {
-  context.parameters.name = context.parameters.name + "-ahoy";
-  return context;
-};
-
+```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules/default/add.sql.before.ts"
 ```
 
 And after the query -- let's read back the rows. 
 This pretty handy as a general trick by the way to read back a lookup table.
 
-```javascript title="./default/add.sql.after.js"
-export const after = async (context) => {
-  context.results = await context.databases.default.things.all.sql({});
-};
+```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules/default/add.sql.after.ts"
 ```
 
 And now -- give it a try, not only will you have a slightly different name than what you sent in -- you will get rows back as well, with one API call, instead of the two we previously ran.
@@ -179,30 +169,15 @@ The trade-off is of couse, you need to know the SQL of you database! The good ne
 For any given database, you can begin, commit, or rollback a transaction at any time in any handler. You can do this in SQL, and you can do this in handler code.
 
 Any transaction that was not committed by the time data is returned is automatically rolled back, meaning and `INSERT` `UPDATE` or `DELETE` will have no permanent effect.
-Data can still return, which can let you do somewhat clever things like, insert data, read it back, and then an automatic roll back happen. This is a handy trick for database testing, where you can let transactions ‘undo’ the test data changes for you, restoring your database to a pristine state.
+Data can still return, which can let you do somewhat clever things like, insert data, read it back, and then an automatic roll back will happen. 
+This is a handy trick for database testing, where you can let transactions ‘undo’ the test data changes for you, restoring your database to a pristine state by having a conditional on your `commit`.
 
 For example, let's modify a previous handler:
 
-```javascript title="./things/add.sql.before.js"
-export const before = async (context) => {
-  // start a database transaction
-  await context.databases.default.transactions.begin();
-  // modify a passed in parameter by name
-  context.parameters.name = context.parameters.name + “-ahem”;
-}
+```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules-transactions/default/add.sql.before.ts"
 ```
 
-```javascript title="./things/add.sql.after.js"
-export const after = async (context) => {
-  // run a SQL module inline, no parameters
-  context.results = await context.invoke.things.all.sql({});
-  // do not commit, as this is commented out
-  // note that by this time we have already done the insert
-  // and queried the database
-  // await context.databases.default.transactions.commit();
-  // we could also explicitly rollback, but this will happen on its own
-  // await context.databases.default.transactions.rollback();
-};
+```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules-transactions/default/add.sql.after.ts"
 ```
 
 And behold the rollback, which you can see in your shell.

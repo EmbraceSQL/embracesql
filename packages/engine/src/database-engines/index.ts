@@ -7,9 +7,10 @@ import {
   SQLColumnMetadata,
   SQLRow,
   SQLParameters,
+  Configuration,
 } from "../shared-context";
 import { SQLModuleInternal } from "../event-handlers/sqlmodule-pipeline";
-import { Configuration } from "../configuration";
+import Url from "url-parse";
 
 /**
  * Serialize database use per process as we really only have one connection.
@@ -26,10 +27,10 @@ const embraceSingleDatabase = async (
   configuration: Configuration,
   databaseName: string
 ): Promise<DatabaseInternal> => {
-  const dbUrl = configuration?.databases[databaseName];
+  const dbUrl = new Url(configuration.databases[databaseName]);
   switch (dbUrl.protocol.split(":")[0].toLowerCase()) {
     case "sqlite":
-      return embraceSQLite(configuration, databaseName);
+      return embraceSQLite(configuration, databaseName, dbUrl);
     default:
       return undefined;
   }

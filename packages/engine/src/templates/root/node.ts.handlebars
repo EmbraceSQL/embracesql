@@ -1,0 +1,8 @@
+---
+to: "{{configuration.embraceSQLRoot}}/node.ts"
+---
+
+import * as context from "./context";
+
+{{> shared-node-client.ts }}
+{{> partials/fetch-client.handlebars }}

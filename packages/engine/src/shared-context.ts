@@ -14,7 +14,7 @@
 /**
  * A message, passed for security and logging.
  */
-export type Message = string | object;
+export type Message = string | Record<string, unknown>;
 
 /**
  * Security types.
@@ -208,7 +208,7 @@ export type Context<RowType> = {
    * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
    * decoded and verified, it will be here.
    */
-  token?: object;
+  token?: Record<string, unknown>;
 
   /**
    * Put the current user identifier string here in order to integrate with database
@@ -322,4 +322,47 @@ export type HasContextualSQLModuleExecutors = {
    * suitable for a GET.
    */
   readOnlyContextualSQLModuleExecutors: ContextualSQLModuleExecutors;
+};
+
+/**
+ * Named URLs to databases.
+ */
+type Databases = {
+  [index: string]: string;
+};
+
+/**
+ * The all important root configuration. This tells EmbraceSQL which databases to manage.
+ */
+export type Configuration = {
+  /**
+   * The root directory used to start this config.
+   */
+  embraceSQLRoot: string;
+  /**
+   * URL identifying Kafka topic or REST endpoing to post commands.
+   */
+  twinCommandsTo?: string;
+  /**
+   * All available databases.
+   */
+  databases?: Databases;
+  /**
+   * Flag for embedded mode. This will be force set by the embedded cli.
+   */
+  embedded: boolean;
+  /**
+   * Optional name used in bootsrap code generation.
+   */
+  name?: string;
+};
+
+/**
+ * Use this to get at the EmbraceSQL configuration.
+ */
+export type HasConfiguration = {
+  /**
+   * The configuration used to build a running EmbraceSQL engine.
+   */
+  configuration: Configuration;
 };

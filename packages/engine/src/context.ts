@@ -1,4 +1,3 @@
-import { Configuration } from "./configuration";
 import { embraceDatabases } from "./database-engines";
 import { embraceEventHandlers } from "./event-handlers";
 import {
@@ -8,9 +7,12 @@ import {
   SQLParameters,
   SQLRow,
   SQLModuleDirectExecutors,
+  HasConfiguration,
+  Configuration,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./event-handlers/sqlmodule-pipeline";
+
 
 /**
  * Keep track of individual migration files with this type.
@@ -78,20 +80,17 @@ export type AllDatabasesInternal = {
  *
  * The type here is a bit different from the context used in handlers, it has more metadata!
  */
-export type InternalContext = SQLModuleDirectExecutors & {
-  /**
-   * The configuration used to build this context.
-   */
-  configuration: Configuration;
-  /**
-   * All configured databases, by name.
-   */
-  databases: AllDatabasesInternal;
-  /**
-   * Close all DB connections.
-   */
-  close: () => Promise<void>;
-};
+export type InternalContext = SQLModuleDirectExecutors &
+  HasConfiguration & {
+    /**
+     * All configured databases, by name.
+     */
+    databases: AllDatabasesInternal;
+    /**
+     * Close all DB connections.
+     */
+    close: () => Promise<void>;
+  };
 
 /**
  * With a configuration in hand, set up a new rootContext.

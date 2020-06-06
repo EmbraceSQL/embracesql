@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import path from "path";
 import fs from "fs-extra";
-import { loadConfiguration, Configuration } from "../src/configuration";
+import { loadConfiguration } from "../src/configuration";
 import { buildInternalContext, InternalContext } from "../src/context";
 import { createServer } from "../src/server";
 import request from "supertest";
@@ -27,7 +27,6 @@ declare global {
  */
 describe("hello world configuration!", () => {
   const root = path.relative(process.cwd(), "./.tests/hello");
-  let theConfig: Configuration = undefined;
   let rootContext: InternalContext;
   let listening: http.Server;
   let callback;
@@ -36,7 +35,7 @@ describe("hello world configuration!", () => {
     await rmfr(root);
     // get the configuration and generate - let's do this just the once
     // and have a few tests that asser things happened
-    const configuration = (theConfig = await loadConfiguration(root));
+    const configuration = await loadConfiguration(root);
     rootContext = await buildInternalContext(configuration);
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { EmbraceSQLEmbedded } = require(path.join(
@@ -53,7 +52,10 @@ describe("hello world configuration!", () => {
   });
   expect.extend({
     toExist(fileName) {
-      const fullPath = path.join(theConfig.embraceSQLRoot, fileName);
+      const fullPath = path.join(
+        rootContext.configuration.embraceSQLRoot,
+        fileName
+      );
       const exists = fs.existsSync(fullPath);
       return exists
         ? { message: (): string => `${fullPath} exists`, pass: true }
@@ -61,13 +63,13 @@ describe("hello world configuration!", () => {
     },
   });
   it("reads a config", async () => {
-    expect(theConfig).toMatchSnapshot();
+    expect(rootContext.configuration).toMatchSnapshot();
   });
   it("makes a default config for you", async () => {
     expect("embracesql.yaml").toExist();
   });
   it("makes a sqlite database for you", async () => {
-    expect(theConfig.databases["default"].pathname).toExist();
+    expect("embracesql.db").toExist();
   });
   it("makes a hello world sql for you", async () => {
     expect("default/hello.sql").toExist();
@@ -92,7 +94,7 @@ describe("hello world configuration!", () => {
   it("generates an open api doc", async () => {
     expect("openapi.yaml").toExist();
     const content = await readFile(
-      path.join(theConfig.embraceSQLRoot, "openapi.yaml")
+      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml")
     );
     expect(content).toMatchSnapshot();
   });

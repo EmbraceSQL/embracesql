@@ -16,6 +16,7 @@ export type SQLModuleTree = {
   databases: {
   {{#eachInMap databases}}
     {{@key}}: {
+      transactions: DatabaseTransactions,
     {{#treeAMap value.SQLModules database=value}}
       {{#each value}}
       {{> moduleTree this database=@database }}

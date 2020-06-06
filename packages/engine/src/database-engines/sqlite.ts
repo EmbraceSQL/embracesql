@@ -7,12 +7,13 @@ import {
   SQLColumnMetadata,
   SQLRow,
   SQLParameters,
+  Configuration,
 } from "../shared-context";
 import { DatabaseInternal, MigrationFile } from "../context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../event-handlers";
 import { SQLModuleInternal } from "../event-handlers/sqlmodule-pipeline";
-import { Configuration } from "../configuration";
+import Url from "url-parse";
 
 /**
  * Map SQLite to our neutral type strings.
@@ -35,9 +36,9 @@ const typeMap = (fromSQLite: string): SQLTypeName => {
  */
 export default async (
   configuration: Configuration,
-  databaseName: string
+  databaseName: string,
+  dbUrl: Url
 ): Promise<DatabaseInternal> => {
-  const dbUrl = configuration?.databases[databaseName];
   const filename = path.isAbsolute(dbUrl.pathname)
     ? dbUrl.pathname
     : path.normalize(path.join(configuration.embraceSQLRoot, dbUrl.pathname));
@@ -48,13 +49,13 @@ export default async (
   });
   const transactions = {
     begin: async (): Promise<void> => {
-      database.run("BEGIN IMMEDIATE TRANSACTION");
+      return database.exec("BEGIN IMMEDIATE TRANSACTION");
     },
     commit: async (): Promise<void> => {
-      database.run("COMMIT");
+      return database.exec("COMMIT");
     },
     rollback: async (): Promise<void> => {
-      database.run("ROLLBACK");
+      return database.exec("ROLLBACK");
     },
   };
   // TODO -- do we need SAVEPOINT / nesting?
@@ -73,24 +74,28 @@ export default async (
       sqlModule: SQLModule,
       parameters?: SQLParameters
     ): Promise<SQLRow[]> => {
-      const statement = await database.prepare(sqlModule.sql);
-      try {
-        if (parameters && Object.keys(parameters).length) {
-          // map to SQLite names
-          const withParameters = Object.fromEntries(
-            Object.keys(parameters).map((name) => [
-              `:${name}`,
-              parameters[name],
-            ])
-          );
-          statement.bind(withParameters);
-          return await statement.all();
-        } else {
-          return await statement.all();
+      // execution wrapper to get transaction support
+      const execute = async (): Promise<SQLRow[]> => {
+        const statement = await database.prepare(sqlModule.sql);
+        try {
+          if (parameters && Object.keys(parameters).length) {
+            // map to SQLite names
+            const withParameters = Object.fromEntries(
+              Object.keys(parameters).map((name) => [
+                `:${name}`,
+                parameters[name],
+              ])
+            );
+            await statement.bind(withParameters);
+            return await statement.all();
+          } else {
+            return await statement.all();
+          }
+        } finally {
+          await statement.finalize();
         }
-      } finally {
-        await statement.finalize();
-      }
+      };
+      return execute();
     },
     analyze: async (
       sqlModule: SQLModuleInternal

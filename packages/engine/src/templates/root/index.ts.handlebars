@@ -5,7 +5,7 @@ to: "{{configuration.embraceSQLRoot}}/index.ts"
 import { buildInternalContext, loadConfiguration, InternalContext } from "@embracesql/engine";
 import * as types from "./context";
 
-type EmbeddedEngine = types.HasContextualSQLModuleExecutors & types.SQLModuleTree;
+type EmbeddedEngine = types.HasContextualSQLModuleExecutors & types.SQLModuleTree & types.HasConfiguration;
 
 /**
 * This is in effect -- EmbraceSQL, the fully configured and ready to
@@ -20,12 +20,22 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
   // at this point the context has the .directQueryExecutors and
   // can run a query to the database, but doesn't have handlers yet
   const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(context);
-  // here is where things get tricky -- the context can have a database map too
-  // but it isn't built yet -- time for some ... self referential code -- we're
-  // making the databases and using the databases in the functions too
+  // here is where things get tricky -- the context can have a database map to
+  // call back into databases -- so this is a forward declaration of that map
   const databases = {
     {{#eachInMap databases}}
       {{@key}}: {
+        transactions: {
+          begin: async () : Promise<void> => {
+            return context.databases.{{@key}}.transactions.begin();
+          },
+          rollback: async () : Promise<void> => {
+            return context.databases.{{@key}}.transactions.rollback();
+          },
+          commit: async () : Promise<void> => {
+            return context.databases.{{@key}}.transactions.commit();
+          },
+        },
       {{#treeAMap value.SQLModules database=value}}
         {{#each value}}
         {{> moduleTree this database=@database }}
@@ -34,7 +44,8 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
       },
     {{/eachInMap}}
   }; 
-  // and contextual named handlers -- these are used by http server wrappers
+  // and contextual named handlers -- this gives you access to call back into the databases from within a handler
+  // this is the 'outermost' shell of calls
   const contextualSQLModuleExecutors = {
     {{#eachInMap databases}}
     // database {{@key}}
@@ -46,7 +57,7 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
     {{/eachInMap}}
     {{/eachInMap}}
   };
-  // map of our read only methods
+  // map of our read only methods -- this is used to figure out GET/POST
   const readOnlyContextualSQLModuleExecutors = {
     {{#eachInMap databases}}
     // database {{@key}}
@@ -54,17 +65,14 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
       {{#if value.canModifyData}}
       // {{value.contextName}} is a mutation and does not get GET
       {{else}}
-      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-        context.databases = databases;
-        return handlerWrappedExecutors.{{value.contextName}}(context);
-      },
+      {{value.contextName}}: contextualSQLModuleExecutors.{{value.contextName}},
       {{/if}}
     {{/eachInMap}}
     {{/eachInMap}}
 
   };
   return {
-    ...context, 
+    configuration: context.configuration,
     databases, 
     contextualSQLModuleExecutors, 
     readOnlyContextualSQLModuleExecutors
