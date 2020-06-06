@@ -23,6 +23,11 @@ describe("sqlmodules provide handlers and autocrud", () => {
     await rootContext.close();
     rootContext = await buildInternalContext(configuration);
   });
+  it("knows add.sql is not read only", async () => {
+    expect(
+      rootContext.databases["default"].SQLModules.add.canModifyData
+    ).toBeTruthy();
+  });
   it("reads and writes things", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { EmbraceSQLEmbedded } = require(path.join(

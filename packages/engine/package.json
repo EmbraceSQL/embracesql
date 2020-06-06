@@ -32,8 +32,7 @@
     "sqlite3": "^4.2.0",
     "supertest": "^4.0.2",
     "url-parse": "^1.4.7",
-    "yaml": "^1.10.0",
-    "yarn-api": "^1.1.0"
+    "yaml": "^1.10.0"
   },
   "devDependencies": {
     "@types/await-timeout": "^0.3.1",

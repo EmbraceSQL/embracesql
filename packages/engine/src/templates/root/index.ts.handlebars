@@ -51,7 +51,8 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
     {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.SQLModules}}
-      {{#if context.canModifyData}}
+      {{#if value.canModifyData}}
+      // {{value.contextName}} is a mutation and does not get GET
       {{else}}
       {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
         context.databases = databases;

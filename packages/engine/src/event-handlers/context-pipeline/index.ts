@@ -1,6 +1,5 @@
 import { InternalContext } from "../../context";
 import generateCombined from "./generate-combined";
-import generatePackage from "./generate-package";
 import generateMigrations from "./generate-migrations";
 import bindExecutors from "./bind-executors";
 
@@ -14,7 +13,6 @@ export default async (
 ): Promise<InternalContext> => {
   await bindExecutors(rootContext);
   await generateCombined(rootContext);
-  await generatePackage(rootContext);
   await generateMigrations(rootContext);
   return rootContext;
 };

@@ -79,6 +79,11 @@ describe("hello world configuration!", () => {
     expect("default/after.ts").toExist();
     expect("default/hello.sql.afterError.ts").toExist();
   });
+  it("knows hello sql is read only", async () => {
+    expect(
+      rootContext.databases["default"].SQLModules.hello.canModifyData
+    ).toBeFalsy();
+  });
   it("exposes methods to run hello sql", async () => {
     expect(
       rootContext.databases["default"].SQLModules.hello.sql
@@ -143,10 +148,16 @@ describe("hello world configuration!", () => {
     );
     // adding a new file should trigger the watcher
     // calling back to the event, which should tell jest we are all done
-    await fs.outputFile(
-      path.join(theConfig.embraceSQLRoot, "default", "yo.sql"),
-      "SELECT 'yo'"
-    );
+    setTimeout(async () => {
+      await fs.outputFile(
+        path.join(
+          rootContext.configuration.embraceSQLRoot,
+          "default",
+          "yo.sql"
+        ),
+        "SELECT 'yo'"
+      );
+    }, 1000);
   });
   it("will make migrations directories", async () => {
     expect("migrations/default").toExist();

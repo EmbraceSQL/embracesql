@@ -6,9 +6,7 @@ to: "{{configuration.embraceSQLRoot}}/package.json"
   "version": "0.0.0",
   "license": "MIT",
   "dependencies": {
-    {{#if configuration.embedded}}
-    "embracesql": "wballard/embrace-sql#13",
-    {{/if}}
+    "@embracesql/engine": "1.0.0",
     "@types/node-fetch": "2.5.7",
     "node-fetch": "2.6.0",
     "typescript": "^3.9.3"

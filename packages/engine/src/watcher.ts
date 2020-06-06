@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import { loadConfiguration } from "./configuration";
 import { buildInternalContext, InternalContext } from "./context";
 import chokidar from "chokidar";
+import path from "path";
 
 /**
  * Need to be able to close this off to exit cleanly
@@ -35,17 +36,22 @@ export const watchRoot = (
   const emitter = new EventEmitter();
 
   // watch the whole directory
-  const watcher = chokidar.watch([
-    `${internalContext.configuration.embraceSQLRoot}/**/*.sql`,
-  ]);
+  const watcher = chokidar.watch(
+    [path.resolve(`${internalContext.configuration.embraceSQLRoot}/**/*.sql`)],
+    {
+      ignoreInitial: true,
+    }
+  );
 
   // this is super convenient to not drown in a pile of single file changes
-  watcher.on("change", async () => {
-    console.info("reload needed");
+  watcher.on("all", async (event, path) => {
     const newInternalContext = await reload(
       internalContext.configuration.embraceSQLRoot
     );
-    emitter.emit("reload", oldInternalContext, newInternalContext);
+    emitter.emit("reload", oldInternalContext, newInternalContext, {
+      event,
+      path,
+    });
     oldInternalContext = newInternalContext;
   });
   return {

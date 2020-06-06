@@ -59,9 +59,9 @@ If you open a browser to http://localhost:8765/ you will see EmbraceSQL has pick
 Go ahead and give these APIs a test. This will give you a before and after look.
 
 ```shell
-curl http://localhost:8765/default/things/all
+curl http://localhost:8765/default/all
 curl --request POST --data '{"id": 100, "name": "cake"}' -H "Content-Type: application/json" http://localhost:8765/default/things/add
-curl http://localhost:8765/default/things/all
+curl http://localhost:8765/default/all
 ```
 
 ## Data Handlers

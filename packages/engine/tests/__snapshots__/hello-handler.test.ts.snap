@@ -45,13 +45,13 @@ Array [
 exports[`hello world with a handler will return errors via HTTP - GET 1`] = `
 Object {
   "status": 500,
-  "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#8\\",\\"message\\":\\"Error: Simulated Error\\",\\"additional\\":[]}",
+  "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#7\\",\\"message\\":\\"Error: Simulated Error -- this is expected\\",\\"additional\\":[]}",
 }
 `;
 
 exports[`hello world with a handler will return errors via HTTP - POST 1`] = `
 Object {
   "status": 500,
-  "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#8\\",\\"message\\":\\"Error: Simulated Error\\",\\"additional\\":[]}",
+  "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#7\\",\\"message\\":\\"Error: Simulated Error -- this is expected\\",\\"additional\\":[]}",
 }
 `;
