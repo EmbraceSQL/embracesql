@@ -8,6 +8,7 @@ build
 .docusaurus
 .cache-loader
 .tests
+coverage
 
 # Misc
 .DS_Store

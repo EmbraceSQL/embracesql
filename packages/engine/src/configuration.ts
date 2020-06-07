@@ -1,7 +1,7 @@
 import { cosmiconfig } from "cosmiconfig";
 import { generateFromTemplates } from "./generator";
 import path from "path";
-import { Configuration } from "./context";
+import { Configuration } from "./shared-context";
 
 /**
  * Load up a configuration object.
@@ -11,8 +11,7 @@ import { Configuration } from "./context";
  * Will look in the current directory or a environment variable set root.
  */
 export const loadConfiguration = async (
-  root: string,
-  embedded = false
+  root: string
 ): Promise<Configuration> => {
   // default name based on the path
   const name = root.split(path.sep).slice().pop() || "default";
@@ -22,7 +21,6 @@ export const loadConfiguration = async (
     {
       configuration: {
         name,
-        embedded,
         embraceSQLRoot: root,
       },
       databases: undefined,

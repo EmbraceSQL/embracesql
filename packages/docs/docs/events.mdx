@@ -17,9 +17,6 @@ Commands - INSERT/UPDATE/DELETE -- can be twinned to a Kafka topic, so that any 
 - When: total ordering of events in Kafka
 - Why: the originating request and paramters resulting from an API call or REST
 
-```yaml title="./embracesql.yml"
-twinCommandsTo: kafka:hostname:port/topic
-```
 
 There is actually a bit more than that -- EmbraceSQL internally runs off message streams, when you call an API, the inputs are enqueued, and run through each handler, as well as for the database query itself.
 EmbraceSQL is itself a SQL EventSourcing system -- where the events _are_ the SQL modules, and the handlers are handling events.

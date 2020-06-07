@@ -340,17 +340,9 @@ export type Configuration = {
    */
   embraceSQLRoot: string;
   /**
-   * URL identifying Kafka topic or REST endpoing to post commands.
-   */
-  twinCommandsTo?: string;
-  /**
    * All available databases.
    */
   databases?: Databases;
-  /**
-   * Flag for embedded mode. This will be force set by the embedded cli.
-   */
-  embedded: boolean;
   /**
    * Optional name used in bootsrap code generation.
    */
