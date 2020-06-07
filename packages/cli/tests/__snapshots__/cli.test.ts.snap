@@ -30,6 +30,13 @@ export const EmbraceSQLEmbedded = async (
   const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(
     internalContext
   );
+  // force use
+  handlerWrappedExecutors.toString();
+  const autocrudExecutors = types.AutocrudExecutorsWithoutHandlers(
+    internalContext
+  );
+  // force use
+  autocrudExecutors.toString();
 
   // here is where things get tricky -- the context can have a database map to
   // call back into databases -- this is how a handler can call another query
@@ -62,11 +69,13 @@ export const EmbraceSQLEmbedded = async (
           ).results;
         },
       },
+      autocrud: {},
     },
   };
-  // and entry points executors -- these are transaction wrapped -- so these
-  // are outer-most
-  const entryPointExecutors = {
+  // transaction wrappings very near the outside on each call
+  // this the the first 'real' execution layer
+  // so like - embedded engine -> entry point -> transactionwrapped
+  const transactionWrappedExecutors = {
     // database default
     default_hello: async (
       context: types.default_helloContext
@@ -80,6 +89,7 @@ export const EmbraceSQLEmbedded = async (
   };
 
   // this is the 'outermost' shell of calls -- entry points into the engine from a server
+  // this is in the context --> context style used for the server processes and event handlers
   const entryPoints = {
     // database default
     default_hello: {
@@ -87,13 +97,14 @@ export const EmbraceSQLEmbedded = async (
         context: types.default_helloContext
       ): Promise<types.default_helloContext> => {
         context.databases = handlerCallableDatabases;
-        return entryPointExecutors.default_hello(context);
+        return transactionWrappedExecutors.default_hello(context);
       },
       canModifyData: false,
     },
   };
 
   // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
+  // and lets you call in a parameters --> results style, rather than the context --> context style
   const entryPointCallableDatabases = {
     default: {
       transactions: {
@@ -110,12 +121,13 @@ export const EmbraceSQLEmbedded = async (
           return internalContext.databases.default.transactions.depth();
         },
       },
+      autocrud: {},
       hello: {
         sql: async (
           parameters: types.default_helloParameters
         ): Promise<types.default_helloRow[]> => {
           return (
-            await entryPointExecutors.default_hello({
+            await transactionWrappedExecutors.default_hello({
               parameters,
               results: [],
               databases: handlerCallableDatabases,
