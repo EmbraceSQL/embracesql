@@ -46,7 +46,7 @@ export type SQLType = string | number | boolean | null;
  */
 export type SQLTypeName = "string" | "number" | "boolean" | "null";
 
-/**
+/**`0V
  * Named parameters. This is a name/value pair hash constrained
  * to our available SQL Types.
  *
@@ -64,7 +64,7 @@ export type SQLParameter = {
 };
 
 /**
- * One result set column metadata.
+ * Information about a single column coming from SQL.
  */
 export type SQLColumnMetadata = {
   /**
@@ -294,34 +294,51 @@ export type SQLModuleDirectExecutors = {
   directQueryExecutors: Executors;
 };
 
-export type DefaultContext = Context<SQLRow>;
-export type DefaultContextualExecutor = (
-  context: DefaultContext
-) => Promise<DefaultContext>;
 /**
- * A map of named, fully contextualized executors, complete
- * with handlers. This is used to wrap and mount the generated code in a runtime
- * server.
+ * Simplest possible context takes the fully unconstrained row.
  */
-export type ContextualSQLModuleExecutors = {
-  [index: string]: DefaultContextualExecutor;
+export type DefaultContext = Context<SQLRow>;
+
+/**
+ * Execute a SQL module with a context. This is what you use when
+ * you have handlers wrapping a Executor.
+ */
+export type ContextualExecutor<T> = (context: T) => Promise<T>;
+
+/**
+ * A single sql module entry point. This is wrapped in an outer function call
+ * or HTTP to provide actual EmbraceSQL service. An EntryPoint is a full featured
+ * EmbraceSQL call.
+ *
+ * This is using the DefaultContext -- at this layer executors are fairly generic.
+ * The client library wrapper or OpenAPI provides specific typeing.
+ */
+export type EntryPoint = {
+  /**
+   * Called to actually run.
+   */
+  executor: ContextualExecutor<DefaultContext>;
+  /**
+   * If the entry module is just a SELECT, it is eligible to be a GET, so track
+   * if there is any data modification.
+   */
+  canModifyData: boolean;
 };
 
 /**
- * An object with fully contextualized execution capability.
+ * A map of named, fully contextualized executors, complete
+ * with handlers. This is used to create entry points into EmbraceSQL
  */
-export type HasContextualSQLModuleExecutors = {
-  /**
-   * `contextName` to function mapping. The idea is you get a fully enabled
-   * execution chain for a given SQLModule, and use the function to actually
-   * run a a SQLModule.
-   */
-  contextualSQLModuleExecutors: ContextualSQLModuleExecutors;
-  /**
-   * `contextName` to function mapping for read only execution that is
-   * suitable for a GET.
-   */
-  readOnlyContextualSQLModuleExecutors: ContextualSQLModuleExecutors;
+export type EntryPoints = {
+  [index: string]: EntryPoint;
+};
+
+/**
+ * Contains entry points. This is passed into 'servers' that will expose
+ * those entry poitns.
+ */
+export type HasEntryPoints = {
+  entryPoints: EntryPoints;
 };
 
 /**

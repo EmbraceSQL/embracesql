@@ -5,7 +5,7 @@ to: "{{configuration.embraceSQLRoot}}/index.ts"
 import { buildInternalContext, loadConfiguration, InternalContext } from "@embracesql/engine";
 import * as types from "./context";
 
-type EmbeddedEngine = types.HasContextualSQLModuleExecutors & types.SQLModuleTree & types.HasConfiguration;
+type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration;
 
 /**
 * This is in effect -- EmbraceSQL, the fully configured and ready to
@@ -46,36 +46,30 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
   }; 
   // and contextual named handlers -- this gives you access to call back into the databases from within a handler
   // this is the 'outermost' shell of calls
-  const contextualSQLModuleExecutors = {
+  const entryPoints = {
     {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.SQLModules}}
-      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-        context.databases = databases;
-        return handlerWrappedExecutors.{{value.contextName}}(context);
+      {{value.contextName}}:  {
+        executor:
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+            context.databases = databases;
+            return handlerWrappedExecutors.{{value.contextName}}(context);
+          },
+        canModifyData:
+          {{#if value.canModifyData}}
+            true,
+          {{else}}
+            false,
+          {{/if}}
       },
     {{/eachInMap}}
     {{/eachInMap}}
   };
-  // map of our read only methods -- this is used to figure out GET/POST
-  const readOnlyContextualSQLModuleExecutors = {
-    {{#eachInMap databases}}
-    // database {{@key}}
-    {{#eachInMap value.SQLModules}}
-      {{#if value.canModifyData}}
-      // {{value.contextName}} is a mutation and does not get GET
-      {{else}}
-      {{value.contextName}}: contextualSQLModuleExecutors.{{value.contextName}},
-      {{/if}}
-    {{/eachInMap}}
-    {{/eachInMap}}
-
-  };
   return {
     configuration: context.configuration,
     databases, 
-    contextualSQLModuleExecutors, 
-    readOnlyContextualSQLModuleExecutors
+    entryPoints
   };
 }
 
