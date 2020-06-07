@@ -47,6 +47,8 @@ export default async (
     filename,
     driver: sqlite3.Database,
   });
+  // process transactions -- notice that SQLite doesn't allow 'normal nesting
+  // so the SAVEPOINT system is used.
   const transactionStack = [];
   const transactions = {
     begin: async (): Promise<void> => {

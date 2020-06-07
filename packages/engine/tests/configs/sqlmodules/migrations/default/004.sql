@@ -1,0 +1,4 @@
+CREATE TABLE items(
+  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  description TEXT NOT NULL
+)

@@ -15,16 +15,10 @@ The SQL you write is the SQL that is going to run. You are in full control and w
 
 As a simple example, let's make two new API endpoints in a directory by creating some sql files. These are tucked under the `./default` meaning they are for the defatult database.
 
-```sql title="migrations/default/001.sql"
-CREATE TABLE things(
-  id integer PRIMARY KEY,
-  name text NOT NULL
-);
+```sql title="./migrations/001.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/001.sql"
 ```
 
-```sql title="migrations/default/002.sql"
-INSERT INTO things(id, name) values(1, "planes");
-INSERT INTO things(id, name) values(2, "trains");
+```sql title="./migrations/002.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/002.sql"
 ```
 
 ```shell
@@ -196,23 +190,13 @@ It's great to be able to have the full power of SQL when you need it -- but some
 
 Let's set up some tables for a really vanilla shopping cart, in our default testing SQLite database and see how this works. We'll have a pretty normal set or orders, items to order, and an association table to put items in an order.
 
-```sql title="./migrations/default/002.sql"
-CREATE TABLE orders(
-  order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL
-);
-CREATE TABLE items(
-  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  description TEXT NOT NULL
-);
-CREATE TABLE order_items(
-  order_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id INTEGER NOT NULL,
-  item_id INTEGER NOT NULL,
-  quantity INTEGER NOT NULL,
-  FOREIGN KEY(order_id) REFERENCES orders(order_id),
-  FOREIGN KEY(item_id) REFERENCES items(item_id)
-);
+```sql title="./migrations/003.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/003.sql"
+```
+
+```sql title="./migrations/004.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/004.sql"
+```
+
+```sql title="./migrations/005.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/005.sql"
 ```
 
 ```shell
