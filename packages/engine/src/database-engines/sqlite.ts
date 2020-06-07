@@ -104,6 +104,7 @@ export default async (
     name: databaseName,
     transactions,
     SQLModules: {},
+    AutocrudModules: {},
     parse: (sqlModule: SQLModule): AST[] | AST => {
       const parser = new Parser();
       const parsed = parser.astify(sqlModule.sql.trim(), {
@@ -228,13 +229,20 @@ export default async (
     },
     schema: async (): Promise<SQLTableMetadata[]> => {
       const allTables = (
-        await database.all("SELECT name FROM sqlite_master WHERE type='table'")
-      ).map((row) => row.name);
-      const tableMetadata = allTables.map(async (table) => {
+        await database.all(
+          "SELECT name, sql FROM sqlite_master WHERE type='table'"
+        )
+      ).map((row) => ({ name: row.name as string, sql: row.sql as string }));
+      const tableMetadata = allTables.map(async ({ name: table, sql }) => {
         const columns = await database.all(`PRAGMA TABLE_INFO('${table}')`);
+        const hasAutoincrement = sql.toLowerCase().indexOf("autoincrement") > 0;
+        const keys = columns.filter((row) => row.pk).map((row) => row.name);
         return {
+          schema: "",
           name: table,
           columns: columnMetadata(columns),
+          keys,
+          autoColumns: hasAutoincrement ? keys : [],
         };
       });
       return await Promise.all(tableMetadata);

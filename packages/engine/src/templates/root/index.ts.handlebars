@@ -20,6 +20,11 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
   // at this point the context has the .directQueryExecutors and
   // can run a query to the database, but doesn't have handlers yet
   const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(internalContext);
+  // force use
+  handlerWrappedExecutors.toString();
+  const autocrudExecutors = types.AutocrudExecutorsWithoutHandlers(internalContext);
+  // force use
+  autocrudExecutors.toString();
 
   // here is where things get tricky -- the context can have a database map to
   // call back into databases -- this is how a handler can call another query
@@ -40,17 +45,25 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
             return internalContext.databases.{{@key}}.transactions.depth();
           }
         },
-      {{#treeAMap value.SQLModules database=value handlerMap="handlerWrappedExecutors"}}
-        {{#each value}}
-        {{> moduleTree this database=@database }}
-        {{/each}}
-      {{/treeAMap}}
+        {{#treeAMap value.SQLModules database=value handlerMap="handlerWrappedExecutors"}}
+          {{#each value}}
+          {{> moduleTree this database=@database }}
+          {{/each}}
+        {{/treeAMap}}
+        autocrud: {
+          {{#treeAMap value.AutocrudModules database=value handlerMap="autocrudExecutors"}}
+            {{#each value}}
+            {{> moduleTree this database=@database }}
+            {{/each}}
+          {{/treeAMap}}
+        }
       },
     {{/eachInMap}}
   }; 
-  // and entry points executors -- these are transaction wrapped -- so these
-  // are outer-most
-  const entryPointExecutors = {
+  // transaction wrappings very near the outside on each call
+  // this the the first 'real' execution layer
+  // so like - embedded engine -> entry point -> transactionwrapped
+  const transactionWrappedExecutors = {
     {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.SQLModules database=@key}}
@@ -62,10 +75,20 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
               context);
           },
     {{/eachInMap}}
+    {{#eachInMap value.AutocrudModules database=@key}}
+      {{value.contextName}}:  
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+            return withTransaction(
+              internalContext.databases.{{@database}}, 
+              autocrudExecutors.{{value.contextName}}, 
+              context);
+          },
+    {{/eachInMap}}
     {{/eachInMap}}
   };
 
   // this is the 'outermost' shell of calls -- entry points into the engine from a server
+  // this is in the context --> context style used for the server processes and event handlers
   const entryPoints = {
     {{#eachInMap databases}}
     // database {{@key}}
@@ -74,7 +97,7 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
         executor:
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
             context.databases = handlerCallableDatabases;
-            return entryPointExecutors.{{value.contextName}}(context);
+            return transactionWrappedExecutors.{{value.contextName}}(context);
           },
         canModifyData:
           {{#if value.canModifyData}}
@@ -88,6 +111,7 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
   };
 
   // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
+  // and lets you call in a parameters --> results style, rather than the context --> context style
   const entryPointCallableDatabases = {
     {{#eachInMap databases}}
       {{@key}}: {
@@ -105,7 +129,14 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
             return internalContext.databases.{{@key}}.transactions.depth();
           }
         },
-      {{#treeAMap value.SQLModules database=value handlerMap="entryPointExecutors"}}
+        autocrud: {
+        {{#treeAMap value.AutocrudModules database=value handlerMap="transactionWrappedExecutors"}}
+          {{#each value}}
+          {{> moduleTree this database=@database }}
+          {{/each}}
+        {{/treeAMap}}
+        },
+      {{#treeAMap value.SQLModules database=value handlerMap="transactionWrappedExecutors"}}
         {{#each value}}
         {{> moduleTree this database=@database }}
         {{/each}}

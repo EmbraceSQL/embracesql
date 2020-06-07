@@ -83,6 +83,10 @@ export type SQLColumnMetadata = {
  */
 export type SQLTableMetadata = {
   /**
+   * Tables are in schemas inside database.
+   */
+  readonly schema: string;
+  /**
    * Tables have names. I call mine 'mid century modern'.
    */
   readonly name: string;
@@ -90,35 +94,24 @@ export type SQLTableMetadata = {
    * Get at all the columns.
    */
   readonly columns: SQLColumnMetadata[];
+  /**
+   * Autokey and Autoincrement columns.
+   */
+  readonly autoColumns: string[];
+  /**
+   * Key columns by name.
+   */
+  readonly keys: string[];
 };
 
 /**
- * Each SQL found on disk has some data -- the SQL itself, and will
- * get additional metadata attached to it.
+ * Common across autocrud and sqlmodules.
  */
-export type SQLModule = {
+export type CommonDatabaseModule = {
   /**
    * Relative path useful for REST.
    */
   readonly restPath: string;
-  /**
-   * Fully qualified file name on disk.
-   */
-  readonly fullPath: string;
-  /**
-   * Chain of relative to EmbraceSQLRoot folder paths, shallow to deep,
-   * that is used to build up handler chains.
-   */
-  readonly beforeHandlerPaths: string[];
-  /**
-   * Chain of relative to EmbraceSQLRoot folder paths, deep to shallow,
-   * that is used to build up handler chains.
-   */
-  readonly afterHandlerPaths: string[];
-  /**
-   * Actual SQL text source, unmodified, read from disk
-   */
-  readonly sql: string;
   /**
    * Content based cache key to use for any hash lookups, so that content
    * changes to the SQL equal cache misses.
@@ -141,6 +134,37 @@ export type SQLModule = {
    * When true, this module may modify data.
    */
   canModifyData?: boolean;
+};
+
+/**
+ * Auto crud module data. These are simpler than from disk sql modules
+ * since the do not have handlers.
+ */
+export type AutocrudModule = CommonDatabaseModule;
+
+/**
+ * Each SQL found on disk has some data -- the SQL itself, and will
+ * get additional metadata attached to it.
+ */
+export type SQLModule = CommonDatabaseModule & {
+  /**
+   * Fully qualified file name on disk.
+   */
+  readonly fullPath: string;
+  /**
+   * Chain of relative to EmbraceSQLRoot folder paths, shallow to deep,
+   * that is used to build up handler chains.
+   */
+  readonly beforeHandlerPaths: string[];
+  /**
+   * Chain of relative to EmbraceSQLRoot folder paths, deep to shallow,
+   * that is used to build up handler chains.
+   */
+  readonly afterHandlerPaths: string[];
+  /**
+   * Actual SQL text source, unmodified, read from disk
+   */
+  readonly sql: string;
 };
 
 /**
@@ -306,12 +330,25 @@ export type Executors = {
  * This map is the ability to go from a SQL module `contextName` to a function
  * that will let you really query the database.
  */
-export type SQLModuleDirectExecutors = {
+export type HasSQLModuleDirectExecutors = {
   /**
    * Store function mapping for query execution here.
    */
   directQueryExecutors: Executors;
 };
+
+/**
+ * Map from context name to allow execution of an Autocrud module
+ */
+export type HasAutocrudExecutors = {
+  /**
+   * Store function mapping for query execution here.
+   */
+  autocrudExecutors: Executors;
+};
+
+
+
 
 /**
  * Simplest possible context takes the fully unconstrained row.

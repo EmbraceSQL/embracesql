@@ -25,6 +25,7 @@ export const loadConfiguration = async (
       },
       databases: undefined,
       directQueryExecutors: {},
+      autocrudExecutors: {},
       close: (): Promise<void> => {
         return;
       },

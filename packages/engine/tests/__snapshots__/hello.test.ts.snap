@@ -89,6 +89,7 @@ Array [
 
 exports[`hello world configuration! will watch for changes and create a new context 1`] = `
 Object {
+  "autocrudExecutors": Object {},
   "close": [Function],
   "configuration": Object {
     "databases": Object {
@@ -98,6 +99,7 @@ Object {
   },
   "databases": Object {
     "default": Object {
+      "AutocrudModules": Object {},
       "SQLModules": Object {
         "hello": Object {
           "afterHandlerPaths": Array [

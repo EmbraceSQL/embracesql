@@ -223,7 +223,7 @@ const client = new EmbraceSQL("http://localhost:8765");
 const example = async () => {
 
   // little shortcut to type less...
-  const db = client.databases.default;
+  const db = client.databases.default.autocrud;
 
   // make some items we can order
   const item_key = await db.items.create({description: "Paper"});
@@ -272,18 +272,6 @@ const example = async () => {
   await db.items.all.delete();
 };
 example();
-```
-
-So, every SQL module has event handlers, and pure SQL inside. So you
-can actually spy on EmbraceSQL -- even change the SQL for AutoCRUD on the fly if you really wish it!
-
-```javascript title="./default/items/before.js"
-export const before = (context) => {
-  // look inside EmbraceSQL and see what it is doing!
-  // this will run for the folder items, corresponding to the table items
-  // so will run for create, read, update and delete
-  console.log(context.sql, context.parameters);
-};
 ```
 
 ### Error Handling

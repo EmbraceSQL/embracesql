@@ -16,11 +16,18 @@ export type SQLModuleTree = {
   {{#eachInMap databases}}
     {{@key}}: {
       transactions: DatabaseTransactions,
-    {{#treeAMap value.SQLModules database=value}}
-      {{#each value}}
-      {{> moduleTree this database=@database }}
-      {{/each}}
-    {{/treeAMap}}
+      {{#treeAMap value.SQLModules database=value}}
+        {{#each value}}
+        {{> moduleTree this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+      autocrud: {
+      {{#treeAMap value.AutocrudModules database=value}}
+        {{#each value}}
+        {{> moduleTree this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+      },
     },
   {{/eachInMap}}
   }
@@ -36,28 +43,36 @@ export type SQLModuleTree = {
 },
 {{/inline}}
 
-// each SQLModule gets its own unique context type
+// parameters, result row, and context types
 {{#eachInMap databases}}
 // database {{@key}}
 {{#eachInMap value.SQLModules}}
-// module {{value.restPath}}
-{{> resultsetMetadata value}}
-{{> parametersMetadata value}}
-export type {{value.contextName}}Context = 
-  SQLModuleTree & Context<{{value.contextName}}Row> & { 
-    parameters: {{value.contextName}}Parameters
-  };
-export type {{value.contextName}}Handler = 
-  (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>;
+// sql module {{@key}} {{value}}
+{{> moduleMetadata module=value}}
+{{/eachInMap}}
+{{#eachInMap value.AutocrudModules}}
+// autocrud module {{@key}} {{value}}
+{{> moduleMetadata module=value}}
 {{/eachInMap}}
 {{/eachInMap}}
 
-// handle a folder, thse use the base types for rows and parameters
+// handle a folder, these use the base types for rows and parameters
 // to allow them to be maximally generic
 export type FolderHandler = (context: Context<SQLRow>) => Promise<Context<SQLRow>>;
 
+{{#*inline "moduleMetadata"}}
 
-// each sql module will have a row return type, adding required properties to the base
+// module {{module.contextName}} parameters, row type, and context type
+{{> resultsetMetadata module}}
+{{> parametersMetadata module}}
+export type {{module.contextName}}Context = 
+  SQLModuleTree & Context<{{module.contextName}}Row> & { 
+    parameters: {{module.contextName}}Parameters
+  };
+export type {{module.contextName}}Handler = 
+  (context: {{module.contextName}}Context) => Promise<{{module.contextName}}Context>;
+{{/inline}}
+
 {{#*inline "resultsetMetadata"}}
 export type {{contextName}}Row = 
 SQLRow & {
@@ -67,7 +82,6 @@ SQLRow & {
 };
 {{/inline}}
 
-// each sql module will have a set of parameters, adding required parameters to the base
 {{#*inline "parametersMetadata"}}
 export type {{contextName}}Parameters = 
 SQLParameters & {
@@ -81,7 +95,7 @@ SQLParameters & {
 // each SQL Module has a direct execution decorator  -- this just talks to the database
 // this attaches handlers both before and after wrapping the direct executor
 // this ends up being a decorated map of handler+query execution capability
-export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: SQLModuleDirectExecutors) => {
+export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: HasSQLModuleDirectExecutors) => {
   return {
   {{#eachInMap databases}}
     // database {{@key}}
@@ -110,6 +124,26 @@ export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: SQLModule
           if (afterError) afterError(context);
           throw error;
         }
+      },
+    {{/eachInMap}}
+    {{/eachInMap}}
+  }
+};
+
+// autocrud is a little different, there are no handlers to load up from disk
+// so this is a strong type wrapping
+export const AutocrudExecutorsWithoutHandlers = ({autocrudExecutors}: HasAutocrudExecutors) => {
+  // force Use
+  autocrudExecutors.toString();
+  return {
+  {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.AutocrudModules}}
+      {{value.contextName}}:  async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
+          const executor = autocrudExecutors["{{value.contextName}}"];
+          const results = executor ? await executor(context.parameters) : [];
+          context.results = results as {{value.contextName}}Row[];
+          return context;
       },
     {{/eachInMap}}
     {{/eachInMap}}

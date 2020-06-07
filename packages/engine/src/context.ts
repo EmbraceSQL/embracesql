@@ -6,10 +6,12 @@ import {
   SQLColumnMetadata,
   SQLParameters,
   SQLRow,
-  SQLModuleDirectExecutors,
+  HasSQLModuleDirectExecutors,
   HasConfiguration,
   Configuration,
   SQLTableMetadata,
+  AutocrudModule,
+  HasAutocrudExecutors,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -23,11 +25,19 @@ export type MigrationFile = {
 };
 
 /**
- * This is the tree of paths derived from SQL files on disk. This is in
- * a compressed path format, so each key can have / in it.
+ * This is the tree of paths derived from SQL files on disk.
+ * This is in a compressed path format, so each key can have / in it.
  */
 export type SQLModules = {
   [index: string]: SQLModule;
+};
+
+/**
+ * All available autocrud modules.
+ * This is in a compressed path format, so each key can have / in it.
+ */
+export type AutocrudModules = {
+  [index: string]: AutocrudModule;
 };
 
 /**
@@ -38,6 +48,10 @@ export type DatabaseInternal = Database & {
    * All modules for this database.
    */
   SQLModules: SQLModules;
+  /**
+   * Autocrud for this database.
+   */
+  AutocrudModules: AutocrudModules;
   /**
    * Execute the sql module query on this database, and
    * promise some result.
@@ -84,7 +98,8 @@ export type AllDatabasesInternal = {
  *
  * The type here is a bit different from the context used in handlers, it has more metadata!
  */
-export type InternalContext = SQLModuleDirectExecutors &
+export type InternalContext = HasSQLModuleDirectExecutors &
+  HasAutocrudExecutors &
   HasConfiguration & {
     /**
      * All configured databases, by name.
@@ -113,6 +128,7 @@ export const buildInternalContext = async (
     configuration,
     databases,
     directQueryExecutors: {},
+    autocrudExecutors: {},
     close: async (): Promise<void> => {
       const waitForThem = Object.values(databases).map((database) =>
         database.close()
