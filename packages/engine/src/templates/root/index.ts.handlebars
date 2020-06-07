@@ -2,7 +2,7 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { buildInternalContext, loadConfiguration, InternalContext } from "@embracesql/engine";
+import { buildInternalContext, loadConfiguration, InternalContext, withTransaction } from "@embracesql/engine";
 import * as types from "./context";
 
 type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration;
@@ -14,29 +14,33 @@ type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConf
 */
 export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promise<EmbeddedEngine> => {
   // the package itself has the configuration and is the root
-  const context = rootContext ? 
+  const internalContext = rootContext ? 
       rootContext :
       await buildInternalContext(await loadConfiguration(__dirname));
   // at this point the context has the .directQueryExecutors and
   // can run a query to the database, but doesn't have handlers yet
-  const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(context);
+  const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(internalContext);
+
   // here is where things get tricky -- the context can have a database map to
-  // call back into databases -- so this is a forward declaration of that map
-  const databases = {
+  // call back into databases -- this is how a handler can call another query
+  const handlerCallableDatabases = {
     {{#eachInMap databases}}
       {{@key}}: {
         transactions: {
           begin: async () : Promise<void> => {
-            return context.databases.{{@key}}.transactions.begin();
+            return internalContext.databases.{{@key}}.transactions.begin();
           },
           rollback: async () : Promise<void> => {
-            return context.databases.{{@key}}.transactions.rollback();
+            return internalContext.databases.{{@key}}.transactions.rollback();
           },
           commit: async () : Promise<void> => {
-            return context.databases.{{@key}}.transactions.commit();
+            return internalContext.databases.{{@key}}.transactions.commit();
           },
+          depth: () : number => {
+            return internalContext.databases.{{@key}}.transactions.depth();
+          }
         },
-      {{#treeAMap value.SQLModules database=value}}
+      {{#treeAMap value.SQLModules database=value handlerMap="handlerWrappedExecutors"}}
         {{#each value}}
         {{> moduleTree this database=@database }}
         {{/each}}
@@ -44,8 +48,24 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
       },
     {{/eachInMap}}
   }; 
-  // and contextual named handlers -- this gives you access to call back into the databases from within a handler
-  // this is the 'outermost' shell of calls
+  // and entry points executors -- these are transaction wrapped -- so these
+  // are outer-most
+  const entryPointExecutors = {
+    {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.SQLModules database=@key}}
+      {{value.contextName}}:  
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+            return withTransaction(
+              internalContext.databases.{{@database}}, 
+              handlerWrappedExecutors.{{value.contextName}}, 
+              context);
+          },
+    {{/eachInMap}}
+    {{/eachInMap}}
+  };
+
+  // this is the 'outermost' shell of calls -- entry points into the engine from a server
   const entryPoints = {
     {{#eachInMap databases}}
     // database {{@key}}
@@ -53,8 +73,8 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
       {{value.contextName}}:  {
         executor:
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-            context.databases = databases;
-            return handlerWrappedExecutors.{{value.contextName}}(context);
+            context.databases = handlerCallableDatabases;
+            return entryPointExecutors.{{value.contextName}}(context);
           },
         canModifyData:
           {{#if value.canModifyData}}
@@ -66,9 +86,37 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
     {{/eachInMap}}
     {{/eachInMap}}
   };
+
+  // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
+  const entryPointCallableDatabases = {
+    {{#eachInMap databases}}
+      {{@key}}: {
+        transactions: {
+          begin: async () : Promise<void> => {
+            return internalContext.databases.{{@key}}.transactions.begin();
+          },
+          rollback: async () : Promise<void> => {
+            return internalContext.databases.{{@key}}.transactions.rollback();
+          },
+          commit: async () : Promise<void> => {
+            return internalContext.databases.{{@key}}.transactions.commit();
+          },
+          depth: () : number => {
+            return internalContext.databases.{{@key}}.transactions.depth();
+          }
+        },
+      {{#treeAMap value.SQLModules database=value handlerMap="entryPointExecutors"}}
+        {{#each value}}
+        {{> moduleTree this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+      },
+    {{/eachInMap}}
+  }; 
+
   return {
-    configuration: context.configuration,
-    databases, 
+    configuration: internalContext.configuration,
+    databases: entryPointCallableDatabases, 
     entryPoints
   };
 }
@@ -77,7 +125,9 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
 {{name}}: {
   {{#if value}}
   sql: async (parameters: types.{{value.contextName}}Parameters) : Promise<types.{{value.contextName}}Row[]> => {
-    return (await handlerWrappedExecutors.{{value.contextName}}({parameters, results: [], databases})).results;
+    return (
+      await {{@handlerMap}}.{{value.contextName}}({parameters, results: [], databases: handlerCallableDatabases})
+    ).results;
   }
   {{/if}}
   {{#each children}}

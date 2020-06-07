@@ -47,16 +47,35 @@ export default async (
     filename,
     driver: sqlite3.Database,
   });
+  const transactionStack = [];
   const transactions = {
     begin: async (): Promise<void> => {
-      return database.exec("BEGIN IMMEDIATE TRANSACTION");
+      if (transactionStack.length == 0) {
+        transactionStack.push("ROOT");
+        return database.exec("BEGIN IMMEDIATE TRANSACTION");
+      } else {
+        const savepoint = `SAVE_${transactionStack.length}`;
+        transactionStack.push(savepoint);
+        return database.exec(`SAVEPOINT ${savepoint}`);
+      }
     },
     commit: async (): Promise<void> => {
-      return database.exec("COMMIT");
+      const savepoint = transactionStack.pop();
+      if (transactionStack.length === 0) {
+        return database.exec("COMMIT");
+      } else {
+        return database.exec(`RELEASE SAVEPOINT ${savepoint}`);
+      }
     },
     rollback: async (): Promise<void> => {
-      return database.exec("ROLLBACK");
+      const savepoint = transactionStack.pop();
+      if (transactionStack.length === 0) {
+        return database.exec("ROLLBACK");
+      } else {
+        return database.exec(`ROLLBACK TRANSACTION TO SAVEPOINT ${savepoint}`);
+      }
     },
+    depth: () => transactionStack.length,
   };
   // TODO -- do we need SAVEPOINT / nesting?
   return {

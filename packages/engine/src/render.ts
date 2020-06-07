@@ -27,6 +27,7 @@ handlebars.registerHelper("eachInMap", (map, block) => {
       },
       {
         data: {
+          ...block.hash,
           index: index,
           key: prop,
           first: index === 0,

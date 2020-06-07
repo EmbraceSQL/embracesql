@@ -153,6 +153,11 @@ export type DatabaseTransactions = {
    * state changes are no saved.
    */
   rollback: () => Promise<void>;
+
+  /**
+   * How deep is the nested transaction stack?
+   */
+  depth: () => number;
 };
 
 /***

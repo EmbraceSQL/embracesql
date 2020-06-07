@@ -23,7 +23,6 @@ export const createServer = async (
   const server = new Koa();
 
   // generated configuration is loaded up
-  // TODO: the configuration is left on disk for current debugging -- but probably should be hidden
   const definition = YAML.parse(
     await readFile(
       path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml")

@@ -193,6 +193,7 @@ Object {
       "transactions": Object {
         "begin": [Function],
         "commit": [Function],
+        "depth": [Function],
         "rollback": [Function],
       },
     },
