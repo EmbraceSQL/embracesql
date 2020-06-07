@@ -8,8 +8,9 @@ import {
   SQLRow,
   SQLParameters,
   Configuration,
+  SQLTableMetadata,
 } from "../shared-context";
-import { SQLModuleInternal } from "../event-handlers/sqlmodule-pipeline";
+import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
 
 /**
@@ -56,16 +57,15 @@ export const embraceDatabases = async (
         sqlModule: SQLModule,
         parameters?: SQLParameters
       ): Promise<SQLRow[]> => {
-        const results = await oneAtATime(() =>
-          database.execute(sqlModule, parameters)
-        );
-        return results as SQLRow[];
+        return oneAtATime(() => database.execute(sqlModule, parameters));
       },
       analyze: async (
         sqlModule: SQLModuleInternal
       ): Promise<SQLColumnMetadata[]> => {
-        const results = await oneAtATime(() => database.analyze(sqlModule));
-        return results as SQLColumnMetadata[];
+        return oneAtATime(() => database.analyze(sqlModule));
+      },
+      schema: async (): Promise<SQLTableMetadata[]> => {
+        return oneAtATime(() => database.schema());
       },
     };
   });

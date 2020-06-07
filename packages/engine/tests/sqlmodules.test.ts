@@ -16,7 +16,6 @@ describe("sqlmodules provide handlers and autocrud", () => {
     // get the configuration and generate - let's do this just the once
     // and have a few tests that asser things happened
     const configuration = await loadConfiguration(root);
-    configuration.embedded = true;
     rootContext = await buildInternalContext(configuration);
     await migrate(rootContext);
     // reset and go

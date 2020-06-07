@@ -79,6 +79,20 @@ export type SQLColumnMetadata = {
 };
 
 /**
+ * All about a table, used in generating AutoCrud.
+ */
+export type SQLTableMetadata = {
+  /**
+   * Tables have names. I call mine 'mid century modern'.
+   */
+  readonly name: string;
+  /**
+   * Get at all the columns.
+   */
+  readonly columns: SQLColumnMetadata[];
+};
+
+/**
  * Each SQL found on disk has some data -- the SQL itself, and will
  * get additional metadata attached to it.
  */

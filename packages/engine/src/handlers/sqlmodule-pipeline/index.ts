@@ -1,22 +1,48 @@
-import { InternalContext, DatabaseInternal } from "../context";
-import readFile from "read-file-utf8";
+import { SQLModule } from "../../shared-context";
+import parseSQL from "./parse-sql";
+import transformResultTypes from "./transform-result-types";
+import transformParameterTypes from "./transform-parameter-types";
+import generateDefaultHandlers from "./generate-default-handlers";
+import type { AST } from "node-sql-parser";
 import walk from "ignore-walk";
 import path from "path";
 import md5 from "md5";
-import sqlModulePipeline from "./sqlmodule-pipeline";
-import contextPipeline from "./context-pipeline";
+import fs from "fs-extra";
+import { identifier } from "../index";
+import { InternalContext, DatabaseInternal } from "../../context";
 
 /**
- * Scrub up identifiers to be valid JavaScript names.
+ * Inside the EmbraceSQL exgine extension to the SQLModule type.
  */
-export const identifier = (key: string): string => {
-  const id = key
-    .trim()
-    // quotes won't do
-    .replace(/['"]+/g, "")
-    // snake case
-    .replace(/\W+/g, "_");
-  return /^\d/.test(id) ? "_" + id : id;
+export type SQLModuleInternal = SQLModule & {
+  /**
+   * Parsed SQL abstract syntax tree, one AST, only one statement is allowed.
+   */
+  ast?: AST;
+};
+
+/**
+ * Each SQLModule runs through a transformation pipeline. This differs slightly
+ * from a nominal compiler in that each stage of the pipeline can update a shared
+ * context, as well as emit additional files.
+ */
+const sqlModulePipeline = async (
+  rootContext: InternalContext,
+  database: DatabaseInternal,
+  sqlModule: SQLModule
+): Promise<InternalContext> => {
+  const sqlModuleInternal = sqlModule as SQLModuleInternal;
+  try {
+    // await makes this a lot less goofy than a promise chain
+    await parseSQL(rootContext, database, sqlModuleInternal);
+    await transformParameterTypes(rootContext, database, sqlModuleInternal);
+    await transformResultTypes(rootContext, database, sqlModuleInternal);
+    await generateDefaultHandlers(rootContext, sqlModuleInternal);
+  } catch (e) {
+    // a single module failing isn't fatal, it's gonna happen all the type with typos
+    console.warn(sqlModule.fullPath, e.message);
+  }
+  return rootContext;
 };
 
 /**
@@ -32,7 +58,7 @@ export const identifier = (key: string): string => {
  *
  * @param rootContext - like other internal methods, run off the root context
  */
-export const embraceEventHandlers = async (
+export default async (
   rootContext: InternalContext
 ): Promise<InternalContext> => {
   // this should be the only place where a file walk happens
@@ -68,7 +94,7 @@ export const embraceEventHandlers = async (
       return path.join(...array.slice(0, index + 1));
     });
     // get all the 'read' IO done
-    const sql = await readFile(fullPath);
+    const sql = await fs.readFile(fullPath, "utf8");
     // data about each SQL module
     const sqlModule = {
       restPath,
@@ -110,8 +136,5 @@ export const embraceEventHandlers = async (
   );
   // let them all finish
   await Promise.all(allDatabases);
-  // stitch together the full context and final combined files
-  // this is the 'pack' phase
-  await contextPipeline(rootContext);
   return rootContext;
 };

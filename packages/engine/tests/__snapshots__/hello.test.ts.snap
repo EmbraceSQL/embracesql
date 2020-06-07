@@ -190,6 +190,7 @@ Object {
       "migrate": [Function],
       "name": "default",
       "parse": [Function],
+      "schema": [Function],
       "transactions": Object {
         "begin": [Function],
         "commit": [Function],

@@ -8,23 +8,43 @@ import {
   SQLRow,
   SQLParameters,
   Configuration,
+  SQLTableMetadata,
 } from "../shared-context";
 import { DatabaseInternal, MigrationFile } from "../context";
 import { Parser, AST } from "node-sql-parser";
-import { identifier } from "../event-handlers";
-import { SQLModuleInternal } from "../event-handlers/sqlmodule-pipeline";
+import { identifier } from "../handlers";
+import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
 
 /**
  * Map SQLite to our neutral type strings.
  */
 const typeMap = (fromSQLite: string): SQLTypeName => {
-  switch (fromSQLite) {
+  switch (fromSQLite.toUpperCase()) {
     case "INT":
+      return "number";
+    case "INTEGER":
       return "number";
     default:
       return "string";
   }
+};
+
+/**
+ * One row per column, the name and type info are interesting,
+ * pick them out and normalize them.
+ */
+const columnMetadata = (readDescribeRows: any[]): SQLColumnMetadata[] => {
+  // OK so something to know -- columns with spaces in them are quoted
+  // by sqlite so if a column is named
+  // hi mom
+  // sqlite has that as 'hi mom'
+  // which makes the javascript key ...["'hi mom'"] -- oh yeah
+  // the ' is part of the key
+  return readDescribeRows.map((row) => ({
+    name: identifier(row.name.toString()),
+    type: typeMap(row.type),
+  }));
 };
 
 /**
@@ -135,7 +155,7 @@ export default async (
         const drop = `DROP TABLE __analyze__;`;
         const preparedCreate = await database.prepare(create);
         try {
-          const describe = `pragma table_info('__analyze__')`;
+          const describe = `PRAGMA TABLE_INFO('__analyze__')`;
           // run with all nulls for all parameters by default
           if (sqlModule.namedParameters?.length) {
             const withParameters = Object.fromEntries(
@@ -148,21 +168,7 @@ export default async (
           }
           const readDescribeRows = await database.all(describe);
           await database.all(drop);
-          // OK so something to know -- columns with spaces in them are quoted
-          // by sqlite so if a column is named
-          // hi mom
-          // sqlite has that as 'hi mom'
-          // which makes the javascript key ...["'hi mom'"] -- oh yeah
-          // the ' is part of the key
-
-          /**
-           * One row per column, the name and type info are interesting,
-           * pick them out and normalize them.
-           */
-          return readDescribeRows.map((row) => ({
-            name: identifier(row.name.toString()),
-            type: typeMap(row.type),
-          }));
+          return columnMetadata(readDescribeRows);
         } finally {
           await preparedCreate.finalize();
         }
@@ -219,6 +225,19 @@ export default async (
     },
     close: async (): Promise<void> => {
       return database.close();
+    },
+    schema: async (): Promise<SQLTableMetadata[]> => {
+      const allTables = (
+        await database.all("SELECT name FROM sqlite_master WHERE type='table'")
+      ).map((row) => row.name);
+      const tableMetadata = allTables.map(async (table) => {
+        const columns = await database.all(`PRAGMA TABLE_INFO('${table}')`);
+        return {
+          name: table,
+          columns: columnMetadata(columns),
+        };
+      });
+      return await Promise.all(tableMetadata);
     },
   };
 };

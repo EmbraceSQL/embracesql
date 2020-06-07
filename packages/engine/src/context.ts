@@ -1,5 +1,5 @@
 import { embraceDatabases } from "./database-engines";
-import { embraceEventHandlers } from "./event-handlers";
+import { embraceEventHandlers } from "./handlers";
 import {
   Database,
   SQLModule,
@@ -9,10 +9,10 @@ import {
   SQLModuleDirectExecutors,
   HasConfiguration,
   Configuration,
+  SQLTableMetadata,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
-import { SQLModuleInternal } from "./event-handlers/sqlmodule-pipeline";
-
+import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
 
 /**
  * Keep track of individual migration files with this type.
@@ -65,6 +65,10 @@ export type DatabaseInternal = Database & {
    * Clean close.
    */
   close: () => Promise<void>;
+  /**
+   * Get schematic information on all tables.
+   */
+  schema: () => Promise<SQLTableMetadata[]>;
 };
 
 /**

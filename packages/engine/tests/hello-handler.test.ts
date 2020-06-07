@@ -37,8 +37,6 @@ describe("hello world with a handler", () => {
     const server = await createServer(engine);
     callback = server.callback();
     listening = server.listen(45679);
-    // non logging
-    rootContext.configuration.logLevels = [];
   });
   afterAll(async (done) => {
     listening.close(() => done());
