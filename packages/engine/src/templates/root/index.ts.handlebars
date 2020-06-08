@@ -7,6 +7,64 @@ import * as types from "./context";
 
 type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration;
 
+// each SQL Module has a direct execution decorator  -- this just talks to the database
+// this attaches handlers both before and after wrapping the direct executor
+// this ends up being a decorated map of handler+query execution capability
+export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: types.HasSQLModuleDirectExecutors) => {
+  return {
+  {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.SQLModules}}
+      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+        const {afterError} = require("./{{value.restPath}}.sql.afterError");
+        try {
+          {{#each value.beforeHandlerPaths}}
+          const before{{@index}} = require("./{{this}}/before").before;
+          await before{{@index}}(context);
+          {{/each}}
+          const before = require("./{{value.restPath}}.sql.before").before;
+          await before(context);
+          const executor = directQueryExecutors["{{value.contextName}}"];
+          const results = executor ? await executor(context.parameters) : [];
+          context.results = results as types.{{value.contextName}}Row[];
+          const after = require("./{{value.restPath}}.sql.after").after;
+          await after(context);
+          {{#each value.afterHandlerPaths}}
+          const after{{@index}} = require("./{{this}}/after").after;
+          await after{{@index}}(context);
+          {{/each}}
+          return context;
+        } catch (error) {
+          context.error = error;
+          if (afterError) afterError(context);
+          throw error;
+        }
+      },
+    {{/eachInMap}}
+    {{/eachInMap}}
+  }
+};
+
+// autocrud is a little different, there are no handlers to load up from disk
+// so this is a strong type wrapping
+export const AutocrudExecutorsWithoutHandlers = ({autocrudExecutors}: types.HasAutocrudExecutors) => {
+  // force Use
+  autocrudExecutors.toString();
+  return {
+  {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.AutocrudModules}}
+      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+          const executor = autocrudExecutors["{{value.contextName}}"];
+          const results = executor ? await executor(context.parameters) : [];
+          context.results = results as types.{{value.contextName}}Row[];
+          return context;
+      },
+    {{/eachInMap}}
+    {{/eachInMap}}
+  }
+};
+
 /**
 * This is in effect -- EmbraceSQL, the fully configured and ready to
 * run in process engine. It can be used directly in process, or wrapped
@@ -19,10 +77,10 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
       await buildInternalContext(await loadConfiguration(__dirname));
   // at this point the context has the .directQueryExecutors and
   // can run a query to the database, but doesn't have handlers yet
-  const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(internalContext);
+  const handlerWrappedExecutors = SQLModuleExecutorsWithHandlers(internalContext);
   // force use
   handlerWrappedExecutors.toString();
-  const autocrudExecutors = types.AutocrudExecutorsWithoutHandlers(internalContext);
+  const autocrudExecutors = AutocrudExecutorsWithoutHandlers(internalContext);
   // force use
   autocrudExecutors.toString();
 
