@@ -19,8 +19,8 @@ export default async (
       tables.forEach((table) => {
         const compressedTreePath = table.schema
           ? `${table.schema}/${table.name}`
-          : table.name;
-        database.AutocrudModules[compressedTreePath] = {
+          : `${table.name}`;
+        database.autocrudModules[compressedTreePath] = {
           ...table,
           restPath: table.schema.length
             ? `${databaseName}/autocrud/${table.schema}/${table.name}`

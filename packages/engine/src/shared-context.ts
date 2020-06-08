@@ -307,48 +307,17 @@ export type SQLRow = {
 };
 
 /**
- * Generic executor, parameters to resultset via a sql module.
- *
- * This is used to bridge the gap between generated in process clients, which will
- * have well defined parameter and result types, to the internal engine which is looser.
- *
- * In process clients execute via a function call, where out of process clients get this
- * genericicity from JSON serialization over HTTP.
+ * Execute a SQL module with a context. This is what you use when
+ * you have handlers wrapping a Executor.
  */
-export type Executor = (parameters: SQLParameters) => Promise<SQLRow[]>;
+export type ContextualExecutor<T> = (context: T) => Promise<T>;
 
 /**
- * Context named executors. This is a map of functions to execute sql modules by the
- * `contextName` which is usefull unique way to address a given sql module in given
- * database in a flattened tree without worryng about / and such.
+ * A mapping of contextual executors.
  */
-export type Executors = {
-  [index: string]: Executor;
-};
-
-/**
- * This map is the ability to go from a SQL module `contextName` to a function
- * that will let you really query the database.
- */
-export type HasSQLModuleDirectExecutors = {
-  /**
-   * Store function mapping for query execution here.
-   */
-  directQueryExecutors: Executors;
-};
-
-/**
- * Map from context name to allow execution of an Autocrud module
- */
-export type HasAutocrudExecutors = {
-  /**
-   * Store function mapping for query execution here.
-   */
-  autocrudExecutors: Executors;
-};
-
-
-
+export type ContextualExecutors<T> = {
+  [index: string]: ContextualExecutor<T>;
+}
 
 /**
  * Simplest possible context takes the fully unconstrained row.
@@ -356,10 +325,20 @@ export type HasAutocrudExecutors = {
 export type DefaultContext = Context<SQLRow>;
 
 /**
- * Execute a SQL module with a context. This is what you use when
- * you have handlers wrapping a Executor.
+ * Execute a SQL module with this.
  */
-export type ContextualExecutor<T> = (context: T) => Promise<T>;
+export type SQLModuleExecutor = {
+  executor: ContextualExecutor<DefaultContext>;
+  sqlModule: SQLModule;
+};
+
+/**
+ * Execute an Autocrd with this.
+ */
+export type AutocrudExecutor = {
+  executor: ContextualExecutor<DefaultContext>;
+  autocrudModule: AutocrudModule;
+};
 
 /**
  * A single sql module entry point. This is wrapped in an outer function call
@@ -369,17 +348,7 @@ export type ContextualExecutor<T> = (context: T) => Promise<T>;
  * This is using the DefaultContext -- at this layer executors are fairly generic.
  * The client library wrapper or OpenAPI provides specific typeing.
  */
-export type EntryPoint = {
-  /**
-   * Called to actually run.
-   */
-  executor: ContextualExecutor<DefaultContext>;
-  /**
-   * If the entry module is just a SELECT, it is eligible to be a GET, so track
-   * if there is any data modification.
-   */
-  canModifyData: boolean;
-};
+export type EntryPoint = SQLModuleExecutor | AutocrudExecutor;
 
 /**
  * A map of named, fully contextualized executors, complete

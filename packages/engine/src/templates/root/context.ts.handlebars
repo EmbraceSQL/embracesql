@@ -14,47 +14,16 @@ to: "{{configuration.embraceSQLRoot}}/context.ts"
 // to allow them to be maximally generic
 export type FolderHandler = (context: Context<SQLRow>) => Promise<Context<SQLRow>>;
 
-// tree structure of the entire set of databases and handlers
-export type SQLModuleTree = {
-  databases: {
-  {{#eachInMap databases}}
-    {{@key}}: {
-      transactions: DatabaseTransactions,
-      {{#treeAMap value.SQLModules database=value}}
-        {{#each value}}
-        {{> moduleTree this database=@database }}
-        {{/each}}
-      {{/treeAMap}}
-      autocrud: {
-      {{#treeAMap value.AutocrudModules database=value}}
-        {{#each value}}
-        {{> moduleTree this database=@database }}
-        {{/each}}
-      {{/treeAMap}}
-      },
-    },
-  {{/eachInMap}}
-  }
-};
-{{#*inline "moduleTree"}}
-{{name}}: {
-  {{#if value}}
-  sql: (parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
-  {{/if}}
-  {{#each children}}
-    {{> moduleTree this database=database}}
-  {{/each}}
-},
-{{/inline}}
+
 
 // parameters, result row, and context types
 {{#eachInMap databases}}
 // database {{@key}}
-{{#eachInMap value.SQLModules}}
+{{#eachInMap value.sqlModules}}
 // sql module {{@key}} {{value}}
 {{> moduleMetadata module=value}}
 {{/eachInMap}}
-{{#eachInMap value.AutocrudModules}}
+{{#eachInMap value.autocrudModules}}
 // autocrud module {{@key}} {{value}}
 {{> moduleMetadata module=value}}
 {{/eachInMap}}
@@ -92,3 +61,51 @@ SQLParameters & {
 };
 {{/inline}}
 
+
+// flat map of execution functions
+export type ExecutorMap = {
+    {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.sqlModules database=@key}}
+      {{value.contextName}}:  
+          (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>,
+    {{/eachInMap}}
+    {{#eachInMap value.autocrudModules database=@key}}
+      {{value.contextName}}:  
+          (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>,
+    {{/eachInMap}}
+    {{/eachInMap}}
+};
+
+// tree structure of the entire set of databases and handlers
+export type SQLModuleTree = {
+  databases: {
+  {{#eachInMap databases}}
+    {{@key}}: {
+      transactions: DatabaseTransactions,
+      {{#treeAMap value.sqlModules database=value}}
+        {{#each value}}
+        {{> moduleTree this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+      autocrud: {
+      {{#treeAMap value.autocrudModules database=value}}
+        {{#each value}}
+        {{> moduleTree this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+      },
+    },
+  {{/eachInMap}}
+  }
+};
+{{#*inline "moduleTree"}}
+{{name}}: {
+  {{#if value}}
+  sql: (parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
+  {{/if}}
+  {{#each children}}
+    {{> moduleTree this database=database}}
+  {{/each}}
+},
+{{/inline}}

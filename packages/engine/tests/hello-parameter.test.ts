@@ -39,7 +39,7 @@ describe("hello world with a parameter", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      rootContext.databases["default"].SQLModules["hello"],
+      rootContext.databases["default"].sqlModules["hello"],
       { stuff: "Whirled" }
     );
     expect(results).toMatchSnapshot();

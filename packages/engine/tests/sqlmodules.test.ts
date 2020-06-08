@@ -24,7 +24,7 @@ describe("sqlmodules provide handlers and autocrud", () => {
   });
   it("knows add.sql is not read only", async () => {
     expect(
-      rootContext.databases["default"].SQLModules.add.canModifyData
+      rootContext.databases["default"].sqlModules.add.canModifyData
     ).toBeTruthy();
   });
   it("reads and writes things", async () => {

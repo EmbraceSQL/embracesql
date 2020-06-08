@@ -6,12 +6,12 @@ import {
   SQLColumnMetadata,
   SQLParameters,
   SQLRow,
-  HasSQLModuleDirectExecutors,
   HasConfiguration,
   Configuration,
   SQLTableMetadata,
   AutocrudModule,
-  HasAutocrudExecutors,
+  SQLModuleExecutor,
+  AutocrudExecutor,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -44,14 +44,6 @@ export type AutocrudModules = {
  * A single instance of a database for use internally.
  */
 export type DatabaseInternal = Database & {
-  /**
-   * All modules for this database.
-   */
-  SQLModules: SQLModules;
-  /**
-   * Autocrud for this database.
-   */
-  AutocrudModules: AutocrudModules;
   /**
    * Execute the sql module query on this database, and
    * promise some result.
@@ -86,10 +78,29 @@ export type DatabaseInternal = Database & {
 };
 
 /**
+ * Collections of modules.
+ */
+export type HasModules = {
+  /**
+   * All modules for this database.
+   */
+  sqlModules: SQLModules;
+  /**
+   * Autocrud for this database.
+   */
+  autocrudModules: AutocrudModules;
+};
+
+/**
+ * Fully wrapped internal database representation.
+ */
+export type DatabaseInternalWithModules = DatabaseInternal & HasModules;
+
+/**
  * All the databases from the internal point of view.
  */
 export type AllDatabasesInternal = {
-  [index: string]: DatabaseInternal;
+  [index: string]: DatabaseInternalWithModules;
 };
 
 /**
@@ -98,18 +109,28 @@ export type AllDatabasesInternal = {
  *
  * The type here is a bit different from the context used in handlers, it has more metadata!
  */
-export type InternalContext = HasSQLModuleDirectExecutors &
-  HasAutocrudExecutors &
-  HasConfiguration & {
-    /**
-     * All configured databases, by name.
-     */
-    databases: AllDatabasesInternal;
-    /**
-     * Close all DB connections.
-     */
-    close: () => Promise<void>;
+export type InternalContext = HasConfiguration & {
+  /**
+   * All configured databases, by name.
+   */
+  databases: AllDatabasesInternal;
+  /**
+   * Close all DB connections.
+   */
+  close: () => Promise<void>;
+  /**
+   * Ability to execute sql modules.
+   */
+  sqlModuleExecutors: {
+    [index: string]: SQLModuleExecutor;
   };
+  /**
+   * Ability to execute autocrud modules.
+   */
+  autocrudModuleExecutors: {
+    [index: string]: AutocrudExecutor;
+  };
+};
 
 /**
  * With a configuration in hand, set up a new rootContext.
@@ -127,8 +148,8 @@ export const buildInternalContext = async (
   const internalContext = {
     configuration,
     databases,
-    directQueryExecutors: {},
-    autocrudExecutors: {},
+    sqlModuleExecutors: {},
+    autocrudModuleExecutors: {},
     close: async (): Promise<void> => {
       const waitForThem = Object.values(databases).map((database) =>
         database.close()

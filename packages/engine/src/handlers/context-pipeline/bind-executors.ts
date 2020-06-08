@@ -1,5 +1,5 @@
 import { InternalContext } from "../../context";
-import { SQLParameters, SQLRow } from "../../shared-context";
+import { DefaultContext } from "../../shared-context";
 
 /**
  * Direct query exeuction for every module on every database. This is the 'middle'
@@ -12,34 +12,45 @@ export default async (
   // collect every sql module in every database
   const allSQLModules = Object.values(rootContext.databases).flatMap(
     (database) =>
-      Object.values(database.SQLModules).flatMap((sqlModule) => ({
+      Object.values(database.sqlModules).flatMap((module) => ({
         database,
-        sqlModule,
+        module,
       }))
   );
   // process any given sql module by asking it's owning database to execute it
   // each module has a `contextName` which is a nice key to use in this module Map
-  rootContext.directQueryExecutors = Object.fromEntries(
+  rootContext.sqlModuleExecutors = Object.fromEntries(
     allSQLModules.map((dbModule) => [
-      dbModule.sqlModule.contextName,
-      async (parameters: SQLParameters): Promise<SQLRow[]> =>
-        dbModule.database.execute(dbModule.sqlModule, parameters),
+      dbModule.module.contextName,
+      {
+        sqlModule: dbModule.module,
+        executor: async (context: DefaultContext): Promise<DefaultContext> => {
+          context.results = await dbModule.database.execute(
+            dbModule.module,
+            context.parameters
+          );
+          return context;
+        },
+      },
     ])
   );
   // collect all the autocrud modules
   const allAutocrudModules = Object.values(rootContext.databases).flatMap(
     (database) =>
-      Object.values(database.AutocrudModules).flatMap((module) => ({
+      Object.values(database.autocrudModules).flatMap((module) => ({
         database,
         module,
       }))
   );
   // wire up an executor for each autocrud module
-  rootContext.autocrudExecutors = Object.fromEntries(
+  rootContext.autocrudModuleExecutors = Object.fromEntries(
     allAutocrudModules.map((dbModule) => [
       dbModule.module.contextName,
-      async (parameters: SQLParameters): Promise<SQLRow[]> => {
-        throw new Error("Not Implemented" + parameters);
+      {
+        autocrudModule: dbModule.module,
+        executor: async (context: DefaultContext): Promise<DefaultContext> => {
+          throw new Error("Not Implemented" + context);
+        },
       },
     ])
   );

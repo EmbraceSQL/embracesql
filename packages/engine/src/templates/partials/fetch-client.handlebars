@@ -7,7 +7,7 @@ export const EmbraceSQL = (serverUrl: string) => {
     databases: {
     {{#eachInMap databases}}
       {{@key}}: {
-      {{#treeAMap value.SQLModules database=value}}
+      {{#treeAMap value.sqlModules database=value}}
         {{#each value}}
         {{> moduleTree this database=@database}}
         {{/each}}

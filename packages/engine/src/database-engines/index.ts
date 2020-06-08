@@ -50,6 +50,8 @@ export const embraceDatabases = async (
     const database = await embraceSingleDatabase(configuration, databaseName);
     databases[databaseName] = {
       ...database,
+      autocrudModules: {},
+      sqlModules: {},
       // here is wrapping the individual database driver execute and analyze
       // with a throttled promise limit -- since we have only one connection
       // these are not re-entrant

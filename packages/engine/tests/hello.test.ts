@@ -83,12 +83,12 @@ describe("hello world configuration!", () => {
   });
   it("knows hello sql is read only", async () => {
     expect(
-      rootContext.databases["default"].SQLModules.hello.canModifyData
+      rootContext.databases["default"].sqlModules.hello.canModifyData
     ).toBeFalsy();
   });
   it("exposes methods to run hello sql", async () => {
     expect(
-      rootContext.databases["default"].SQLModules.hello.sql
+      rootContext.databases["default"].sqlModules.hello.sql
     ).toMatchSnapshot();
   });
   it("generates an open api doc", async () => {
@@ -107,7 +107,7 @@ describe("hello world configuration!", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      rootContext.databases["default"].SQLModules["hello"]
+      rootContext.databases["default"].sqlModules["hello"]
     );
     expect(results).toMatchSnapshot();
   });

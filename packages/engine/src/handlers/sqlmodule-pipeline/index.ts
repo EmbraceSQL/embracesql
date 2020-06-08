@@ -108,7 +108,7 @@ export default async (
       contextName: identifier(path.join(parsedPath.dir, parsedPath.name)),
     };
     // collate each module by the containing database
-    rootContext.databases[databaseName].SQLModules[
+    rootContext.databases[databaseName].sqlModules[
       pathAfterDatabase
     ] = sqlModule;
     return sqlModule;
@@ -117,13 +117,13 @@ export default async (
   await Promise.all(allSQLModules);
   // with all sql modules enumerated time to build up metadata from each database
   const allDatabases = Object.values(rootContext.databases).flatMap(
-    async (database: DatabaseInternal) => {
+    async (database) => {
       try {
         // one big transaction around all oof our module building
         // so we can roll back and know we didn't modify our database
         database.transactions.begin();
         const waitForThem = Object.values(
-          database.SQLModules
+          database.sqlModules
         ).map(async (sqlModule) =>
           sqlModulePipeline(rootContext, database, sqlModule)
         );

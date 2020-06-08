@@ -27,7 +27,6 @@ describe("sqlmodules provide autocrud", () => {
       rootContext.configuration.embraceSQLRoot
     ));
     engine = await EmbraceSQLEmbedded();
-    console.log(engine);
   });
   afterAll(async () => {
     engine.close();

@@ -103,8 +103,6 @@ export default async (
   return {
     name: databaseName,
     transactions,
-    SQLModules: {},
-    AutocrudModules: {},
     parse: (sqlModule: SQLModule): AST[] | AST => {
       const parser = new Parser();
       const parsed = parser.astify(sqlModule.sql.trim(), {
