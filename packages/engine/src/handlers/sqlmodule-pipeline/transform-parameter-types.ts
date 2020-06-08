@@ -5,6 +5,7 @@ import { SQLModuleInternal } from ".";
 /**
  * Looking for parameters? Need to be able to spot them!
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 type MaybeAParameter = object & {
   type?: string;
   value?: string;
@@ -29,13 +30,12 @@ export default async (
       return [o.value];
     } else if (o instanceof Array) {
       // an array -- let's assume these might be objects
+      // eslint-disable-next-line @typescript-eslint/ban-types
       return (o as Array<object>).flatMap((e) => traverse(e));
     } else if (o instanceof Object) {
       // if an object -- let's look at all the properties actually 'on it' --
       // don't get confused by proptotypes...
-      return Object.keys(o || {})
-        .filter((key) => o.hasOwnProperty(key))
-        .flatMap((key) => traverse(o[key]));
+      return Object.keys(o || {}).flatMap((key) => traverse(o[key]));
     } else {
       return [];
     }

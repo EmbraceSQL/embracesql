@@ -99,13 +99,15 @@ export type SQLModuleTree = {
   {{/eachInMap}}
   }
 };
+
 {{#*inline "moduleTree"}}
-{{name}}: {
-  {{#if value}}
-  sql: (parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
-  {{/if}}
+  {{#if children.length}}
+  {{name}}: {
   {{#each children}}
     {{> moduleTree this database=database}}
   {{/each}}
-},
+  },
+  {{else}}
+  {{name}}:(parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
+  {{/if}}
 {{/inline}}

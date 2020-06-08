@@ -1,5 +1,4 @@
 const remarkImport = require("remark-code-import");
-const remarkMermaid = require("remark-mermaid");
 
 module.exports = {
   scripts: [
@@ -45,7 +44,7 @@ module.exports = {
       "@docusaurus/preset-classic",
       {
         docs: {
-          remarkPlugins: [remarkImport, [remarkMermaid, { simple: true }]],
+          remarkPlugins: [remarkImport],
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
           editUrl:

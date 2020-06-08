@@ -183,9 +183,16 @@ export const renderTemplates = async (
               }
             });
             if (parsers.length) {
-              return prettier.format(content, {
-                parser: (parsers[0] as unknown) as prettier.CustomParser,
-              });
+              try {
+                return prettier.format(content, {
+                  parser: (parsers[0] as unknown) as prettier.CustomParser,
+                });
+              } catch {
+                // forgive a lack of pretty -- the compiler will catch it
+                // and if you don't have this -- files won't regenerate unless
+                // they are pretty -- and it'll be really hard to debug template errors...
+                return content;
+              }
             } else {
               return content;
             }

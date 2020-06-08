@@ -15,11 +15,12 @@ The SQL you write is the SQL that is going to run. You are in full control and w
 
 As a simple example, let's make two new API endpoints in a directory by creating some sql files. These are tucked under the `./default` meaning they are for the defatult database.
 
-```sql title="./migrations/001.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/001.sql"
+```sql title="./migrations/001.sql" file=../../engine/tests/configs/sqlmodules-transactions/migrations/default/001.sql
 ```
 
-```sql title="./migrations/002.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/002.sql"
+```sql title="./migrations/002.sql" file=../../engine/tests/configs/sqlmodules-transactions/migrations/default/002.sql
 ```
+
 
 ```shell
 docker run -v ${PWD}:/var/embracesql embracesql/server migrate
@@ -113,13 +114,13 @@ stateDiagram
 
 Let’s look inside the `add` handlers, and tweak some parameters.
 
-```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules/default/add.sql.before.ts"
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules/default/add.sql.before.ts
 ```
 
 And after the query -- let's read back the rows. 
 This pretty handy as a general trick by the way to read back a lookup table.
 
-```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules/default/add.sql.after.ts"
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules/default/add.sql.after.ts
 ```
 
 And now -- give it a try, not only will you have a slightly different name than what you sent in -- you will get rows back as well, with one API call, instead of the two we previously ran.
@@ -168,10 +169,10 @@ This is a handy trick for database testing, where you can let transactions ‘un
 
 For example, let's modify a previous handler:
 
-```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules-transactions/default/add.sql.before.ts"
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql.before.ts
 ```
 
-```typescript title="./add.sql.before.js" file="../../engine/tests/configs/sqlmodules-transactions/default/add.sql.after.ts"
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql.after.ts
 ```
 
 And behold the rollback, which you can see in your shell.
@@ -190,13 +191,13 @@ It's great to be able to have the full power of SQL when you need it -- but some
 
 Let's set up some tables for a really vanilla shopping cart, in our default testing SQLite database and see how this works. We'll have a pretty normal set or orders, items to order, and an association table to put items in an order.
 
-```sql title="./migrations/003.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/003.sql"
+```sql title="./migrations/003.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/003.sql
 ```
 
-```sql title="./migrations/004.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/004.sql"
+```sql title="./migrations/004.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/004.sql
 ```
 
-```sql title="./migrations/005.sql" file="../../engine/tests/configs/sqlmodules-transactions/migrations/005.sql"
+```sql title="./migrations/005.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/005.sql
 ```
 
 ```shell

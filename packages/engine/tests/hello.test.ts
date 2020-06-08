@@ -121,7 +121,7 @@ describe("hello world configuration!", () => {
       "node"
     ));
     const client = EmbraceSQL("http://localhost:4567");
-    expect(await client.databases.default.hello.sql()).toMatchSnapshot();
+    expect(await client.databases.default.hello()).toMatchSnapshot();
   });
   it("will make an embeddable engine", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -130,7 +130,7 @@ describe("hello world configuration!", () => {
       rootContext.configuration.embraceSQLRoot
     ));
     const engine = await EmbraceSQLEmbedded();
-    expect(await engine.databases.default.hello.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.hello()).toMatchSnapshot();
   });
   it("will watch for changes and create a new context", async (done) => {
     const watcher = watchRoot(rootContext);

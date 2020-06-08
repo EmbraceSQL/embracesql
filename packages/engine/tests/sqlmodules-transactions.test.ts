@@ -33,12 +33,12 @@ describe("sqlmodules provide transactions", () => {
     ));
     const engine = await EmbraceSQLEmbedded();
     // initial values
-    const initial = await engine.databases.default.all.sql();
+    const initial = await engine.databases.default.all();
     // add a thing
     expect(
-      await engine.databases.default.add.sql({ id: 3, name: "automobiles" })
+      await engine.databases.default.add({ id: 3, name: "automobiles" })
     ).toMatchSnapshot();
     // and read again
-    expect(await engine.databases.default.all.sql()).toEqual(initial);
+    expect(await engine.databases.default.all()).toEqual(initial);
   });
 });

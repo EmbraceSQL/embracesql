@@ -97,11 +97,11 @@ export type SQLTableMetadata = {
   /**
    * Autokey and Autoincrement columns.
    */
-  readonly autoColumns: string[];
+  readonly autoColumns: SQLColumnMetadata[];
   /**
    * Key columns by name.
    */
-  readonly keys: string[];
+  readonly keys: SQLColumnMetadata[];
 };
 
 /**
@@ -125,7 +125,7 @@ export type CommonDatabaseModule = {
    * All the parameters we found by looking at the query. These are in an array
    * to facilitate conversion of named to positional parameters.
    */
-  namedParameters?: SQLParameter[];
+  namedParameters?: SQLColumnMetadata[];
   /**
    * Result set metadata, which may be an array because of semicolon batches.
    */
@@ -140,7 +140,7 @@ export type CommonDatabaseModule = {
  * Auto crud module data. These are simpler than from disk sql modules
  * since the do not have handlers.
  */
-export type AutocrudModule = CommonDatabaseModule;
+export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
 
 /**
  * Each SQL found on disk has some data -- the SQL itself, and will

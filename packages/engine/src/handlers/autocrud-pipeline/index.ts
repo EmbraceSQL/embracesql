@@ -1,6 +1,21 @@
-import { InternalContext } from "../../context";
+import { InternalContext, DatabaseInternalWithModules } from "../../context";
 import md5 from "md5";
+import { AutocrudModule } from "../../shared-context";
+import generateCreate from "./generate-create";
 import { identifier } from "..";
+
+/**
+ * Each autocrud module runs through the pipeline to generate each
+ * component of CRUD.
+ */
+const autocrudModulePipeline = async (
+  rootContext: InternalContext,
+  database: DatabaseInternalWithModules,
+  autocrudModule: AutocrudModule
+): Promise<InternalContext> => {
+  await generateCreate(rootContext, database, autocrudModule);
+  return rootContext;
+};
 
 /**
  * AutoCRUD is much like a SQLModule, but doesn't read in from disk, instead it
@@ -11,25 +26,22 @@ export default async (
 ): Promise<InternalContext> => {
   // every database probably has tables, let's start there and generates
   // some skeletal autocrud modules
-  const waitForAll = Object.keys(rootContext.databases).map(
+  const waitForAll = Object.keys(rootContext.databases).flatMap(
     async (databaseName) => {
       const database = rootContext.databases[databaseName];
       const tables = await database.schema();
       // collate each module by schema and name
-      tables.forEach((table) => {
-        const compressedTreePath = table.schema
+      return tables.map(async (table) => {
+        const restPath = table.schema
           ? `${table.schema}/${table.name}`
           : `${table.name}`;
-        database.autocrudModules[compressedTreePath] = {
+        const module = (database.autocrudModules[restPath] = {
           ...table,
-          restPath: table.schema.length
-            ? `${databaseName}/autocrud/${table.schema}/${table.name}`
-            : `${databaseName}/autocrud/${table.name}`,
+          restPath,
           cacheKey: md5(JSON.stringify(table.columns)),
-          contextName: identifier(
-            `${databaseName}_${table.schema}_${table.name}`
-          ),
-        };
+          contextName: identifier(`${databaseName}/${restPath}`),
+        });
+        await autocrudModulePipeline(rootContext, database, module);
       });
     }
   );

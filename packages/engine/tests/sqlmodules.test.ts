@@ -35,12 +35,12 @@ describe("sqlmodules provide handlers and autocrud", () => {
     ));
     const engine = await EmbraceSQLEmbedded();
     // initial values
-    expect(await engine.databases.default.all.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.all()).toMatchSnapshot();
     // add a thing
     expect(
-      await engine.databases.default.add.sql({ id: 3, name: "automobiles" })
+      await engine.databases.default.add({ id: 3, name: "automobiles" })
     ).toMatchSnapshot();
     // and read again
-    expect(await engine.databases.default.all.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.all()).toMatchSnapshot();
   });
 });

@@ -3,6 +3,6 @@ import { EmbraceSQLEmbedded } from "databases";
 
 const main = async () => {
   const embedded = await EmbraceSQLEmbedded();
-  console.log(await embedded.databases.default.hello.sql({}));
+  console.log(await embedded.databases.default.hello({}));
 };
 main();

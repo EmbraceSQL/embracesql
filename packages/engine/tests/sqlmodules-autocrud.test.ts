@@ -34,6 +34,8 @@ describe("sqlmodules provide autocrud", () => {
   it("makes use of AutoCrud", async () => {
     expect(engine.databases.default.autocrud).toBeTruthy();
     expect(engine.databases.default.autocrud.things).toBeTruthy();
-    //expect(engine.databases.default.autocrud.things.create).toBeInstanceOf( Function);
+    expect(engine.databases.default.autocrud.things.create).toBeInstanceOf(
+      Function
+    );
   });
 });

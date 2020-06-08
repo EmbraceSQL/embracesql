@@ -234,7 +234,7 @@ export default async (
       const tableMetadata = allTables.map(async ({ name: table, sql }) => {
         const columns = await database.all(`PRAGMA TABLE_INFO('${table}')`);
         const hasAutoincrement = sql.toLowerCase().indexOf("autoincrement") > 0;
-        const keys = columns.filter((row) => row.pk).map((row) => row.name);
+        const keys = columnMetadata(columns.filter((row) => row.pk));
         return {
           schema: "",
           name: table,
