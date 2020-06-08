@@ -108,18 +108,16 @@ export const EmbraceSQLEmbedded = async (
         },
       },
       autocrud: {},
-      hello: {
-        sql: async (
-          parameters: types.default_helloParameters
-        ): Promise<types.default_helloRow[]> => {
-          return (
-            await typedExecutors.default_hello({
-              parameters,
-              results: [],
-              databases: entryPointCallableDatabases,
-            })
-          ).results;
-        },
+      hello: async (
+        parameters: types.default_helloParameters
+      ): Promise<types.default_helloRow[]> => {
+        return (
+          await typedExecutors.default_hello({
+            parameters,
+            results: [],
+            databases: entryPointCallableDatabases,
+          })
+        ).results;
       },
     },
   };
