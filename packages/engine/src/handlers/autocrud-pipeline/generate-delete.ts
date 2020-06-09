@@ -2,7 +2,6 @@ import { InternalContext, DatabaseInternalWithModules } from "../../context";
 import {
   AutocrudModule,
   DefaultContext,
-  SQLRow,
   SQLParameterSet,
   isSQLParameterSetBatch,
   SQLParameterSetBatch,
@@ -12,7 +11,7 @@ import { identifier } from "..";
 import { validParameters } from "../../database-engines";
 
 /**
- * Generate an update method. This will generate another autocrud
+ * Generate a delete method. This will generate another autocrud
  * module and add it to the database.
  *
  * This will accept and entire record of parameters, and return
@@ -24,49 +23,44 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   // create
-  const restPath = `${autocrudModule.restPath}/update`;
-  // the fields to update -- things other than keys
-  const otherThanKeys = autocrudModule.columns.filter(
-    (column) => !autocrudModule.keys.map((c) => c.name).includes(column.name)
-  );
-  const updateModule = (database.autocrudModules[restPath] = {
+  const restPath = `${autocrudModule.restPath}/delete`;
+  const deleteModule = (database.autocrudModules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
-    // every column is a parameter in a full update
-    namedParameters: autocrudModule.columns,
-    // inserted columns will be 1-1 with parameters
-    columns: otherThanKeys,
-    // read back the keys
-    resultsetMetadata: autocrudModule.keys,
+    namedParameters: autocrudModule.keys,
+    // empty return -- we did delete it after all
+    columns: [],
+    resultsetMetadata: [],
     canModifyData: true,
   });
   // and with an executor to run the thing
-  rootContext.autocrudModuleExecutors[updateModule.contextName] = {
-    autocrudModule: updateModule,
+  rootContext.autocrudModuleExecutors[deleteModule.contextName] = {
+    autocrudModule: deleteModule,
     executor: async (context: DefaultContext): Promise<DefaultContext> => {
-      const queries = await database.updateSQL(updateModule);
-      const updateOne = async (
-        parameters: SQLParameterSet
-      ): Promise<SQLRow> => {
+      const queries = await database.deleteSQL(deleteModule);
+      const doOne = async (parameters: SQLParameterSet): Promise<void> => {
+        // limit to the desired parameters to be forgiving
+        parameters = Object.fromEntries(
+          deleteModule.namedParameters.map((p) => [p.name, parameters[p.name]])
+        );
         // make the row -- nothing to read here
         await database.execute(
           queries.byKey,
-          validParameters(updateModule, parameters)
+          validParameters(deleteModule, parameters)
         );
-        return parameters;
       };
       if (isSQLParameterSetBatch(context.parameters)) {
-        const updates = (context.parameters as SQLParameterSetBatch).map(
-          updateOne
+        await Promise.all(
+          (context.parameters as SQLParameterSetBatch).map(doOne)
         );
-        context.results = await Promise.all(updates);
       } else if (isSQLParameterSet(context.parameters)) {
-        context.results = [await updateOne(context.parameters)];
+        await doOne(context.parameters);
       } else {
         throw new Error("no parameters");
       }
-
+      // results should be empty
+      context.results = [];
       return context;
     },
   };

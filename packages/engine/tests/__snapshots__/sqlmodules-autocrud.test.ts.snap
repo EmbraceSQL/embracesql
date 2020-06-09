@@ -69,3 +69,18 @@ Array [
   },
 ]
 `;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 8`] = `Array []`;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 9`] = `Array []`;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 10`] = `
+Array [
+  Object {
+    "id": 2,
+    "name": "trains",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 11`] = `Array []`;

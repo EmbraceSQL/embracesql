@@ -28,6 +28,7 @@ export default async (
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
     namedParameters: autocrudModule.keys,
+    resultsetMetadata: autocrudModule.columns,
     canModifyData: false,
   });
   // and with an executor to run the thing

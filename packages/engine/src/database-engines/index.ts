@@ -8,6 +8,8 @@ import {
   SQLParameters,
   Configuration,
   SQLTableMetadata,
+  CommonDatabaseModule,
+  SQLParameterSet,
 } from "../shared-context";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
@@ -16,6 +18,18 @@ import Url from "url-parse";
  * Serialize database use per process as we really only have one connection.
  */
 const oneAtATime = pLimit(1);
+
+/**
+ * Filter to just the declared parameters. This lets callers be a little sloppy
+ * and things will still 'just work'.
+ */
+export const validParameters = (
+  module: CommonDatabaseModule,
+  parameters: SQLParameterSet
+): SQLParameterSet =>
+  Object.fromEntries(
+    module.namedParameters.map((p) => [p.name, parameters[p.name]])
+  );
 
 /**
  * Embrace a database, bringing it into context.

@@ -9,6 +9,7 @@ import {
   SQLParameters,
   Configuration,
   SQLTableMetadata,
+  AutocrudModule,
 } from "../shared-context";
 import {
   DatabaseInternal,
@@ -16,6 +17,7 @@ import {
   CreateAndReadbackSQL,
   ReadSQL,
   UpdateSQL,
+  DeleteSQL,
 } from "../context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../handlers";
@@ -255,50 +257,55 @@ export default async (
      * AutoCRUD query generation.
      */
     createSQL: async (
-      sqlTable: SQLTableMetadata
+      autocrudModule: AutocrudModule
     ): Promise<CreateAndReadbackSQL> => {
-      // the input parameters -- are the schema minus any autoincrement
-      const namedParameters = sqlTable.columns.filter(
-        (column) =>
-          !sqlTable.autoColumns.map((c) => c.name).includes(column.name)
-      );
-      const columnString = namedParameters.map((c) => c.name).join(",");
-      const parameterString = namedParameters
+      const columnString = autocrudModule.namedParameters
+        .map((c) => c.name)
+        .join(",");
+      const parameterString = autocrudModule.namedParameters
         .map((c) => `:${c.name}`)
         .join(",");
-      const readbackKeyString = sqlTable.keys.map((c) => c.name).join(",");
+      const readbackKeyString = autocrudModule.resultsetMetadata
+        .map((c) => c.name)
+        .join(",");
       // no schema in SQLite..
       return {
         // make a row with all the values -- except for the auto values
-        create: `INSERT INTO ${sqlTable.name}(${columnString}) VALUES(${parameterString});`,
+        create: `INSERT INTO ${autocrudModule.name}(${columnString}) VALUES(${parameterString});`,
         // readback with the special column rowid for single crud inserts
-        readback: `SELECT ${readbackKeyString} FROM ${sqlTable.name} WHERE ROWID=last_insert_rowid()`,
+        readback: `SELECT ${readbackKeyString} FROM ${autocrudModule.name} WHERE ROWID=last_insert_rowid()`,
       };
     },
-    readSQL: async (sqlTable: SQLTableMetadata): Promise<ReadSQL> => {
-      const columnString = sqlTable.columns.map((c) => c.name).join(",");
-      const keyWhere = sqlTable.keys
+    readSQL: async (autocrudModule: AutocrudModule): Promise<ReadSQL> => {
+      const columnString = autocrudModule.resultsetMetadata
+        .map((c) => c.name)
+        .join(",");
+      const keyWhere = autocrudModule.namedParameters
         .map((k) => `${k.name} = :${k.name}`)
         .join(" AND ");
       return {
-        allRows: `SELECT ${columnString} FROM ${sqlTable.name};`,
-        byKey: `SELECT ${columnString} FROM ${sqlTable.name} WHERE ${keyWhere};`,
+        allRows: `SELECT ${columnString} FROM ${autocrudModule.name};`,
+        byKey: `SELECT ${columnString} FROM ${autocrudModule.name} WHERE ${keyWhere};`,
       };
     },
-    updateSQL: async (sqlTable: SQLTableMetadata): Promise<UpdateSQL> => {
-      // we won't be updating keys -- we're selecting on them...
-      const otherThankKeys = sqlTable.columns.filter(
-        (column) => !sqlTable.keys.map((c) => c.name).includes(column.name)
-      );
+    updateSQL: async (autocrudModule: AutocrudModule): Promise<UpdateSQL> => {
       // COALESCE to just save the existing value, this means this is a full record update
-      const columnUpdates = otherThankKeys
+      const columnUpdates = autocrudModule.columns
         .map((c) => `${c.name} = COALESCE(:${c.name}, ${c.name})`)
         .join(",");
-      const keyFilter = sqlTable.keys
+      const keyFilter = autocrudModule.keys
         .map((c) => `${c.name} = :${c.name}`)
         .join(" AND ");
       return {
-        byKey: `UPDATE ${sqlTable.name} SET ${columnUpdates} WHERE ${keyFilter}`,
+        byKey: `UPDATE ${autocrudModule.name} SET ${columnUpdates} WHERE ${keyFilter}`,
+      };
+    },
+    deleteSQL: async (autocrudModule: AutocrudModule): Promise<DeleteSQL> => {
+      const keyFilter = autocrudModule.namedParameters
+        .map((c) => `${c.name} = :${c.name}`)
+        .join(" AND ");
+      return {
+        byKey: `DELETE FROM ${autocrudModule.name}  WHERE ${keyFilter}`,
       };
     },
   };

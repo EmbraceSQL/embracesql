@@ -70,5 +70,27 @@ describe("sqlmodules provide autocrud", () => {
     expect(
       await engine.databases.default.autocrud.things.read(newKey)
     ).toMatchSnapshot();
+    // nuke it
+    expect(
+      await engine.databases.default.autocrud.things.delete(newKey)
+    ).toMatchSnapshot();
+    // nuke a single
+    expect(
+      await engine.databases.default.autocrud.things.delete({ id: 1 })
+    ).toMatchSnapshot();
+    // what's left?
+    expect(
+      await engine.databases.default.autocrud.things.read()
+    ).toMatchSnapshot();
+    // kill em all
+    expect(
+      await engine.databases.default.autocrud.things.delete(
+        await engine.databases.default.autocrud.things.read()
+      )
+    ).toMatchSnapshot();
+    // what's left?
+    expect(await engine.databases.default.autocrud.things.read()).toMatchObject(
+      []
+    );
   });
 });

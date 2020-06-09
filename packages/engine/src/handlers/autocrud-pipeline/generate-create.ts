@@ -1,6 +1,15 @@
 import { InternalContext, DatabaseInternalWithModules } from "../../context";
-import { AutocrudModule, DefaultContext } from "../../shared-context";
+import {
+  AutocrudModule,
+  DefaultContext,
+  SQLRow,
+  isSQLParameterSet,
+  isSQLParameterSetBatch,
+  SQLParameterSetBatch,
+  SQLParameterSet,
+} from "../../shared-context";
 import { identifier } from "..";
+import { validParameters } from "../../database-engines";
 
 /**
  * Generate a create method. This will generate another autocrud
@@ -17,6 +26,7 @@ export default async (
   // create
   const restPath = `${autocrudModule.restPath}/create`;
   // the input parameters -- are the schema minus any autoincrement
+  // normal keys are allowed -- needed even!
   const namedParameters = autocrudModule.columns.filter(
     (column) =>
       !autocrudModule.autoColumns.map((c) => c.name).includes(column.name)
@@ -37,11 +47,25 @@ export default async (
     autocrudModule: createModule,
     executor: async (context: DefaultContext): Promise<DefaultContext> => {
       const queries = await database.createSQL(createModule);
-      // make the row -- nothing to read here
-      await database.execute(queries.create, context.parameters);
-      // and the keys come back -- no parameters needed
-      const readBackKeys = await database.execute(queries.readback);
-      context.results = readBackKeys;
+      const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
+        // make the row -- nothing to read here
+        await database.execute(
+          queries.create,
+          validParameters(createModule, parameters)
+        );
+        // and the keys come back -- no parameters needed -- use the DB 'last inserted row' capability
+        // take advantage of the fact we are in the same transaction and connection
+        const readBackKeys = await database.execute(queries.readback);
+        return readBackKeys[0];
+      };
+      if (isSQLParameterSetBatch(context.parameters)) {
+        const updates = (context.parameters as SQLParameterSetBatch).map(doOne);
+        context.results = await Promise.all(updates);
+      } else if (isSQLParameterSet(context.parameters)) {
+        context.results = [await doOne(context.parameters)];
+      } else {
+        throw new Error("no parameters");
+      }
       return context;
     },
   };

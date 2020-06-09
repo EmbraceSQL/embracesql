@@ -64,6 +64,13 @@ export type UpdateSQL = {
 };
 
 /**
+ * SQL for the D in CRUD.
+ */
+export type DeleteSQL = {
+  byKey: string;
+};
+
+/**
  * A single instance of a database for use internally.
  */
 export type DatabaseInternal = Database & {
@@ -98,15 +105,19 @@ export type DatabaseInternal = Database & {
   /**
    * Get the full create statement sql, with an immeidate readback
    */
-  createSQL: (sqlTable: SQLTableMetadata) => Promise<CreateAndReadbackSQL>;
+  createSQL: (autocrudModule: AutocrudModule) => Promise<CreateAndReadbackSQL>;
   /**
    * Get the SQL to read back a table.
    */
-  readSQL: (sqlTable: SQLTableMetadata) => Promise<ReadSQL>;
+  readSQL: (autocrudModule: AutocrudModule) => Promise<ReadSQL>;
   /**
    * Get the SQL to update a table.
    */
-  updateSQL: (sqlTable: SQLTableMetadata) => Promise<UpdateSQL>;
+  updateSQL: (autocrudModule: AutocrudModule) => Promise<UpdateSQL>;
+  /**
+   * Get the SQL to delete from a table.
+   */
+  deleteSQL: (autocrudModule: AutocrudModule) => Promise<DeleteSQL>;
 };
 
 /**

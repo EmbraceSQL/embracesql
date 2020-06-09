@@ -5,7 +5,7 @@ import { buildInternalContext, InternalContext } from "../src/context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
 
-describe("sqlmodules provide handlers and autocrud", () => {
+describe("sqlmodules provide handlers", () => {
   let rootContext: InternalContext;
   const root = path.relative(process.cwd(), "./.tests/sqlmodules");
   beforeAll(async () => {
