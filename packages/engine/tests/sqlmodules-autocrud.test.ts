@@ -37,5 +37,11 @@ describe("sqlmodules provide autocrud", () => {
     expect(engine.databases.default.autocrud.things.create).toBeInstanceOf(
       Function
     );
+    expect(
+      await engine.databases.default.autocrud.things.create({
+        id: 100,
+        name: "hi there",
+      })
+    ).toMatchSnapshot();
   });
 });

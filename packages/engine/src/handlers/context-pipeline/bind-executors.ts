@@ -26,30 +26,10 @@ export default async (
         sqlModule: dbModule.module,
         executor: async (context: DefaultContext): Promise<DefaultContext> => {
           context.results = await dbModule.database.execute(
-            dbModule.module,
+            dbModule.module.sql,
             context.parameters
           );
           return context;
-        },
-      },
-    ])
-  );
-  // collect all the autocrud modules
-  const allAutocrudModules = Object.values(rootContext.databases).flatMap(
-    (database) =>
-      Object.values(database.autocrudModules).flatMap((module) => ({
-        database,
-        module,
-      }))
-  );
-  // wire up an executor for each autocrud module
-  rootContext.autocrudModuleExecutors = Object.fromEntries(
-    allAutocrudModules.map((dbModule) => [
-      dbModule.module.contextName,
-      {
-        autocrudModule: dbModule.module,
-        executor: async (context: DefaultContext): Promise<DefaultContext> => {
-          throw new Error("Not Implemented" + context);
         },
       },
     ])

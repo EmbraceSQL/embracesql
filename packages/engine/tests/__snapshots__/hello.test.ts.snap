@@ -102,6 +102,7 @@ Object {
       "analyze": [Function],
       "autocrudModules": Object {},
       "close": [Function],
+      "createSQL": [Function],
       "execute": [Function],
       "migrate": [Function],
       "name": "default",

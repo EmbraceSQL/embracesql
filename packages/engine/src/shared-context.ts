@@ -317,7 +317,7 @@ export type ContextualExecutor<T> = (context: T) => Promise<T>;
  */
 export type ContextualExecutors<T> = {
   [index: string]: ContextualExecutor<T>;
-}
+};
 
 /**
  * Simplest possible context takes the fully unconstrained row.

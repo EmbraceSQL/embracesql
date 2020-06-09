@@ -3,7 +3,6 @@ import { AllDatabasesInternal } from "../context";
 import { DatabaseInternal } from "../context";
 import pLimit from "p-limit";
 import {
-  SQLModule,
   SQLColumnMetadata,
   SQLRow,
   SQLParameters,
@@ -56,10 +55,10 @@ export const embraceDatabases = async (
       // with a throttled promise limit -- since we have only one connection
       // these are not re-entrant
       execute: async (
-        sqlModule: SQLModule,
+        sql: string,
         parameters?: SQLParameters
       ): Promise<SQLRow[]> => {
-        return oneAtATime(() => database.execute(sqlModule, parameters));
+        return oneAtATime(() => database.execute(sql, parameters));
       },
       analyze: async (
         sqlModule: SQLModuleInternal

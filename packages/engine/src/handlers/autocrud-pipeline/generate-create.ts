@@ -1,5 +1,5 @@
 import { InternalContext, DatabaseInternalWithModules } from "../../context";
-import { AutocrudModule } from "../../shared-context";
+import { AutocrudModule, DefaultContext } from "../../shared-context";
 import { identifier } from "..";
 
 /**
@@ -21,13 +21,29 @@ export default async (
     (column) =>
       !autocrudModule.autoColumns.map((c) => c.name).includes(column.name)
   );
-  database.autocrudModules[restPath] = {
+  const createModule = (database.autocrudModules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
     namedParameters,
-    resultsetMetadata: autocrudModule.columns,
+    // inserted columns will be 1-1 with parameters
+    columns: namedParameters,
+    // read back the keys
+    resultsetMetadata: autocrudModule.keys,
     canModifyData: true,
+  });
+  // and with an executor to run the thing
+  rootContext.autocrudModuleExecutors[createModule.contextName] = {
+    autocrudModule: createModule,
+    executor: async (context: DefaultContext): Promise<DefaultContext> => {
+      const queries = await database.createSQL(createModule);
+      // make the row -- nothing to read here
+      await database.execute(queries.create, context.parameters);
+      // and the keys come back -- no parameters needed
+      const readBackKeys = await database.execute(queries.readback);
+      context.results = readBackKeys;
+      return context;
+    },
   };
   return rootContext;
 };

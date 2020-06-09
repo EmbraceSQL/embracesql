@@ -41,6 +41,14 @@ export type AutocrudModules = {
 };
 
 /**
+ * SQL Pair for C in CRUD.
+ */
+export type CreateAndReadback = {
+  create: string;
+  readback: string;
+};
+
+/**
  * A single instance of a database for use internally.
  */
 export type DatabaseInternal = Database & {
@@ -48,13 +56,10 @@ export type DatabaseInternal = Database & {
    * Execute the sql module query on this database, and
    * promise some result.
    *
-   * @param SQLModule - execute this module, returning results
+   * @param sql - sql string in the dialect of the target database, can include :name style paramters
    * @param parameters - name value pairs are the passed parameters
    */
-  execute: (
-    sqlModule: SQLModule,
-    parameters?: SQLParameters
-  ) => Promise<SQLRow[]>;
+  execute: (sql: string, parameters?: SQLParameters) => Promise<SQLRow[]>;
   /**
    * Analyze the passed module and determine the resultset type(s).
    */
@@ -75,6 +80,10 @@ export type DatabaseInternal = Database & {
    * Get schematic information on all tables.
    */
   schema: () => Promise<SQLTableMetadata[]>;
+  /**
+   * Get the full create statement sql, with an immeidate readback
+   */
+  createSQL: (sqlTable: SQLTableMetadata) => Promise<CreateAndReadback>;
 };
 
 /**

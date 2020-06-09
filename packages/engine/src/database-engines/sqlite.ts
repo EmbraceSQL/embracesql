@@ -10,7 +10,7 @@ import {
   Configuration,
   SQLTableMetadata,
 } from "../shared-context";
-import { DatabaseInternal, MigrationFile } from "../context";
+import { DatabaseInternal, MigrationFile, CreateAndReadback } from "../context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../handlers";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
@@ -111,12 +111,12 @@ export default async (
       return parsed;
     },
     execute: async (
-      sqlModule: SQLModule,
+      sql: string,
       parameters?: SQLParameters
     ): Promise<SQLRow[]> => {
       // execution wrapper to get transaction support
       const execute = async (): Promise<SQLRow[]> => {
-        const statement = await database.prepare(sqlModule.sql);
+        const statement = await database.prepare(sql);
         try {
           if (parameters && Object.keys(parameters).length) {
             // map to SQLite names
@@ -244,6 +244,30 @@ export default async (
         };
       });
       return await Promise.all(tableMetadata);
+    },
+    /**
+     * AutoCRUD query generation.
+     */
+    createSQL: async (
+      sqlTable: SQLTableMetadata
+    ): Promise<CreateAndReadback> => {
+      // the input parameters -- are the schema minus any autoincrement
+      const namedParameters = sqlTable.columns.filter(
+        (column) =>
+          !sqlTable.autoColumns.map((c) => c.name).includes(column.name)
+      );
+      const columnString = namedParameters.map((c) => c.name).join(",");
+      const parameterString = namedParameters
+        .map((c) => `:${c.name}`)
+        .join(",");
+      const readbackKeyString = sqlTable.keys.map((c) => c.name).join(",");
+      // no schema in SQLite..
+      return {
+        // make a row with all the values -- except for the auto values
+        create: `INSERT INTO ${sqlTable.name}(${columnString}) VALUES(${parameterString});`,
+        // readback with the special column rowid for single crud inserts
+        readback: `SELECT ${readbackKeyString} FROM ${sqlTable.name} WHERE ROWID=last_insert_rowid()`,
+      };
     },
   };
 };
