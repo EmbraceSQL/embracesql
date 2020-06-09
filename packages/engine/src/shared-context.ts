@@ -288,12 +288,50 @@ export type Context<RowType> = {
 };
 
 /**
+ * The core notion of sql parameters, name value pairs.
+ */
+export type SQLParameterSet = {
+  [index: string]: SQLType;
+};
+
+/**
+ * Sometimes -- you want a batch -- multiple sets of parameters
+ * to run multiple logical queries to get even more records in
+ * 'one trip to the DB'
+ */
+export type SQLParameterSetBatch = SQLParameterSet[];
+
+/**
  * A SQL query may have parameters, this type constrains them. This single
  * type defines the conceptual constraint, an can be further constrained
  * with specific type names extracted by parsing queries.
  */
-export type SQLParameters = {
-  [index: string]: SQLType;
+export type SQLParameters = SQLParameterSet | SQLParameterSetBatch | undefined;
+
+/**
+ * And some type guards.
+ */
+
+/**
+ * True if a single parameter set.
+ */
+export const isSQLParameterSet = (
+  parameters: SQLParameters
+): parameters is SQLParameterSet => {
+  return (
+    parameters &&
+    Object.keys(parameters as SQLParameterSet).length > 0 &&
+    !Array.isArray(parameters)
+  );
+};
+
+/**
+ * True if a batch of parameters.
+ */
+export const isSQLParameterSetBatch = (
+  parameters: SQLParameters
+): parameters is SQLParameterSetBatch => {
+  return Array.isArray(parameters);
 };
 
 /**

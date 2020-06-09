@@ -43,9 +43,17 @@ export type AutocrudModules = {
 /**
  * SQL Pair for C in CRUD.
  */
-export type CreateAndReadback = {
+export type CreateAndReadbackSQL = {
   create: string;
   readback: string;
+};
+
+/**
+ * SQL for the R in CRUD.
+ */
+export type ReadSQL = {
+  allRows: string;
+  byKey: string;
 };
 
 /**
@@ -83,7 +91,11 @@ export type DatabaseInternal = Database & {
   /**
    * Get the full create statement sql, with an immeidate readback
    */
-  createSQL: (sqlTable: SQLTableMetadata) => Promise<CreateAndReadback>;
+  createSQL: (sqlTable: SQLTableMetadata) => Promise<CreateAndReadbackSQL>;
+  /**
+   * Get the SQL to read back a table.
+   */
+  readSQL: (sqlTable: SQLTableMetadata) => Promise<ReadSQL>;
 };
 
 /**

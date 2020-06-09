@@ -7,3 +7,38 @@ Array [
   },
 ]
 `;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 2`] = `
+Array [
+  Object {
+    "id": 1,
+    "name": "planes",
+  },
+  Object {
+    "id": 2,
+    "name": "trains",
+  },
+  Object {
+    "id": 100,
+    "name": "hi there",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 3`] = `
+Array [
+  Object {
+    "id": 100,
+    "name": "hi there",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud makes use of AutoCrud 4`] = `
+Array [
+  Object {
+    "id": 100,
+    "name": "hi there",
+  },
+]
+`;

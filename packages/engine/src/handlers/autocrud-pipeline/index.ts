@@ -2,6 +2,7 @@ import { InternalContext, DatabaseInternalWithModules } from "../../context";
 import md5 from "md5";
 import { AutocrudModule } from "../../shared-context";
 import generateCreate from "./generate-create";
+import generateRead from "./generate-read";
 import { identifier } from "..";
 
 /**
@@ -14,6 +15,7 @@ const autocrudModulePipeline = async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   await generateCreate(rootContext, database, autocrudModule);
+  await generateRead(rootContext, database, autocrudModule);
   return rootContext;
 };
 

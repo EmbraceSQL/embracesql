@@ -10,7 +10,12 @@ import {
   Configuration,
   SQLTableMetadata,
 } from "../shared-context";
-import { DatabaseInternal, MigrationFile, CreateAndReadback } from "../context";
+import {
+  DatabaseInternal,
+  MigrationFile,
+  CreateAndReadbackSQL,
+  ReadSQL,
+} from "../context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../handlers";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
@@ -250,7 +255,7 @@ export default async (
      */
     createSQL: async (
       sqlTable: SQLTableMetadata
-    ): Promise<CreateAndReadback> => {
+    ): Promise<CreateAndReadbackSQL> => {
       // the input parameters -- are the schema minus any autoincrement
       const namedParameters = sqlTable.columns.filter(
         (column) =>
@@ -267,6 +272,16 @@ export default async (
         create: `INSERT INTO ${sqlTable.name}(${columnString}) VALUES(${parameterString});`,
         // readback with the special column rowid for single crud inserts
         readback: `SELECT ${readbackKeyString} FROM ${sqlTable.name} WHERE ROWID=last_insert_rowid()`,
+      };
+    },
+    readSQL: async (sqlTable: SQLTableMetadata): Promise<ReadSQL> => {
+      const columnString = sqlTable.columns.map((c) => c.name).join(",");
+      const keyWhere = sqlTable.keys
+        .map((k) => `${k.name} = :${k.name}`)
+        .join(" AND ");
+      return {
+        allRows: `SELECT ${columnString} FROM ${sqlTable.name};`,
+        byKey: `SELECT ${columnString} FROM ${sqlTable.name} WHERE ${keyWhere};`,
       };
     },
   };

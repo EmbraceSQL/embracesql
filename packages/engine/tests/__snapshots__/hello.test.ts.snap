@@ -107,6 +107,7 @@ Object {
       "migrate": [Function],
       "name": "default",
       "parse": [Function],
+      "readSQL": [Function],
       "schema": [Function],
       "sqlModules": Object {
         "hello": Object {

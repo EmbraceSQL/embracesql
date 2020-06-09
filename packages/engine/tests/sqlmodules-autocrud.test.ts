@@ -37,11 +37,22 @@ describe("sqlmodules provide autocrud", () => {
     expect(engine.databases.default.autocrud.things.create).toBeInstanceOf(
       Function
     );
+    const newKey = await engine.databases.default.autocrud.things.create({
+      id: 100,
+      name: "hi there",
+    });
+    expect(newKey).toMatchSnapshot();
+    // all those rows
     expect(
-      await engine.databases.default.autocrud.things.create({
-        id: 100,
-        name: "hi there",
-      })
+      await engine.databases.default.autocrud.things.read()
+    ).toMatchSnapshot();
+    // and a key row, let's use our reaback - just the one
+    expect(
+      await engine.databases.default.autocrud.things.read(newKey[0])
+    ).toMatchSnapshot();
+    // and a key row, let's use our reaback!
+    expect(
+      await engine.databases.default.autocrud.things.read(newKey)
     ).toMatchSnapshot();
   });
 });
