@@ -46,11 +46,27 @@ describe("sqlmodules provide autocrud", () => {
     expect(
       await engine.databases.default.autocrud.things.read()
     ).toMatchSnapshot();
-    // and a key row, let's use our reaback - just the one
+    // read with one set of parameters
     expect(
       await engine.databases.default.autocrud.things.read(newKey[0])
     ).toMatchSnapshot();
-    // and a key row, let's use our reaback!
+    // read with an 'array' -- of one...
+    expect(
+      await engine.databases.default.autocrud.things.read(newKey)
+    ).toMatchSnapshot();
+    // update a single, built in readback
+    expect(
+      await engine.databases.default.autocrud.things.update({
+        ...newKey[0],
+        name: "super",
+      })
+    ).toMatchSnapshot();
+    // update with an array of one -- we'll make a clone
+    const updateWith = newKey.map((k) => ({ ...k, name: "grand" }));
+    expect(
+      await engine.databases.default.autocrud.things.update(updateWith)
+    ).toMatchSnapshot();
+    // did it really stick update?
     expect(
       await engine.databases.default.autocrud.things.read(newKey)
     ).toMatchSnapshot();

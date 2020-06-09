@@ -201,6 +201,7 @@ Object {
         "depth": [Function],
         "rollback": [Function],
       },
+      "updateSQL": [Function],
     },
   },
   "sqlModuleExecutors": Object {

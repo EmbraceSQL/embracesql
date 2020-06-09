@@ -15,6 +15,7 @@ import {
   MigrationFile,
   CreateAndReadbackSQL,
   ReadSQL,
+  UpdateSQL,
 } from "../context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../handlers";
@@ -282,6 +283,22 @@ export default async (
       return {
         allRows: `SELECT ${columnString} FROM ${sqlTable.name};`,
         byKey: `SELECT ${columnString} FROM ${sqlTable.name} WHERE ${keyWhere};`,
+      };
+    },
+    updateSQL: async (sqlTable: SQLTableMetadata): Promise<UpdateSQL> => {
+      // we won't be updating keys -- we're selecting on them...
+      const otherThankKeys = sqlTable.columns.filter(
+        (column) => !sqlTable.keys.map((c) => c.name).includes(column.name)
+      );
+      // COALESCE to just save the existing value, this means this is a full record update
+      const columnUpdates = otherThankKeys
+        .map((c) => `${c.name} = COALESCE(:${c.name}, ${c.name})`)
+        .join(",");
+      const keyFilter = sqlTable.keys
+        .map((c) => `${c.name} = :${c.name}`)
+        .join(" AND ");
+      return {
+        byKey: `UPDATE ${sqlTable.name} SET ${columnUpdates} WHERE ${keyFilter}`,
       };
     },
   };

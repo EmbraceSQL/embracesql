@@ -57,6 +57,13 @@ export type ReadSQL = {
 };
 
 /**
+ * SQL for the U in CRUD.
+ */
+export type UpdateSQL = {
+  byKey: string;
+};
+
+/**
  * A single instance of a database for use internally.
  */
 export type DatabaseInternal = Database & {
@@ -96,6 +103,10 @@ export type DatabaseInternal = Database & {
    * Get the SQL to read back a table.
    */
   readSQL: (sqlTable: SQLTableMetadata) => Promise<ReadSQL>;
+  /**
+   * Get the SQL to update a table.
+   */
+  updateSQL: (sqlTable: SQLTableMetadata) => Promise<UpdateSQL>;
 };
 
 /**
