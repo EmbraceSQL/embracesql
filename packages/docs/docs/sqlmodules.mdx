@@ -252,6 +252,10 @@ const example = async () => {
   // to query to get child records like order_items or lookup data like items
   const my_order = await db.orders.read(order_key);
 
+  // And sometimes you really do need the whole table
+  // This is even simpler, just don't pass any parameters!
+  const all_orders = await db.orders.read();
+
   // notice three tables are joined automatically and you can get the description
   // EmbraceSQL inside created a query batch to pull in all this data
   // -- in one trip to the database, so it's not a chatterbox like ORMs

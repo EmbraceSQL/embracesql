@@ -3,6 +3,7 @@ import parseSQL from "./parse-sql";
 import transformResultTypes from "./transform-result-types";
 import transformParameterTypes from "./transform-parameter-types";
 import generateDefaultHandlers from "./generate-default-handlers";
+import bindExecutors from "./bind-executors";
 import type { AST } from "node-sql-parser";
 import walk from "ignore-walk";
 import path from "path";
@@ -38,6 +39,7 @@ const sqlModulePipeline = async (
     await transformParameterTypes(rootContext, database, sqlModuleInternal);
     await transformResultTypes(rootContext, database, sqlModuleInternal);
     await generateDefaultHandlers(rootContext, sqlModuleInternal);
+    await bindExecutors(rootContext, database, sqlModuleInternal);
   } catch (e) {
     // a single module failing isn't fatal, it's gonna happen all the type with typos
     console.warn(sqlModule.fullPath, e.message);
