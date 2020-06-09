@@ -29,8 +29,8 @@ export default async (
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
     namedParameters: autocrudModule.keys,
+    workOnTheseColumns: [],
     // empty return -- we did delete it after all
-    columns: [],
     resultsetMetadata: [],
     canModifyData: true,
   });

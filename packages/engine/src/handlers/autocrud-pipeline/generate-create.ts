@@ -37,7 +37,7 @@ export default async (
     restPath,
     namedParameters,
     // inserted columns will be 1-1 with parameters
-    columns: namedParameters,
+    workOnTheseColumns: namedParameters,
     // read back the keys
     resultsetMetadata: autocrudModule.keys,
     canModifyData: true,

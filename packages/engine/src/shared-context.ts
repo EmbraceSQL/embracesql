@@ -125,22 +125,29 @@ export type CommonDatabaseModule = {
    * All the parameters we found by looking at the query. These are in an array
    * to facilitate conversion of named to positional parameters.
    */
-  namedParameters?: SQLColumnMetadata[];
+  readonly namedParameters?: SQLColumnMetadata[];
   /**
-   * Result set metadata, which may be an array because of semicolon batches.
+   * Result set metadata, one entry for each column coming back.
    */
-  resultsetMetadata?: SQLColumnMetadata[];
+  readonly resultsetMetadata?: SQLColumnMetadata[];
   /**
    * When true, this module may modify data.
    */
-  canModifyData?: boolean;
+  readonly canModifyData?: boolean;
 };
 
 /**
  * Auto crud module data. These are simpler than from disk sql modules
  * since the do not have handlers.
  */
-export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
+export type AutocrudModule = CommonDatabaseModule &
+  SQLTableMetadata & {
+    /**
+     * A subset of columns to be modified. Generally a subset of the columns
+     * minus the keys
+     */
+    readonly workOnTheseColumns?: SQLColumnMetadata[];
+  };
 
 /**
  * Each SQL found on disk has some data -- the SQL itself, and will

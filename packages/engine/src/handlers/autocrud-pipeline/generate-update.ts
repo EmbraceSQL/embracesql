@@ -36,7 +36,7 @@ export default async (
     // every column is a parameter in a full update
     namedParameters: autocrudModule.columns,
     // inserted columns will be 1-1 with parameters
-    columns: otherThanKeys,
+    workOnTheseColumns: otherThanKeys,
     // read back the keys
     resultsetMetadata: autocrudModule.keys,
     canModifyData: true,

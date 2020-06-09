@@ -290,7 +290,7 @@ export default async (
     },
     updateSQL: async (autocrudModule: AutocrudModule): Promise<UpdateSQL> => {
       // COALESCE to just save the existing value, this means this is a full record update
-      const columnUpdates = autocrudModule.columns
+      const columnUpdates = autocrudModule.workOnTheseColumns
         .map((c) => `${c.name} = COALESCE(:${c.name}, ${c.name})`)
         .join(",");
       const keyFilter = autocrudModule.keys
