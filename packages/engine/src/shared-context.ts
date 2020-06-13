@@ -125,15 +125,15 @@ export type CommonDatabaseModule = {
    * All the parameters we found by looking at the query. These are in an array
    * to facilitate conversion of named to positional parameters.
    */
-  readonly namedParameters?: SQLColumnMetadata[];
+  namedParameters: SQLColumnMetadata[];
   /**
    * Result set metadata, one entry for each column coming back.
    */
-  readonly resultsetMetadata?: SQLColumnMetadata[];
+  resultsetMetadata: SQLColumnMetadata[];
   /**
    * When true, this module may modify data.
    */
-  readonly canModifyData?: boolean;
+  canModifyData: boolean;
 };
 
 /**
@@ -302,18 +302,11 @@ export type SQLParameterSet = {
 };
 
 /**
- * Sometimes -- you want a batch -- multiple sets of parameters
- * to run multiple logical queries to get even more records in
- * 'one trip to the DB'
- */
-export type SQLParameterSetBatch = SQLParameterSet[];
-
-/**
  * A SQL query may have parameters, this type constrains them. This single
  * type defines the conceptual constraint, an can be further constrained
  * with specific type names extracted by parsing queries.
  */
-export type SQLParameters = SQLParameterSet | SQLParameterSetBatch | undefined;
+export type SQLParameters = SQLParameterSet | SQLParameterSet[] | undefined;
 
 /**
  * And some type guards.
@@ -337,8 +330,8 @@ export const isSQLParameterSet = (
  */
 export const isSQLParameterSetBatch = (
   parameters: SQLParameters
-): parameters is SQLParameterSetBatch => {
-  return Array.isArray(parameters);
+): parameters is SQLParameterSet[] => {
+  return Array.isArray(parameters) && parameters.length > 0;
 };
 
 /**
@@ -373,16 +366,16 @@ export type DefaultContext = Context<SQLRow>;
  * Execute a SQL module with this.
  */
 export type SQLModuleExecutor = {
-  executor: ContextualExecutor<DefaultContext>;
-  sqlModule: SQLModule;
+  readonly executor: ContextualExecutor<DefaultContext>;
+  readonly sqlModule: SQLModule;
 };
 
 /**
  * Execute an Autocrd with this.
  */
 export type AutocrudExecutor = {
-  executor: ContextualExecutor<DefaultContext>;
-  autocrudModule: AutocrudModule;
+  readonly executor: ContextualExecutor<DefaultContext>;
+  readonly autocrudModule: AutocrudModule;
 };
 
 /**
@@ -393,7 +386,12 @@ export type AutocrudExecutor = {
  * This is using the DefaultContext -- at this layer executors are fairly generic.
  * The client library wrapper or OpenAPI provides specific typeing.
  */
-export type EntryPoint = SQLModuleExecutor | AutocrudExecutor;
+export type EntryPoint = (SQLModuleExecutor | AutocrudExecutor) & {
+  /**
+   * Know if this can modify a database.
+   */
+  readonly canModifyData: boolean;
+};
 
 /**
  * A map of named, fully contextualized executors, complete

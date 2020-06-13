@@ -46,6 +46,9 @@ export default async (
           restPath,
           cacheKey: md5(JSON.stringify(table.columns)),
           contextName: identifier(`${databaseName}/${restPath}`),
+          namedParameters: [],
+          resultsetMetadata: [],
+          canModifyData: false,
         });
         await autocrudModulePipeline(rootContext, database, module);
       });

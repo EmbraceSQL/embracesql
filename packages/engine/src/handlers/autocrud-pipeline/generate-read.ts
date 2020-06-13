@@ -4,7 +4,7 @@ import {
   DefaultContext,
   isSQLParameterSetBatch,
   isSQLParameterSet,
-  SQLParameterSetBatch,
+  SQLParameterSet,
 } from "../../shared-context";
 import { identifier } from "..";
 
@@ -21,8 +21,8 @@ export default async (
   database: DatabaseInternalWithModules,
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
-  // create
   const restPath = `${autocrudModule.restPath}/read`;
+  autocrudModule.canModifyData = false;
   const readModule = (database.autocrudModules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
@@ -38,7 +38,7 @@ export default async (
       const queries = await database.readSQL(readModule);
       if (isSQLParameterSetBatch(context.parameters)) {
         // lots of ways to implement this, let's do the naive one for the moment
-        const resultSets = (context.parameters as SQLParameterSetBatch).map(
+        const resultSets = (context.parameters as SQLParameterSet[]).map(
           (parameters) => {
             return database.execute(queries.byKey, parameters);
           }

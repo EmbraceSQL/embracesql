@@ -55,3 +55,7 @@ Object {
   "text": "{\\"logLevel\\":\\"error\\",\\"source\\":\\".tests/hello-handler/default/before.ts#7\\",\\"message\\":\\"Error: Simulated Error -- this is expected\\",\\"additional\\":[]}",
 }
 `;
+
+exports[`hello world with a handler will throw errors back out to the client - nested 1`] = `[FetchError: request to http://localhost:45679/default/hello failed, reason: connect ECONNREFUSED 127.0.0.1:45679]`;
+
+exports[`hello world with a handler will throw errors back out to the client - nested 2`] = `[FetchError: request to http://localhost:45679/default/nested/echo failed, reason: connect ECONNREFUSED 127.0.0.1:45679]`;

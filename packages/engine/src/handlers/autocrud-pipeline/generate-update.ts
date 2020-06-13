@@ -5,7 +5,6 @@ import {
   SQLRow,
   SQLParameterSet,
   isSQLParameterSetBatch,
-  SQLParameterSetBatch,
   isSQLParameterSet,
 } from "../../shared-context";
 import { identifier } from "..";
@@ -23,8 +22,8 @@ export default async (
   database: DatabaseInternalWithModules,
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
-  // create
   const restPath = `${autocrudModule.restPath}/update`;
+  autocrudModule.canModifyData = true;
   // the fields to update -- things other than keys
   const otherThanKeys = autocrudModule.columns.filter(
     (column) => !autocrudModule.keys.map((c) => c.name).includes(column.name)
@@ -57,7 +56,7 @@ export default async (
         return parameters;
       };
       if (isSQLParameterSetBatch(context.parameters)) {
-        const updates = (context.parameters as SQLParameterSetBatch).map(
+        const updates = (context.parameters as SQLParameterSet[]).map(
           updateOne
         );
         context.results = await Promise.all(updates);

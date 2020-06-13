@@ -11,9 +11,11 @@
     "pretty": "prettier --write './src/**/*.ts'",
     "cli": "ts-node-script src/cli",
     "lint": "eslint ./src/**/*.ts",
+    "types": "tsc --noEmit  --project",
     "docker": "docker build -t embracesql/server ."
   },
   "dependencies": {
+    "@types/whatwg-streams": "^3.2.1",
     "chokidar": "^3.4.0",
     "cosmiconfig": "^6.0.0",
     "front-matter": "^4.0.2",

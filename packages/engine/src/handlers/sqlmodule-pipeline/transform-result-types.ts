@@ -14,10 +14,6 @@ export default async (
   database: DatabaseInternal,
   sqlModule: SQLModuleInternal
 ): Promise<InternalContext> => {
-  // check if the metadata already exists -- Autocrud will come equipped with
-  // so there is no need to 'double check'
-  if (!sqlModule.resultsetMetadata) {
-    sqlModule.resultsetMetadata = await database.analyze(sqlModule);
-  }
+  sqlModule.resultsetMetadata = await database.analyze(sqlModule);
   return rootContext;
 };

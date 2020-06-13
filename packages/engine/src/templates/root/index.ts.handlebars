@@ -151,6 +151,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             return transactionWrappedExecutors.{{value.contextName}}(context);
           },
         sqlModule: internalContext.databases.{{@database}}.sqlModules.{{value.contextName}},
+        canModifyData: {{value.canModifyData}},
       },
     {{/eachInMap}}
     {{#eachInMap value.autocrudModules database=@key}}
@@ -161,6 +162,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             return transactionWrappedExecutors.{{value.contextName}}(context);
           },
         autocrudModule: internalContext.databases.{{@database}}.autocrudModules.{{value.contextName}},
+        canModifyData: {{value.canModifyData}},
       },
     {{/eachInMap}}
     {{/eachInMap}}
@@ -183,10 +185,19 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   {{/each}}
   },
   {{else}}
-  {{name}}: async (parameters: types.{{value.contextName}}Parameters) : Promise<types.{{value.contextName}}Row[]> => {
-    return (
-      await {{@handlerMap}}.{{value.contextName}}({parameters, results: [], databases: entryPointCallableDatabases})
-    ).results;
+  {{name}}: async (...parameters: types.{{value.contextName}}Parameters[]) : Promise<types.{{value.contextName}}Result> => {
+      const context = 
+        await {{@handlerMap}}.{{value.contextName}}({
+          parameters: parameters?.length === 1 ? parameters[0] as types.{{value.contextName}}Parameters : parameters, 
+          results: [], 
+          databases: entryPointCallableDatabases
+        });
+      // singles as object, otherwise array
+      if (context?.results?.length === 1) {
+        return context.results[0];
+      } else {
+        return context.results;
+      }
   },
   {{/if}}
 {{/inline}}

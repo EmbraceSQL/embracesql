@@ -2,10 +2,6 @@
 to: "{{configuration.embraceSQLRoot}}/context.ts"
 ---
 
-/**
-* THIS FILE IS GENERATED -- edits will be lost
-*/
-
 {{> shared-context.ts}}
 
 // Generation starts here
@@ -50,16 +46,17 @@ SQLRow & {
     {{name}}: {{type}}
   {{/each}}
 };
+export type {{contextName}}Result = {{contextName}}Row | {{contextName}}Row[] | undefined;
 {{/inline}}
 
 {{#*inline "parametersMetadata"}}
 export type {{contextName}}ParameterSet = 
-{
+SQLParameterSet & {
   {{#each namedParameters}}
     {{name}}: {{type}}
   {{/each}}
 };
-export type {{contextName}}Parameters ={{contextName}}ParameterSet | {{contextName}}ParameterSet[] | undefined;
+export type {{contextName}}Parameters = {{contextName}}ParameterSet | {{contextName}}ParameterSet[] | undefined;
 {{/inline}}
 
 
@@ -109,6 +106,6 @@ export type SQLModuleTree = {
   {{/each}}
   },
   {{else}}
-  {{name}}:(parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
+  {{name}}:(...parameters: {{value.contextName}}Parameters[]) => Promise<{{value.contextName}}Result>;
   {{/if}}
 {{/inline}}

@@ -2969,7 +2969,7 @@
   dependencies:
     "@types/whatwg-streams" "*"
 
-"@types/whatwg-streams@*":
+"@types/whatwg-streams@*", "@types/whatwg-streams@^3.2.1":
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/@types/whatwg-streams/-/whatwg-streams-3.2.1.tgz#225009a823e8b44be12569a24e60374ccdabe29e"
   integrity sha512-Syv05sRL25b8cC8tqgXSQgLZZmqGq2GO+NafrtHbjPJccP6gWBXmHvo2Trw3AWXQ4QLIkVuOB7uStCuhzswyiw==

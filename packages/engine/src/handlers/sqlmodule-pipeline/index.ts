@@ -108,6 +108,9 @@ export default async (
       sql,
       cacheKey: md5(sql),
       contextName: identifier(path.join(parsedPath.dir, parsedPath.name)),
+      namedParameters: [],
+      resultsetMetadata: [],
+      canModifyData: false,
     };
     // collate each module by the containing database
     rootContext.databases[databaseName].sqlModules[

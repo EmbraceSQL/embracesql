@@ -4,8 +4,8 @@ import {
   DefaultContext,
   SQLParameterSet,
   isSQLParameterSetBatch,
-  SQLParameterSetBatch,
   isSQLParameterSet,
+  SQLRow,
 } from "../../shared-context";
 import { identifier } from "..";
 import { validParameters } from "../../database-engines";
@@ -22,8 +22,8 @@ export default async (
   database: DatabaseInternalWithModules,
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
-  // create
   const restPath = `${autocrudModule.restPath}/delete`;
+  autocrudModule.canModifyData = true;
   const deleteModule = (database.autocrudModules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
@@ -39,28 +39,26 @@ export default async (
     autocrudModule: deleteModule,
     executor: async (context: DefaultContext): Promise<DefaultContext> => {
       const queries = await database.deleteSQL(deleteModule);
-      const doOne = async (parameters: SQLParameterSet): Promise<void> => {
+      const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // limit to the desired parameters to be forgiving
         parameters = Object.fromEntries(
           deleteModule.namedParameters.map((p) => [p.name, parameters[p.name]])
         );
         // make the row -- nothing to read here
-        await database.execute(
-          queries.byKey,
-          validParameters(deleteModule, parameters)
-        );
+        const validatedParameters = validParameters(deleteModule, parameters);
+        await database.execute(queries.byKey, validatedParameters);
+        return validatedParameters;
       };
       if (isSQLParameterSetBatch(context.parameters)) {
-        await Promise.all(
-          (context.parameters as SQLParameterSetBatch).map(doOne)
+        context.results = await Promise.all(
+          (context.parameters as SQLParameterSet[]).map(doOne)
         );
       } else if (isSQLParameterSet(context.parameters)) {
-        await doOne(context.parameters);
+        context.results = [await doOne(context.parameters)];
       } else {
         throw new Error("no parameters");
       }
-      // results should be empty
-      context.results = [];
+      // just return the parameters used, may be handy for chaining
       return context;
     },
   };

@@ -5,7 +5,6 @@ import {
   SQLRow,
   isSQLParameterSet,
   isSQLParameterSetBatch,
-  SQLParameterSetBatch,
   SQLParameterSet,
 } from "../../shared-context";
 import { identifier } from "..";
@@ -23,7 +22,7 @@ export default async (
   database: DatabaseInternalWithModules,
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
-  // create
+  autocrudModule.canModifyData = true;
   const restPath = `${autocrudModule.restPath}/create`;
   // the input parameters -- are the schema minus any autoincrement
   // normal keys are allowed -- needed even!
@@ -59,7 +58,7 @@ export default async (
         return readBackKeys[0];
       };
       if (isSQLParameterSetBatch(context.parameters)) {
-        const updates = (context.parameters as SQLParameterSetBatch).map(doOne);
+        const updates = (context.parameters as SQLParameterSet[]).map(doOne);
         context.results = await Promise.all(updates);
       } else if (isSQLParameterSet(context.parameters)) {
         context.results = [await doOne(context.parameters)];
