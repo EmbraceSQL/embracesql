@@ -41,7 +41,7 @@ export type {{module.contextName}}Handler =
 
 {{#*inline "resultsetMetadata"}}
 export type {{contextName}}Row = 
-SQLRow & {
+{
   {{#each resultsetMetadata}}
     {{name}}: {{type}}
   {{/each}}
@@ -51,7 +51,7 @@ export type {{contextName}}Result = {{contextName}}Row | {{contextName}}Row[] | 
 
 {{#*inline "parametersMetadata"}}
 export type {{contextName}}ParameterSet = 
-SQLParameterSet & {
+{
   {{#each namedParameters}}
     {{name}}: {{type}}
   {{/each}}

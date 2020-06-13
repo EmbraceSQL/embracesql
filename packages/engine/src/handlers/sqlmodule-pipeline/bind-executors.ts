@@ -1,5 +1,5 @@
 import { InternalContext, DatabaseInternal } from "../../context";
-import { DefaultContext } from "../../shared-context";
+import { Context } from "../../shared-context";
 import { SQLModuleInternal } from ".";
 
 /**
@@ -14,7 +14,7 @@ export default async (
 ): Promise<InternalContext> => {
   rootContext.sqlModuleExecutors[sqlModule.contextName] = {
     sqlModule: sqlModule,
-    executor: async (context: DefaultContext): Promise<DefaultContext> => {
+    executor: async (context: Context): Promise<Context> => {
       context.results = await database.execute(
         sqlModule.sql,
         context.parameters

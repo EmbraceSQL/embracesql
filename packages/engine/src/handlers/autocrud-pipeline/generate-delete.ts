@@ -1,7 +1,7 @@
 import { InternalContext, DatabaseInternalWithModules } from "../../context";
 import {
   AutocrudModule,
-  DefaultContext,
+  Context,
   SQLParameterSet,
   isSQLParameterSetBatch,
   isSQLParameterSet,
@@ -37,7 +37,7 @@ export default async (
   // and with an executor to run the thing
   rootContext.autocrudModuleExecutors[deleteModule.contextName] = {
     autocrudModule: deleteModule,
-    executor: async (context: DefaultContext): Promise<DefaultContext> => {
+    executor: async (context: Context): Promise<Context> => {
       const queries = await database.deleteSQL(deleteModule);
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // limit to the desired parameters to be forgiving

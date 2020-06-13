@@ -37,21 +37,26 @@ export default async (
       const database = rootContext.databases[databaseName];
       const tables = await database.schema();
       // collate each module by schema and name
-      return tables.map(async (table) => {
-        const restPath = table.schema
-          ? `${table.schema}/${table.name}`
-          : `${table.name}`;
-        const module = (database.autocrudModules[restPath] = {
-          ...table,
-          restPath,
-          cacheKey: md5(JSON.stringify(table.columns)),
-          contextName: identifier(`${databaseName}/${restPath}`),
-          namedParameters: [],
-          resultsetMetadata: [],
-          canModifyData: false,
-        });
-        await autocrudModulePipeline(rootContext, database, module);
-      });
+      return (
+        tables
+          // filter out our own meta table
+          .filter((t) => !"__embracesql_migrations__".includes(t.name))
+          .map(async (table) => {
+            const restPath = table.schema
+              ? `${table.schema}/${table.name}`
+              : `${table.name}`;
+            const module = (database.autocrudModules[restPath] = {
+              ...table,
+              restPath,
+              cacheKey: md5(JSON.stringify(table.columns)),
+              contextName: identifier(`${databaseName}/${restPath}`),
+              namedParameters: [],
+              resultsetMetadata: [],
+              canModifyData: false,
+            });
+            await autocrudModulePipeline(rootContext, database, module);
+          })
+      );
     }
   );
   await Promise.all(waitForAll);

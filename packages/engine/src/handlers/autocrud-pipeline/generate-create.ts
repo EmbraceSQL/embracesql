@@ -1,7 +1,7 @@
 import { InternalContext, DatabaseInternalWithModules } from "../../context";
 import {
   AutocrudModule,
-  DefaultContext,
+  Context,
   SQLRow,
   isSQLParameterSet,
   isSQLParameterSetBatch,
@@ -44,7 +44,7 @@ export default async (
   // and with an executor to run the thing
   rootContext.autocrudModuleExecutors[createModule.contextName] = {
     autocrudModule: createModule,
-    executor: async (context: DefaultContext): Promise<DefaultContext> => {
+    executor: async (context: Context): Promise<Context> => {
       const queries = await database.createSQL(createModule);
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // make the row -- nothing to read here

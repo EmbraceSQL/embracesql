@@ -86,6 +86,36 @@ export const decorateWithTransactions = (
     };
 };
 
+// EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
+// which can result in a result set -- an array or rows -- or a single record / row
+// this mapping deals with cardinality, treating arrays of 1 item as a single item
+export const decorateWithCardinality = (
+  innerExecutors: types.ExecutorMap) => {
+    return {
+    {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.sqlModules database=@key}}
+      {{value.contextName}}:  
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+              context.parameters = context?.parameters?.length === 1 ? context.parameters[0] : context.parameters;
+              await innerExecutors.{{value.contextName}}(context);
+              context.results = context?.results?.length === 1 ? context.results[0] : context.results;
+              return context;
+          },
+    {{/eachInMap}}
+    {{#eachInMap value.autocrudModules database=@key}}
+      {{value.contextName}}:  
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+              context.parameters = context?.parameters?.length === 1 ? context.parameters[0] : context.parameters;
+              await innerExecutors.{{value.contextName}}(context);
+              context.results = context?.results?.length === 1 ? context.results[0] : context.results;
+              return context;
+          },
+    {{/eachInMap}}
+    {{/eachInMap}}
+    };
+};
+
 /**
 * This is in effect -- EmbraceSQL, the fully configured and ready to
 * run in process engine. It can be used directly in process, or wrapped
@@ -100,7 +130,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   // can run a query to the database, but doesn't have handlers yet
   const handlerWrappedExecutors = decorateWithHandlers(internalContext);
   const transactionWrappedExecutors = decorateWithTransactions(internalContext, handlerWrappedExecutors);
-  const typedExecutors = transactionWrappedExecutors;
+  const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
 
   // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
   // and lets you call in a parameters --> results style, rather than the context --> context style
@@ -185,19 +215,14 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   {{/each}}
   },
   {{else}}
-  {{name}}: async (...parameters: types.{{value.contextName}}Parameters[]) : Promise<types.{{value.contextName}}Result> => {
+  {{name}}: async (...parameters: types.{{value.contextName}}ParameterSet[]) : Promise<types.{{value.contextName}}Result> => {
       const context = 
         await {{@handlerMap}}.{{value.contextName}}({
-          parameters: parameters?.length === 1 ? parameters[0] as types.{{value.contextName}}Parameters : parameters, 
+          parameters: parameters,
           results: [], 
           databases: entryPointCallableDatabases
         });
-      // singles as object, otherwise array
-      if (context?.results?.length === 1) {
-        return context.results[0];
-      } else {
-        return context.results;
-      }
+      return context.results;
   },
   {{/if}}
 {{/inline}}

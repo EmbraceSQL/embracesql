@@ -1,7 +1,7 @@
 import { InternalContext, DatabaseInternalWithModules } from "../../context";
 import {
   AutocrudModule,
-  DefaultContext,
+  Context,
   SQLRow,
   SQLParameterSet,
   isSQLParameterSetBatch,
@@ -43,7 +43,7 @@ export default async (
   // and with an executor to run the thing
   rootContext.autocrudModuleExecutors[updateModule.contextName] = {
     autocrudModule: updateModule,
-    executor: async (context: DefaultContext): Promise<DefaultContext> => {
+    executor: async (context: Context): Promise<Context> => {
       const queries = await database.updateSQL(updateModule);
       const updateOne = async (
         parameters: SQLParameterSet

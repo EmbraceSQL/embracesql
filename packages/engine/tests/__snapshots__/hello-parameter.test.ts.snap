@@ -13,11 +13,9 @@ Array [
 `;
 
 exports[`hello world with a parameter will make an embeddable engine 1`] = `
-Array [
-  Object {
-    "message": "hole",
-  },
-]
+Object {
+  "message": "hole",
+}
 `;
 
 exports[`hello world with a parameter will run a query in context 1`] = `

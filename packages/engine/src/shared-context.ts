@@ -234,7 +234,7 @@ export type Database = {
  * that will be generated will be noted in comments.
  *
  */
-export type Context<RowType> = {
+export type Context = {
   /**
    * Set the current state of security to allow SQL execution against the database.
    *
@@ -291,7 +291,7 @@ export type Context<RowType> = {
    * Results may be on here for the default context. This will get generated
    * and specified per SQLModule.
    */
-  results?: RowType[];
+  results?: SQLResults
 };
 
 /**
@@ -345,6 +345,11 @@ export type SQLRow = {
 };
 
 /**
+ * Results can be a single row, or an array.
+ */
+export type SQLResults = SQLRow | SQLRow[] | undefined;
+
+/**
  * Execute a SQL module with a context. This is what you use when
  * you have handlers wrapping a Executor.
  */
@@ -358,15 +363,10 @@ export type ContextualExecutors<T> = {
 };
 
 /**
- * Simplest possible context takes the fully unconstrained row.
- */
-export type DefaultContext = Context<SQLRow>;
-
-/**
  * Execute a SQL module with this.
  */
 export type SQLModuleExecutor = {
-  readonly executor: ContextualExecutor<DefaultContext>;
+  readonly executor: ContextualExecutor<Context>;
   readonly sqlModule: SQLModule;
 };
 
@@ -374,7 +374,7 @@ export type SQLModuleExecutor = {
  * Execute an Autocrd with this.
  */
 export type AutocrudExecutor = {
-  readonly executor: ContextualExecutor<DefaultContext>;
+  readonly executor: ContextualExecutor<Context>;
   readonly autocrudModule: AutocrudModule;
 };
 

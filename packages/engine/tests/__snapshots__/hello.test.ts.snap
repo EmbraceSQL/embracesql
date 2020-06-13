@@ -72,11 +72,9 @@ Array [
 `;
 
 exports[`hello world configuration! will make an embeddable engine 1`] = `
-Array [
-  Object {
-    "\\"hello world\\"": "hello world",
-  },
-]
+Object {
+  "\\"hello world\\"": "hello world",
+}
 `;
 
 exports[`hello world configuration! will run a query in context 1`] = `
