@@ -4,7 +4,12 @@ import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
 import readFile from "read-file-utf8";
 import path from "path";
-import { HasConfiguration, HasEntryPoints } from "./shared-context";
+import {
+  HasConfiguration,
+  HasEntryPoints,
+  AutocrudExecutor,
+  SQLModuleExecutor,
+} from "./shared-context";
 import { restructure } from "../../console/src/structured";
 
 /**
@@ -34,7 +39,12 @@ export const createServer = async (
 
   // go ahead and make a handler for both GET and POST
   Object.keys(rootContext.entryPoints).forEach((contextName) => {
-    if (!rootContext.entryPoints[contextName].canModifyData) {
+    const canModifyData =
+      (rootContext.entryPoints[contextName] as AutocrudExecutor)?.autocrudModule
+        ?.canModifyData ||
+      (rootContext.entryPoints[contextName] as SQLModuleExecutor)?.sqlModule
+        ?.canModifyData;
+    if (!canModifyData) {
       handlers[`get__${contextName}`] = async (
         _openAPI,
         httpContext

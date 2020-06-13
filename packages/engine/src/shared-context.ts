@@ -291,7 +291,7 @@ export type Context = {
    * Results may be on here for the default context. This will get generated
    * and specified per SQLModule.
    */
-  results?: SQLResults
+  results?: SQLResults;
 };
 
 /**
@@ -386,12 +386,7 @@ export type AutocrudExecutor = {
  * This is using the DefaultContext -- at this layer executors are fairly generic.
  * The client library wrapper or OpenAPI provides specific typeing.
  */
-export type EntryPoint = (SQLModuleExecutor | AutocrudExecutor) & {
-  /**
-   * Know if this can modify a database.
-   */
-  readonly canModifyData: boolean;
-};
+export type EntryPoint = SQLModuleExecutor | AutocrudExecutor;
 
 /**
  * A map of named, fully contextualized executors, complete

@@ -181,7 +181,6 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             return transactionWrappedExecutors.{{value.contextName}}(context);
           },
         sqlModule: internalContext.databases.{{@database}}.sqlModules.{{value.contextName}},
-        canModifyData: {{value.canModifyData}},
       },
     {{/eachInMap}}
     {{#eachInMap value.autocrudModules database=@key}}
@@ -192,7 +191,6 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             return transactionWrappedExecutors.{{value.contextName}}(context);
           },
         autocrudModule: internalContext.databases.{{@database}}.autocrudModules.{{value.contextName}},
-        canModifyData: {{value.canModifyData}},
       },
     {{/eachInMap}}
     {{/eachInMap}}
