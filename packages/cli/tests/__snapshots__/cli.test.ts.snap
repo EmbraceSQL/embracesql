@@ -68,6 +68,27 @@ export const decorateWithTransactions = (
   };
 };
 
+// EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
+// which can result in a result set -- an array or rows -- or a single record / row
+// this mapping deals with cardinality, treating arrays of 1 item as a single item
+export const decorateWithCardinality = (innerExecutors: types.ExecutorMap) => {
+  return {
+    // database default
+    default_hello: async (
+      context: types.default_helloContext
+    ): Promise<types.default_helloContext> => {
+      context.parameters =
+        context?.parameters?.length === 1
+          ? context.parameters[0]
+          : context.parameters;
+      await innerExecutors.default_hello(context);
+      context.results =
+        context?.results?.length === 1 ? context.results[0] : context.results;
+      return context;
+    },
+  };
+};
+
 /**
  * This is in effect -- EmbraceSQL, the fully configured and ready to
  * run in process engine. It can be used directly in process, or wrapped
@@ -87,7 +108,7 @@ export const EmbraceSQLEmbedded = async (
     internalContext,
     handlerWrappedExecutors
   );
-  const typedExecutors = transactionWrappedExecutors;
+  const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
 
   // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
   // and lets you call in a parameters --> results style, rather than the context --> context style
@@ -109,15 +130,14 @@ export const EmbraceSQLEmbedded = async (
       },
       autocrud: {},
       hello: async (
-        parameters: types.default_helloParameters
-      ): Promise<types.default_helloRow[]> => {
-        return (
-          await typedExecutors.default_hello({
-            parameters,
-            results: [],
-            databases: entryPointCallableDatabases,
-          })
-        ).results;
+        ...parameters: types.default_helloParameterSet[]
+      ): Promise<types.default_helloResult> => {
+        const context = await typedExecutors.default_hello({
+          parameters: parameters,
+          results: [],
+          databases: entryPointCallableDatabases,
+        });
+        return context.results;
       },
     },
   };

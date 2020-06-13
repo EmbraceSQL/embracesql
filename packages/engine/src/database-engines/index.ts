@@ -18,6 +18,7 @@ import Url from "url-parse";
  * Serialize database use per process as we really only have one connection.
  */
 const oneAtATime = pLimit(1);
+const atomic = pLimit(1);
 
 /**
  * Filter to just the declared parameters. This lets callers be a little sloppy
@@ -82,6 +83,7 @@ export const embraceDatabases = async (
       schema: async (): Promise<SQLTableMetadata[]> => {
         return oneAtATime(() => database.schema());
       },
+      atomic,
     };
   });
   return databases;

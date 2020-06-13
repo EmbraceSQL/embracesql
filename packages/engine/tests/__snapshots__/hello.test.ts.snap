@@ -98,6 +98,7 @@ Object {
   "databases": Object {
     "default": Object {
       "analyze": [Function],
+      "atomic": [Function],
       "autocrudModules": Object {},
       "close": [Function],
       "createSQL": [Function],

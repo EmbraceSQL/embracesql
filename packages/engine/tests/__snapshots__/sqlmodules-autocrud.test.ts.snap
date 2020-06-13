@@ -1,5 +1,92 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`sqlmodules provide autocrud works with arrays of parameters 1`] = `
+Array [
+  Object {
+    "id": 100,
+  },
+  Object {
+    "id": 200,
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 2`] = `
+Array [
+  Object {
+    "id": 100,
+    "name": "hi there",
+  },
+  Object {
+    "id": 200,
+    "name": "hola",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 3`] = `
+Array [
+  Object {
+    "id": 100,
+    "name": "hi there",
+  },
+  Object {
+    "id": 200,
+    "name": "hola",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 4`] = `
+Array [
+  Object {
+    "id": 100,
+    "name": "super",
+  },
+  Object {
+    "id": 200,
+    "name": "super",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 5`] = `
+Array [
+  Object {
+    "id": 100,
+    "name": "super",
+  },
+  Object {
+    "id": 200,
+    "name": "super",
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 6`] = `
+Array [
+  Object {
+    "id": 100,
+  },
+  Object {
+    "id": 200,
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 7`] = `Array []`;
+
+exports[`sqlmodules provide autocrud works with arrays of parameters 8`] = `
+Array [
+  Object {
+    "id": 300,
+  },
+  Object {
+    "id": 400,
+  },
+]
+`;
+
 exports[`sqlmodules provide autocrud works with single parameter set 1`] = `
 Object {
   "id": 100,
@@ -7,20 +94,10 @@ Object {
 `;
 
 exports[`sqlmodules provide autocrud works with single parameter set 2`] = `
-Array [
-  Object {
-    "id": 1,
-    "name": "planes",
-  },
-  Object {
-    "id": 2,
-    "name": "trains",
-  },
-  Object {
-    "id": 100,
-    "name": "hi there",
-  },
-]
+Object {
+  "id": 100,
+  "name": "hi there",
+}
 `;
 
 exports[`sqlmodules provide autocrud works with single parameter set 3`] = `
@@ -50,26 +127,4 @@ Object {
 }
 `;
 
-exports[`sqlmodules provide autocrud works with single parameter set 7`] = `
-Array [
-  Object {
-    "id": 1,
-    "name": "planes",
-  },
-  Object {
-    "id": 2,
-    "name": "trains",
-  },
-]
-`;
-
-exports[`sqlmodules provide autocrud works with single parameter set 8`] = `
-Array [
-  Object {
-    "id": 1,
-  },
-  Object {
-    "id": 2,
-  },
-]
-`;
+exports[`sqlmodules provide autocrud works with single parameter set 7`] = `Array []`;

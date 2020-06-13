@@ -47,15 +47,19 @@ export default async (
     executor: async (context: Context): Promise<Context> => {
       const queries = await database.createSQL(createModule);
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
-        // make the row -- nothing to read here
-        await database.execute(
-          queries.create,
-          validParameters(createModule, parameters)
-        );
-        // and the keys come back -- no parameters needed -- use the DB 'last inserted row' capability
-        // take advantage of the fact we are in the same transaction and connection
-        const readBackKeys = await database.execute(queries.readback);
-        return readBackKeys[0];
+        // this needs to be atomic so our read back goes right after our insert
+        // and no other query can sneak in between
+        return await database.atomic(async () => {
+          // make the row -- nothing to read here
+          await database.execute(
+            queries.create,
+            validParameters(createModule, parameters)
+          );
+          // and the keys come back -- no parameters needed -- use the DB 'last inserted row' capability
+          // take advantage of the fact we are in the same transaction and connection
+          const readBackKeys = await database.execute(queries.readback);
+          return readBackKeys[0];
+        });
       };
       if (isSQLParameterSetBatch(context.parameters)) {
         const updates = (context.parameters as SQLParameterSet[]).map(doOne);

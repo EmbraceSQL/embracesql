@@ -71,6 +71,19 @@ export type DeleteSQL = {
 };
 
 /**
+ * Function wrapper for atomicicity in running in the database.
+ */
+export interface AtomicDatabaseAction {
+  /**
+	@param fn - Promise-returning/async function.
+	@returns The promise returned by calling `fn(...arguments)`.
+	*/
+  <ReturnType>(fn: () => PromiseLike<ReturnType> | ReturnType): Promise<
+    ReturnType
+  >;
+}
+
+/**
  * A single instance of a database for use internally.
  */
 export type DatabaseInternal = Database & {
@@ -118,6 +131,12 @@ export type DatabaseInternal = Database & {
    * Get the SQL to delete from a table.
    */
   deleteSQL: (autocrudModule: AutocrudModule) => Promise<DeleteSQL>;
+  /**
+   * Throttle access to a database for atomicity. This is needed when thre
+   * are multiple parallel queries possible and you need to batch -- such
+   * as reading back a created key in the face of parallel inserts.
+   */
+  atomic: AtomicDatabaseAction;
 };
 
 /**
