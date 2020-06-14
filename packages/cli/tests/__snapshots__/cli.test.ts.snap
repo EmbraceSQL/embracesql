@@ -11,7 +11,8 @@ import * as types from \\"./context\\";
 
 type EmbeddedEngine = types.HasEntryPoints &
   types.SQLModuleTree &
-  types.HasConfiguration;
+  types.HasConfiguration &
+  types.Closeable;
 
 // each SQL Module has a direct execution decorator  -- this just talks to the database
 // this attaches handlers both before and after wrapping the direct executor
@@ -151,7 +152,7 @@ export const EmbraceSQLEmbedded = async (
         context: types.default_helloContext
       ): Promise<types.default_helloContext> => {
         context.databases = entryPointCallableDatabases;
-        return transactionWrappedExecutors.default_hello(context);
+        return typedExecutors.default_hello(context);
       },
       sqlModule: internalContext.databases.default.sqlModules.default_hello,
     },
@@ -161,6 +162,7 @@ export const EmbraceSQLEmbedded = async (
     configuration: internalContext.configuration,
     databases: entryPointCallableDatabases,
     entryPoints,
+    close: internalContext.close,
   };
 };
 "
