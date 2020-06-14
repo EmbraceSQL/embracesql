@@ -28,12 +28,10 @@ docker run -v ${PWD}:/var/embracesql embracesql/server migrate
 
 And now the sql scripts to define the sql modules.
 
-```sql title="./default/all.sql"
-SELECT * FROM things;
+```sql title="./default/all.sql" file=../../engine/tests/configs/sqlmodules-transactions/default/all.sql
 ```
 
-```sql title="./default/add.sql"
-INSERT INTO things(id, name) VALUES(:id, :name);
+```sql title="./default/add.sql" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql
 ```
 
 Notice the named parameters.
@@ -220,81 +218,21 @@ Even more powerful, with [Generated Client Libraries](./clients), you have typin
 import EmbraceSQL from "./embrace-sql";
 
 const client = new EmbraceSQL("http://localhost:8765");
-
-const example = async () => {
-
-  // little shortcut to type less...
-  const db = client.databases.default.autocrud;
-
-  // make some items we can order
-  const item_key = await db.items.create({description: "Paper"});
-
-  // and array valued, make a few records in one shot...
-  const more_item_keys = await db.items.create(
-    {description: "Can"},
-    {description: "Loaf"},
-  );
-
-  // no need to pass in the key, it is an auto increment, but you
-  // sure will need it to put in order items, so let's capture the created key
-  // whih EmbraceSQL thought of for you
-  const order_key = await db.orders.create({name: "Sample"});
-
-  // now join items and orders with one of each
-  // again notice we don't need to mention the autoincrement
-  await db.order_items.create([item_key, ...more_item_keys].map(
-    (item_key) => ({order_key.order_id, item_key.item_id, quantity: 1})
-  ));
-
-  // You can use that created key to 'read back' a record, kinda handy
-  // oh -- and it pulls back the whole associated referential graph
-  // your reward for embracing sql and referential integrity is not needing
-  // to query to get child records like order_items or lookup data like items
-  const my_order = await db.orders.read(order_key);
-
-  // And sometimes you really do need the whole table
-  // This is even simpler, just don't pass any parameters!
-  const all_orders = await db.orders.read();
-
-  // notice three tables are joined automatically and you can get the description
-  // EmbraceSQL inside created a query batch to pull in all this data
-  // -- in one trip to the database, so it's not a chatterbox like ORMs
-  console.log(my_order.name, my_order.order_items, my_order.order_items[0].description);
-
-  // hmm -- I really want two of that... let's update, passing in all the order items
-  // and using nice object spread with one property of overwrite
-  await db.order_items.update({...my_order.order_items, quantity: 2});
-
-  // nope -- I don't want it at all
-  // delete the whole thing down the referentia graph
-  await db.orders.delete(order_key);
-
-  // but the items aren't deleted -- they are lookup data!
-  // EmbraceSQL is smart enough to only delete children
-  console.log(await db.items.all());
-
-  // clean up the items
-  await db.items.all.delete();
-};
-example();
 ```
+
+```typescript file=../../engine/tests/examples/orders_items.ts
+```
+
+```typescript
+example(client);
+```
+
 
 ### Error Handling
 
 Some errors are more critical than others. Sometimes you want to keep going, sometimes you want to abort. EmbraceSQL is a bit of a perfectionist, and aborts the entire request on any unhandled error. You can be more forgiving though, and decide to keep going by creating an error handler:
 
-```javascript title="./things/add.sql.error.js"
-export const error = (context) => {
-  // see what happened and print it out, the error is on the context
-  console.log(context.error);
-  // do nothing and the error 'counts'
-
-  // optionally 'eat' the error
-  context.error = undefined;
-
-  // raise it again -- or any error and the transaction aborts
-  // throw "Oh! Noes!";
-};
+```typescript title="./default/hello.sql.afterError.ts" file=../../engine/tests/configs/hello-handler/default/hello.sql.afterError.ts
 ```
 
 You can also `try/catch` in your handler code, so in practice the `error` event handlers are useful to capture errors coming back from your database engine.
