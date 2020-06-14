@@ -42,10 +42,10 @@ export default async (
     canModifyData: true,
   });
   // and with an executor to run the thing
+  const queries = await database.createSQL(createModule);
   rootContext.autocrudModuleExecutors[createModule.contextName] = {
     autocrudModule: createModule,
     executor: async (context: Context): Promise<Context> => {
-      const queries = await database.createSQL(createModule);
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // this needs to be atomic so our read back goes right after our insert
         // and no other query can sneak in between

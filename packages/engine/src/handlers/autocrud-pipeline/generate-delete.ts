@@ -35,10 +35,10 @@ export default async (
     canModifyData: true,
   });
   // and with an executor to run the thing
+  const queries = await database.deleteSQL(deleteModule);
   rootContext.autocrudModuleExecutors[deleteModule.contextName] = {
     autocrudModule: deleteModule,
     executor: async (context: Context): Promise<Context> => {
-      const queries = await database.deleteSQL(deleteModule);
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // limit to the desired parameters to be forgiving
         parameters = Object.fromEntries(

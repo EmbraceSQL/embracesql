@@ -79,6 +79,14 @@ export type SQLColumnMetadata = {
 };
 
 /**
+ * Relations are mappings to a foreign table name -- the key
+ * and the references columns -- the value.
+ */
+export type SQLTableReferences = {
+  [index: string]: string[];
+};
+
+/**
  * All about a table, used in generating AutoCrud.
  */
 export type SQLTableMetadata = {
@@ -102,6 +110,10 @@ export type SQLTableMetadata = {
    * Key columns by name.
    */
   readonly keys: SQLColumnMetadata[];
+  /**
+   * Relationships to to foreign tables.
+   */
+  readonly references: SQLTableReferences;
 };
 
 /**

@@ -160,7 +160,7 @@ export default async (
       if (sqlModule.ast?.type === "select") {
         const parser = new Parser();
         const sql = parser.sqlify(sqlModule.ast, { database: "postgresql" });
-        const create = `CREATE TABLE __analyze__ AS ${sql};`;
+        const create = `CREATE TEMPORARY TABLE __analyze__ AS ${sql};`;
         const drop = `DROP TABLE __analyze__;`;
         const preparedCreate = await database.prepare(create);
         try {
@@ -243,6 +243,9 @@ export default async (
       ).map((row) => ({ name: row.name as string, sql: row.sql as string }));
       const tableMetadata = allTables.map(async ({ name: table, sql }) => {
         const columns = await database.all(`PRAGMA TABLE_INFO('${table}')`);
+        const relations = await database.all(
+          `PRAGMA FOREIGN_KEY_LIST('${table}')`
+        );
         const hasAutoincrement = sql.toLowerCase().indexOf("autoincrement") > 0;
         const keys = columnMetadata(columns.filter((row) => row.pk));
         return {
@@ -251,6 +254,12 @@ export default async (
           columns: columnMetadata(columns),
           keys,
           autoColumns: hasAutoincrement ? keys : [],
+          references: Object.fromEntries(
+            relations.map((r) => [
+              r.table,
+              r.to.split(",").map((s) => s.trim()),
+            ])
+          ),
         };
       });
       return await Promise.all(tableMetadata);

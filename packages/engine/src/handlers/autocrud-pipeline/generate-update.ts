@@ -41,10 +41,10 @@ export default async (
     canModifyData: true,
   });
   // and with an executor to run the thing
+  const queries = await database.updateSQL(updateModule);
   rootContext.autocrudModuleExecutors[updateModule.contextName] = {
     autocrudModule: updateModule,
     executor: async (context: Context): Promise<Context> => {
-      const queries = await database.updateSQL(updateModule);
       const updateOne = async (
         parameters: SQLParameterSet
       ): Promise<SQLRow> => {

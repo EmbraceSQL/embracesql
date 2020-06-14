@@ -32,10 +32,10 @@ export default async (
     canModifyData: false,
   });
   // and with an executor to run the thing
+  const queries = await database.readSQL(readModule);
   rootContext.autocrudModuleExecutors[readModule.contextName] = {
     autocrudModule: readModule,
     executor: async (context: Context): Promise<Context> => {
-      const queries = await database.readSQL(readModule);
       if (isSQLParameterSetBatch(context.parameters)) {
         // lots of ways to implement this, let's do the naive one for the moment
         const resultSets = (context.parameters as SQLParameterSet[]).map(
