@@ -1,5 +1,73 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`sqlmodules provide autocrud works like the documentation in process 1`] = `
+Array [
+  Object {
+    "name": "Sample",
+    "order_id": 1,
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works like the documentation in process 2`] = `
+Array [
+  Array [
+    Object {
+      "description": "Paper",
+      "item_id": 1,
+    },
+    Object {
+      "description": "Can",
+      "item_id": 2,
+    },
+    Object {
+      "description": "Loaf",
+      "item_id": 3,
+    },
+  ],
+]
+`;
+
+exports[`sqlmodules provide autocrud works like the documentation in process 3`] = `
+Array [
+  Array [],
+]
+`;
+
+exports[`sqlmodules provide autocrud works like the documentation over http 1`] = `
+Array [
+  Object {
+    "name": "Sample",
+    "order_id": 2,
+  },
+]
+`;
+
+exports[`sqlmodules provide autocrud works like the documentation over http 2`] = `
+Array [
+  Array [
+    Object {
+      "description": "Paper",
+      "item_id": 4,
+    },
+    Object {
+      "description": "Can",
+      "item_id": 5,
+    },
+    Object {
+      "description": "Loaf",
+      "item_id": 6,
+    },
+  ],
+]
+`;
+
+exports[`sqlmodules provide autocrud works like the documentation over http 3`] = `
+Array [
+  Array [],
+]
+`;
+
 exports[`sqlmodules provide autocrud works with arrays of parameters in process 1`] = `
 Array [
   Object {

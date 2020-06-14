@@ -46,6 +46,16 @@ describe("sqlmodules provide autocrud", () => {
     await engine.close();
     listening.close(() => done());
   });
+  // intercept console log
+  const originalLog = console.log;
+  beforeEach(() => {
+    console.log = (...args) => {
+      expect(args).toMatchSnapshot();
+    };
+  });
+  afterEach(() => {
+    console.log = originalLog;
+  });
   describe("works with single parameter set", async () => {
     const cycle = async (client) => {
       // make a single thing -- get a single key
@@ -166,6 +176,9 @@ describe("sqlmodules provide autocrud", () => {
   describe("works like the documentation", async () => {
     it("in process", async () => {
       await example(engine);
+    });
+    it("over http", async () => {
+      await example(nodeHttpClient);
     });
   });
   it("works like the documentation over http", async () => {});
