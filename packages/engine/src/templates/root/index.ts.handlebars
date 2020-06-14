@@ -57,7 +57,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
 
 // transaction wrappings very near the outside on each call
 // this the the first 'real' execution layer
-// so like - embedded engine -> entry point -> transactionwrapped
+// so like - embedded engine -> entry point -> transactionwrapped 
 export const decorateWithTransactions = (
   rootContext: InternalContext, 
   innerExecutors: types.ExecutorMap) => {
@@ -178,7 +178,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
         executor:
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
             context.databases = entryPointCallableDatabases;
-            return transactionWrappedExecutors.{{value.contextName}}(context);
+            return typedExecutors.{{value.contextName}}(context);
           },
         sqlModule: internalContext.databases.{{@database}}.sqlModules.{{value.contextName}},
       },
@@ -188,7 +188,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
         executor:
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
             context.databases = entryPointCallableDatabases;
-            return transactionWrappedExecutors.{{value.contextName}}(context);
+            return typedExecutors.{{value.contextName}}(context);
           },
         autocrudModule: internalContext.databases.{{@database}}.autocrudModules.{{value.contextName}},
       },

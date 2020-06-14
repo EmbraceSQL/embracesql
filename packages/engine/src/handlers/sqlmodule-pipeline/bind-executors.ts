@@ -1,5 +1,11 @@
 import { InternalContext, DatabaseInternal } from "../../context";
-import { Context } from "../../shared-context";
+import {
+  Context,
+  SQLParameterSet,
+  SQLRow,
+  isSQLParameterSetBatch,
+  isSQLParameterSet,
+} from "../../shared-context";
 import { SQLModuleInternal } from ".";
 
 /**
@@ -15,10 +21,18 @@ export default async (
   rootContext.sqlModuleExecutors[sqlModule.contextName] = {
     sqlModule: sqlModule,
     executor: async (context: Context): Promise<Context> => {
-      context.results = await database.execute(
-        sqlModule.sql,
-        context.parameters
-      );
+      const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
+        return await database.execute(sqlModule.sql, parameters);
+      };
+      if (isSQLParameterSetBatch(context.parameters)) {
+        const updates = (context.parameters as SQLParameterSet[]).map(doOne);
+        context.results = (await Promise.all(updates)).flat(1);
+      } else if (isSQLParameterSet(context.parameters)) {
+        context.results = await doOne(context.parameters);
+      } else {
+        // this is the undefined / empty case
+        context.results = await doOne({});
+      }
       return context;
     },
   };

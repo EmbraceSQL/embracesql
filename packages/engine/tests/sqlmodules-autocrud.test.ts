@@ -85,76 +85,83 @@ describe("sqlmodules provide autocrud", () => {
         await client.databases.default.autocrud.things.read()
       ).toMatchObject([]);
     };
-    it("works in process", async () => {
+    it("in process", async () => {
       await cycle(engine);
     });
-    it("works over http", async () => {
+    it("over http", async () => {
       await cycle(nodeHttpClient);
     });
   });
-  it("works with arrays of parameters", async () => {
-    // make multiple things -- get multiple keys
-    const newKey = await engine.databases.default.autocrud.things.create(
-      {
-        id: 100,
-        name: "hi there",
-      },
-      {
-        id: 200,
-        name: "hola",
-      }
-    );
-    expect(newKey).toMatchSnapshot();
-    // all those rows
-    expect(
-      await engine.databases.default.autocrud.things.read()
-    ).toMatchSnapshot();
-    // read with an 'array' -- of one...
-    expect(
-      await engine.databases.default.autocrud.things.read(newKey)
-    ).toMatchSnapshot();
-    // update  built in readback
-    expect(
-      await engine.databases.default.autocrud.things.update(
-        newKey.map((k) => ({ ...k, name: "super" }))
-      )
-    ).toMatchSnapshot();
-    // did it really stick update?
-    expect(
-      await engine.databases.default.autocrud.things.read(newKey)
-    ).toMatchSnapshot();
-    // nuke it
-    expect(
-      await engine.databases.default.autocrud.things.delete(newKey)
-    ).toMatchSnapshot();
-    // what's left?
-    expect(
-      await engine.databases.default.autocrud.things.read()
-    ).toMatchSnapshot();
-    // a few more new --
-    await engine.databases.default.autocrud.things.create(
-      {
-        id: 300,
-        name: "fizz",
-      },
-      {
-        id: 400,
-        name: "buzz",
-      }
-    );
-    // kill em all -- readback can be used to delete and
-    // extra columns / parameters are ignored
-    expect(
-      await engine.databases.default.autocrud.things.delete(
-        await engine.databases.default.autocrud.things.read()
-      )
-    ).toMatchSnapshot();
-    // what's left?
-    expect(await engine.databases.default.autocrud.things.read()).toMatchObject(
-      []
-    );
+  describe("works with arrays of parameters", async () => {
+    const cycle = async (client) => {
+      // make multiple things -- get multiple keys
+      const newKey = await client.databases.default.autocrud.things.create(
+        {
+          id: 100,
+          name: "hi there",
+        },
+        {
+          id: 200,
+          name: "hola",
+        }
+      );
+      expect(newKey).toMatchSnapshot();
+      // all those rows
+      expect(
+        await client.databases.default.autocrud.things.read()
+      ).toMatchSnapshot();
+      // read with an 'array' -- of one...
+      expect(
+        await client.databases.default.autocrud.things.read(newKey)
+      ).toMatchSnapshot();
+      // update  built in readback
+      expect(
+        await client.databases.default.autocrud.things.update(
+          newKey.map((k) => ({ ...k, name: "super" }))
+        )
+      ).toMatchSnapshot();
+      // did it really stick update?
+      expect(
+        await client.databases.default.autocrud.things.read(newKey)
+      ).toMatchSnapshot();
+      // nuke it
+      expect(
+        await client.databases.default.autocrud.things.delete(newKey)
+      ).toMatchSnapshot();
+      // what's left?
+      expect(
+        await client.databases.default.autocrud.things.read()
+      ).toMatchSnapshot();
+      // a few more new --
+      await client.databases.default.autocrud.things.create(
+        {
+          id: 300,
+          name: "fizz",
+        },
+        {
+          id: 400,
+          name: "buzz",
+        }
+      );
+      // kill em all -- readback can be used to delete and
+      // extra columns / parameters are ignored
+      expect(
+        await client.databases.default.autocrud.things.delete(
+          await client.databases.default.autocrud.things.read()
+        )
+      ).toMatchSnapshot();
+      // what's left?
+      expect(
+        await client.databases.default.autocrud.things.read()
+      ).toMatchObject([]);
+    };
+    it("in process", async () => {
+      await cycle(engine);
+    });
+    it("over http", async () => {
+      await cycle(nodeHttpClient);
+    });
   });
-  it("works with arrays of parameters over http", async () => {});
   it("works like the documentation", async () => {
     const client = engine;
     // little shortcut to type less...

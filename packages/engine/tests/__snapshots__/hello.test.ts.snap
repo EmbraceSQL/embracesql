@@ -61,14 +61,12 @@ Object {
 }
 `;
 
-exports[`hello world configuration! will make a runnable server 1`] = `"[{\\"\\\\\\"hello world\\\\\\"\\":\\"hello world\\"}]"`;
+exports[`hello world configuration! will make a runnable server 1`] = `"{\\"\\\\\\"hello world\\\\\\"\\":\\"hello world\\"}"`;
 
 exports[`hello world configuration! will make a runnable server 2`] = `
-Array [
-  Object {
-    "\\"hello world\\"": "hello world",
-  },
-]
+Object {
+  "\\"hello world\\"": "hello world",
+}
 `;
 
 exports[`hello world configuration! will make an embeddable engine 1`] = `
