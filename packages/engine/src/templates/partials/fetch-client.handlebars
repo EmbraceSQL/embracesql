@@ -12,6 +12,13 @@ export const EmbraceSQL = (serverUrl: string) => {
         {{> moduleTree this database=@database}}
         {{/each}}
       {{/treeAMap}}
+      autocrud: {
+        {{#treeAMap value.autocrudModules database=value}}
+          {{#each value}}
+          {{> moduleTree this database=@database}}
+          {{/each}}
+        {{/treeAMap}}
+        },
       },
     {{/eachInMap}}
     }

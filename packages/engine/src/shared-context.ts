@@ -438,3 +438,13 @@ export type HasConfiguration = {
    */
   configuration: Configuration;
 };
+
+/**
+ * Can -- and should -- be closed.
+ */
+export type Closeable = {
+  /**
+   * Close down all resourcs.
+   */
+  close: () => Promise<void>;
+};

@@ -5,7 +5,7 @@ to: "{{configuration.embraceSQLRoot}}/index.ts"
 import { buildInternalContext, loadConfiguration, InternalContext, withTransaction } from "@embracesql/engine";
 import * as types from "./context";
 
-type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration;
+type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration & types.Closeable;
 
 // each SQL Module has a direct execution decorator  -- this just talks to the database
 // this attaches handlers both before and after wrapping the direct executor
@@ -201,7 +201,8 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   return {
     configuration: internalContext.configuration,
     databases: entryPointCallableDatabases, 
-    entryPoints
+    entryPoints,
+    close: internalContext.close,
   };
 }
 

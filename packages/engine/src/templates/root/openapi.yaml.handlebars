@@ -16,6 +16,10 @@ paths:
   /{{value.restPath}}:
     {{> get module=value}}
 {{/eachInMap}}
+{{#eachInMap value.autocrudModules}}
+  /{{value.restPath}}:
+    {{> get module=value}}
+{{/eachInMap}}
 {{/eachInMap}}
 
 

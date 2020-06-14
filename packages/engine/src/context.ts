@@ -12,6 +12,7 @@ import {
   AutocrudModule,
   SQLModuleExecutor,
   AutocrudExecutor,
+  Closeable,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -171,28 +172,25 @@ export type AllDatabasesInternal = {
  *
  * The type here is a bit different from the context used in handlers, it has more metadata!
  */
-export type InternalContext = HasConfiguration & {
-  /**
-   * All configured databases, by name.
-   */
-  databases: AllDatabasesInternal;
-  /**
-   * Close all DB connections.
-   */
-  close: () => Promise<void>;
-  /**
-   * Ability to execute sql modules.
-   */
-  sqlModuleExecutors: {
-    [index: string]: SQLModuleExecutor;
+export type InternalContext = HasConfiguration &
+  Closeable & {
+    /**
+     * All configured databases, by name.
+     */
+    databases: AllDatabasesInternal;
+    /**
+     * Ability to execute sql modules.
+     */
+    sqlModuleExecutors: {
+      [index: string]: SQLModuleExecutor;
+    };
+    /**
+     * Ability to execute autocrud modules.
+     */
+    autocrudModuleExecutors: {
+      [index: string]: AutocrudExecutor;
+    };
   };
-  /**
-   * Ability to execute autocrud modules.
-   */
-  autocrudModuleExecutors: {
-    [index: string]: AutocrudExecutor;
-  };
-};
 
 /**
  * With a configuration in hand, set up a new rootContext.

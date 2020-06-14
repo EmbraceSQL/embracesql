@@ -23,6 +23,8 @@ import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../handlers";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
+import pLimit from "p-limit";
+const atomic = pLimit(1);
 
 /**
  * Map SQLite to our neutral type strings.
@@ -308,5 +310,6 @@ export default async (
         byKey: `DELETE FROM ${autocrudModule.name}  WHERE ${keyFilter}`,
       };
     },
+    atomic,
   };
 };

@@ -4,11 +4,15 @@ import { loadConfiguration } from "../src/configuration";
 import { buildInternalContext, InternalContext } from "../src/context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
+import { createServer } from "..";
+import http from "http";
 
 describe("sqlmodules provide autocrud", () => {
   let rootContext: InternalContext;
   const root = path.relative(process.cwd(), "./.tests/sqlmodules-autocrud");
   let engine;
+  let nodeHttpClient;
+  let listening: http.Server;
   beforeAll(async () => {
     // clean up
     await fs.ensureDir(root);
@@ -27,55 +31,67 @@ describe("sqlmodules provide autocrud", () => {
       rootContext.configuration.embraceSQLRoot
     ));
     engine = await EmbraceSQLEmbedded();
+    const server = await createServer(engine);
+    listening = server.listen(5678);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { EmbraceSQL } = require(path.join(
+      process.cwd(),
+      rootContext.configuration.embraceSQLRoot,
+      "node"
+    ));
+    nodeHttpClient = EmbraceSQL("http://localhost:5678");
   });
-  afterAll(async () => {
-    engine.close();
+  afterAll(async (done) => {
+    await engine.close();
+    listening.close(() => done());
   });
-  it("works with single parameter set", async () => {
-    expect(engine.databases.default.autocrud).toBeTruthy();
-    expect(engine.databases.default.autocrud.things).toBeTruthy();
-    expect(engine.databases.default.autocrud.things.create).toBeInstanceOf(
-      Function
-    );
-    // make a single thing -- get a single key
-    const newKey = await engine.databases.default.autocrud.things.create({
-      id: 100,
-      name: "hi there",
+  describe("works with single parameter set", async () => {
+    const cycle = async (client) => {
+      // make a single thing -- get a single key
+      const newKey = await client.databases.default.autocrud.things.create({
+        id: 100,
+        name: "hi there",
+      });
+      expect(newKey).toMatchSnapshot();
+      // all those rows
+      expect(
+        await client.databases.default.autocrud.things.read()
+      ).toMatchSnapshot();
+      // read with an 'array' -- of one...
+      expect(
+        await client.databases.default.autocrud.things.read(newKey)
+      ).toMatchSnapshot();
+      // update a single, built in readback
+      expect(
+        await client.databases.default.autocrud.things.update({
+          ...newKey,
+          name: "super",
+        })
+      ).toMatchSnapshot();
+      // did it really stick update?
+      expect(
+        await client.databases.default.autocrud.things.read(newKey)
+      ).toMatchSnapshot();
+      // nuke it
+      expect(
+        await client.databases.default.autocrud.things.delete(newKey)
+      ).toMatchSnapshot();
+      // what's left?
+      expect(
+        await client.databases.default.autocrud.things.read()
+      ).toMatchSnapshot();
+      // what's left?
+      expect(
+        await client.databases.default.autocrud.things.read()
+      ).toMatchObject([]);
+    };
+    it("works in process", async () => {
+      await cycle(engine);
     });
-    expect(newKey).toMatchSnapshot();
-    // all those rows
-    expect(
-      await engine.databases.default.autocrud.things.read()
-    ).toMatchSnapshot();
-    // read with an 'array' -- of one...
-    expect(
-      await engine.databases.default.autocrud.things.read(newKey)
-    ).toMatchSnapshot();
-    // update a single, built in readback
-    expect(
-      await engine.databases.default.autocrud.things.update({
-        ...newKey,
-        name: "super",
-      })
-    ).toMatchSnapshot();
-    // did it really stick update?
-    expect(
-      await engine.databases.default.autocrud.things.read(newKey)
-    ).toMatchSnapshot();
-    // nuke it
-    expect(
-      await engine.databases.default.autocrud.things.delete(newKey)
-    ).toMatchSnapshot();
-    // what's left?
-    expect(
-      await engine.databases.default.autocrud.things.read()
-    ).toMatchSnapshot();
-    // what's left?
-    expect(await engine.databases.default.autocrud.things.read()).toMatchObject(
-      []
-    );
+    it("works over http", async () => {
+      await cycle(nodeHttpClient);
+    });
   });
-  it("works with single parameter set over http", async () => {});
   it("works with arrays of parameters", async () => {
     // make multiple things -- get multiple keys
     const newKey = await engine.databases.default.autocrud.things.create(
