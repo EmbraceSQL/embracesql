@@ -15,11 +15,13 @@
     "docker": "docker build -t embracesql/server ."
   },
   "dependencies": {
+    "@types/graphlib": "^2.1.6",
     "@types/whatwg-streams": "^3.2.1",
     "chokidar": "^3.4.0",
     "cosmiconfig": "^6.0.0",
     "front-matter": "^4.0.2",
     "fs-extra": "^9.0.0",
+    "graphlib": "^2.1.8",
     "handlebars": "^4.7.6",
     "ignore-walk": "^3.0.3",
     "koa": "^2.11.0",

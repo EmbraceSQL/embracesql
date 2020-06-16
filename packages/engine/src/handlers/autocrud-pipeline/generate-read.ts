@@ -5,6 +5,7 @@ import {
   isSQLParameterSetBatch,
   isSQLParameterSet,
   SQLParameterSet,
+  SQLRow,
 } from "../../shared-context";
 import { identifier } from "..";
 
@@ -22,7 +23,6 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   const restPath = `${autocrudModule.restPath}/read`;
-  autocrudModule.canModifyData = false;
   const readModule = (database.autocrudModules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
@@ -31,28 +31,23 @@ export default async (
     resultsetMetadata: autocrudModule.columns,
     canModifyData: false,
   });
-  // and with an executor to run the thing
   const queries = await database.readSQL(readModule);
   rootContext.autocrudModuleExecutors[readModule.contextName] = {
     autocrudModule: readModule,
     executor: async (context: Context): Promise<Context> => {
+      const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
+        return database.execute(queries.byKey, parameters);
+      };
       if (isSQLParameterSetBatch(context.parameters)) {
         // lots of ways to implement this, let's do the naive one for the moment
-        const resultSets = (context.parameters as SQLParameterSet[]).map(
-          (parameters) => {
-            return database.execute(queries.byKey, parameters);
-          }
-        );
+        const resultSets = (context.parameters as SQLParameterSet[]).map(doOne);
         // flatten out a bit so this looks like a result set
         context.results = (await Promise.all(resultSets)).flat(2);
       } else if (isSQLParameterSet(context.parameters)) {
         // this is a pretty simple case -- just run and return
-        context.results = await database.execute(
-          queries.byKey,
-          context.parameters
-        );
+        context.results = await doOne(context.parameters);
       } else {
-        // all the rows we can get
+        // without parameters, just run a query to get all rows
         context.results = await database.execute(queries.allRows);
       }
       return context;

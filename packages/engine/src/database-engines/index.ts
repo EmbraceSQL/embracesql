@@ -7,12 +7,13 @@ import {
   SQLRow,
   SQLParameters,
   Configuration,
-  SQLTableMetadata,
   CommonDatabaseModule,
   SQLParameterSet,
+  SQLTableMetadata,
 } from "../shared-context";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
+import graphlib from "graphlib";
 
 /**
  * Serialize database use per process as we really only have one connection.
@@ -51,6 +52,34 @@ const embraceSingleDatabase = async (
 };
 
 /**
+ * Referential graph. This is undirected, relationships are considered
+ * symmetric even though the SQL references clause it actually directed.
+ *
+ * Reason being -- 1-man-1 jointer tables, those joiners 'reference' the parent, compared
+ * to lookup value type tables where the parent references the child.
+ *
+ * And -- master detail 1-many, the child references the parent, but you will
+ * want to get all the children along with a fetch of a parent to build screens
+ * in actual practice.
+ */
+export const buildReferentialGraph = async (
+  tables: SQLTableMetadata[]
+): Promise<void> => {
+  // each table is a node, each reference is an undirected edge
+  const graph = new graphlib.Graph({ multigraph: true });
+  for (const table of tables) {
+    graph.setNode(`${table.schema}.${table.name}`, table);
+    for (const reference of table.references) {
+      graph.setEdge(
+        `${table.schema}.${table.name}`,
+        `${reference.toSchema}.${reference.toTable}`,
+        reference
+      );
+    }
+  }
+};
+
+/**
  * Every database in the configuraton is embraced and brought into the context.
  */
 export const embraceDatabases = async (
@@ -78,9 +107,6 @@ export const embraceDatabases = async (
         sqlModule: SQLModuleInternal
       ): Promise<SQLColumnMetadata[]> => {
         return oneAtATime(() => database.analyze(sqlModule));
-      },
-      schema: async (): Promise<SQLTableMetadata[]> => {
-        return oneAtATime(() => database.schema());
       },
     };
   });

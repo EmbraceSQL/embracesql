@@ -22,7 +22,6 @@ export default async (
   database: DatabaseInternalWithModules,
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
-  autocrudModule.canModifyData = true;
   const restPath = `${autocrudModule.restPath}/create`;
   // the input parameters -- are the schema minus any autoincrement
   // normal keys are allowed -- needed even!

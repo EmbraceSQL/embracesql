@@ -24,6 +24,7 @@ import { identifier } from "../handlers";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
 import pLimit from "p-limit";
+import { buildReferentialGraph } from ".";
 const atomic = pLimit(1);
 
 /**
@@ -77,6 +78,53 @@ export default async (
     filename,
     driver: sqlite3.Database,
   });
+  // need to know the schema
+  const schema = async (): Promise<SQLTableMetadata[]> => {
+    const allTables = (
+      await database.all(
+        "SELECT name, sql FROM sqlite_master WHERE type='table'"
+      )
+    ).map((row) => ({ name: row.name as string, sql: row.sql as string }));
+    const tableMetadata = allTables.map(async ({ name: table, sql }) => {
+      const columns = await database.all(`PRAGMA TABLE_INFO('${table}')`);
+      const relations = await database.all(
+        `PRAGMA FOREIGN_KEY_LIST('${table}')`
+      );
+      const hasAutoincrement = sql.toLowerCase().indexOf("autoincrement") > 0;
+      const keys = columnMetadata(columns.filter((row) => row.pk));
+      return {
+        // sqlte has no schemas in one database attaches
+        schema: "",
+        name: table,
+        columns: columnMetadata(columns),
+        keys,
+        autoColumns: hasAutoincrement ? keys : [],
+        references: relations.map((r) => ({
+          toSchema: "",
+          toTable: r.table,
+          toColumns: r.to.split(","),
+          fromSchema: "",
+          fromTable: table,
+          fromColumns: r.from.split(","),
+        })),
+      };
+    });
+    return await Promise.all(tableMetadata);
+  };
+  const tables = await schema();
+  const uniqueSchemaNames = [...new Set(tables.map((t) => t.schema))];
+  // group tables by schema -- there will be a 'no name' schema for SQLite
+  const schemas = Object.fromEntries(
+    uniqueSchemaNames.map((s) => [
+      s,
+
+      Object.fromEntries(
+        tables.filter((t) => t.schema === s).map((t) => [t.name, t])
+      ),
+    ])
+  );
+  // build the referential graph for the tables in each schema
+  await buildReferentialGraph(tables);
   // process transactions -- notice that SQLite doesn't allow 'normal nesting
   // so the SAVEPOINT system is used.
   const transactionStack = [];
@@ -109,7 +157,6 @@ export default async (
     },
     depth: () => transactionStack.length,
   };
-  // TODO -- do we need SAVEPOINT / nesting?
   return {
     name: databaseName,
     transactions,
@@ -235,35 +282,6 @@ export default async (
     close: async (): Promise<void> => {
       return database.close();
     },
-    schema: async (): Promise<SQLTableMetadata[]> => {
-      const allTables = (
-        await database.all(
-          "SELECT name, sql FROM sqlite_master WHERE type='table'"
-        )
-      ).map((row) => ({ name: row.name as string, sql: row.sql as string }));
-      const tableMetadata = allTables.map(async ({ name: table, sql }) => {
-        const columns = await database.all(`PRAGMA TABLE_INFO('${table}')`);
-        const relations = await database.all(
-          `PRAGMA FOREIGN_KEY_LIST('${table}')`
-        );
-        const hasAutoincrement = sql.toLowerCase().indexOf("autoincrement") > 0;
-        const keys = columnMetadata(columns.filter((row) => row.pk));
-        return {
-          schema: "",
-          name: table,
-          columns: columnMetadata(columns),
-          keys,
-          autoColumns: hasAutoincrement ? keys : [],
-          references: Object.fromEntries(
-            relations.map((r) => [
-              r.table,
-              r.to.split(",").map((s) => s.trim()),
-            ])
-          ),
-        };
-      });
-      return await Promise.all(tableMetadata);
-    },
     /**
      * AutoCRUD query generation.
      */
@@ -320,5 +338,6 @@ export default async (
       };
     },
     atomic,
+    schemas,
   };
 };

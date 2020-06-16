@@ -106,7 +106,7 @@ Object {
       "name": "default",
       "parse": [Function],
       "readSQL": [Function],
-      "schema": [Function],
+      "schemas": Object {},
       "sqlModules": Object {
         "hello": Object {
           "afterHandlerPaths": Array [

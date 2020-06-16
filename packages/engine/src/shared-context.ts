@@ -79,11 +79,16 @@ export type SQLColumnMetadata = {
 };
 
 /**
- * Relations are mappings to a foreign table name -- the key
- * and the references columns -- the value.
+ * A single foeign key reference. This has 'all the things' to
+ * allow it to generate a join clause.
  */
-export type SQLTableReferences = {
-  [index: string]: string[];
+export type SQLTableReference = {
+  toSchema: string;
+  toTable: string;
+  toColumns: string[];
+  fromSchema: string;
+  fromTable: string;
+  fromColumns: string[];
 };
 
 /**
@@ -113,7 +118,7 @@ export type SQLTableMetadata = {
   /**
    * Relationships to to foreign tables.
    */
-  readonly references: SQLTableReferences;
+  readonly references: SQLTableReference[];
 };
 
 /**
@@ -217,6 +222,20 @@ export type DatabaseTransactions = {
   depth: () => number;
 };
 
+/**
+ * Track all tables in a database schema.
+ */
+export type DatabaseSchema = {
+  [index: string]: SQLTableMetadata;
+};
+
+/**
+ * And databases can have more than one schema.
+ */
+export type DatabaseSchemas = {
+  [index: string]: DatabaseSchema;
+};
+
 /***
  * A single database available via the context
  */
@@ -230,6 +249,10 @@ export type Database = {
    * Access transaction control of the database here.
    */
   readonly transactions: DatabaseTransactions;
+  /**
+   * All schemas in the database.
+   */
+  readonly schemas: DatabaseSchemas;
 };
 
 /**

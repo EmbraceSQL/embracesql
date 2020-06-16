@@ -32,33 +32,30 @@ export default async (
 ): Promise<InternalContext> => {
   // every database probably has tables, let's start there and generates
   // some skeletal autocrud modules
-  const waitForAll = Object.keys(rootContext.databases).flatMap(
-    async (databaseName) => {
-      const database = rootContext.databases[databaseName];
-      const tables = await database.schema();
-      // collate each module by schema and name
-      return (
-        tables
-          // filter out our own meta table
-          .filter((t) => !"__embracesql_migrations__".includes(t.name))
-          .map(async (table) => {
-            const restPath = table.schema
-              ? `${table.schema}/${table.name}`
-              : `${table.name}`;
-            const module = (database.autocrudModules[restPath] = {
-              ...table,
-              restPath,
-              cacheKey: md5(JSON.stringify(table.columns)),
-              contextName: identifier(`${databaseName}/${restPath}`),
-              namedParameters: [],
-              resultsetMetadata: [],
-              canModifyData: false,
-            });
-            await autocrudModulePipeline(rootContext, database, module);
-          })
-      );
+  for (const database of Object.values(rootContext.databases)) {
+    for (const schema of Object.values(database.schemas)) {
+      for (const table of Object.values(schema)) {
+        // rest paths follow a common schema that matches the notion
+        // of the database as a file system with database/schema/table
+        const restPath = table.schema
+          ? `${table.schema}/${table.name}`
+          : `${table.name}`;
+        // here is a basic module representing the table - this isn't a specific autocrud operation
+        // so this module isn't attached to the database, it is just a free floating variable that will
+        // be forgotten
+        const module = {
+          ...table,
+          restPath,
+          cacheKey: md5(JSON.stringify(table.columns)),
+          contextName: identifier(`${database.name}/${restPath}`),
+          namedParameters: [],
+          resultsetMetadata: [],
+          canModifyData: false,
+        };
+        // expand this in effect 'template' module -- into modules for operations
+        await autocrudModulePipeline(rootContext, database, module);
+      }
     }
-  );
-  await Promise.all(waitForAll);
+  }
   return rootContext;
 };

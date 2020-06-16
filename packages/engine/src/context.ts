@@ -8,7 +8,6 @@ import {
   SQLRow,
   HasConfiguration,
   Configuration,
-  SQLTableMetadata,
   AutocrudModule,
   SQLModuleExecutor,
   AutocrudExecutor,
@@ -112,10 +111,6 @@ export type DatabaseInternal = Database & {
    * Clean close.
    */
   close: () => Promise<void>;
-  /**
-   * Get schematic information on all tables.
-   */
-  schema: () => Promise<SQLTableMetadata[]>;
   /**
    * Get the full create statement sql, with an immeidate readback
    */

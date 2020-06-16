@@ -23,7 +23,6 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   const restPath = `${autocrudModule.restPath}/delete`;
-  autocrudModule.canModifyData = true;
   const deleteModule = (database.autocrudModules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),

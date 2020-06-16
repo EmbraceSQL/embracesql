@@ -1,7 +1,6 @@
 import { InternalContext } from "./context";
 import walk from "ignore-walk";
 import path from "path";
-import readFile from "read-file-utf8";
 import frontMatter from "front-matter";
 import handlebars from "handlebars";
 import prettier from "prettier";
@@ -122,7 +121,10 @@ export const renderTemplates = async (
     "shared-node-client.ts",
   ].map(
     async (fileName): Promise<void> => {
-      const fileContent = await readFile(path.join(__dirname, fileName));
+      const fileContent = await fs.readFile(
+        path.join(__dirname, fileName),
+        "utf8"
+      );
       handlebars.registerPartial(fileName, handlebars.compile(fileContent));
     }
   );
@@ -135,8 +137,9 @@ export const renderTemplates = async (
   );
   const waitForPartials = partials.map(
     async (fileName): Promise<void> => {
-      const fileContent = await readFile(
-        path.join(__dirname, "templates", "partials", fileName)
+      const fileContent = await fs.readFile(
+        path.join(__dirname, "templates", "partials", fileName),
+        "utf8"
       );
       handlebars.registerPartial(
         `partials/${fileName}`,
@@ -150,7 +153,9 @@ export const renderTemplates = async (
       .then((fileNames) =>
         fileNames.map((fileName) => path.join(templatesInDirectory, fileName))
       )
-      .then(async (templatePaths) => templatePaths.map(readFile))
+      .then(async (templatePaths) =>
+        templatePaths.map((p) => fs.readFile(p, "utf8"))
+      )
       // the files themselves know their 'to' so we don't need to keep the file name
       // but might as well flatten out those promises
       .then((_) => Promise.all(_))

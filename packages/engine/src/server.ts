@@ -2,7 +2,6 @@ import Koa from "koa";
 import bodyparser from "koa-bodyparser";
 import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
-import readFile from "read-file-utf8";
 import path from "path";
 import {
   HasConfiguration,
@@ -11,6 +10,7 @@ import {
   SQLModuleExecutor,
 } from "./shared-context";
 import { restructure } from "../../console/src/structured";
+import fs from "fs-extra";
 
 /**
  * Create a HTTP server exposing an OpenAPI style set of endpoints for each Database
@@ -29,8 +29,9 @@ export const createServer = async (
 
   // generated configuration is loaded up
   const definition = YAML.parse(
-    await readFile(
-      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml")
+    await fs.readFile(
+      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml"),
+      "utf8"
     )
   );
 

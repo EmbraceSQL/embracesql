@@ -56,7 +56,7 @@ describe("sqlmodules provide autocrud", () => {
   afterEach(() => {
     console.log = originalLog;
   });
-  describe("works with single parameter set", async () => {
+  describe("works with single parameter set", () => {
     const cycle = async (client) => {
       // make a single thing -- get a single key
       const newKey = await client.databases.default.autocrud.things.create({
@@ -103,7 +103,7 @@ describe("sqlmodules provide autocrud", () => {
       await cycle(nodeHttpClient);
     });
   });
-  describe("works with arrays of parameters", async () => {
+  describe("works with arrays of parameters", () => {
     const cycle = async (client) => {
       // make multiple things -- get multiple keys
       const newKey = await client.databases.default.autocrud.things.create(
@@ -173,7 +173,7 @@ describe("sqlmodules provide autocrud", () => {
       await cycle(nodeHttpClient);
     });
   });
-  describe("works like the documentation", async () => {
+  describe("works like the documentation", () => {
     it("in process", async () => {
       await example(engine);
     });

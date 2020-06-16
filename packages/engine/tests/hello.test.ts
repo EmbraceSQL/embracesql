@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import path from "path";
-import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
 import { buildInternalContext, InternalContext } from "../src/context";
 import { createServer } from "../src/server";
 import request from "supertest";
-import readFile from "read-file-utf8";
 import rmfr from "rmfr";
 import { watchRoot } from "../src/watcher";
 import http from "http";
+import fs from "fs-extra";
 
 declare global {
   namespace jest {
@@ -93,8 +92,9 @@ describe("hello world configuration!", () => {
   });
   it("generates an open api doc", async () => {
     expect("openapi.yaml").toExist();
-    const content = await readFile(
-      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml")
+    const content = await fs.readFile(
+      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml"),
+      "utf8"
     );
     expect(content).toMatchSnapshot();
   });

@@ -23,7 +23,6 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   const restPath = `${autocrudModule.restPath}/update`;
-  autocrudModule.canModifyData = true;
   // the fields to update -- things other than keys
   const otherThanKeys = autocrudModule.columns.filter(
     (column) => !autocrudModule.keys.map((c) => c.name).includes(column.name)
