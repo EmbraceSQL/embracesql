@@ -26,7 +26,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
           {{/each}}
           const before = require("./{{value.restPath}}.sql.before").before;
           await before(context);
-          const executor = rootContext.sqlModuleExecutors.{{value.contextName}}.executor;
+          const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
           const results = executor ? (await executor(context)).results : [];
           context.results = results as types.{{value.contextName}}Row[];
           const after = require("./{{value.restPath}}.sql.after").after;
@@ -45,7 +45,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
     {{/eachInMap}}
     {{#eachInMap value.autocrudModules}}
       {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-          const executor = rootContext.autocrudModuleExecutors.{{value.contextName}}.executor;
+          const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
           const results = executor ? (await executor(context)).results : [];
           context.results = results as types.{{value.contextName}}Row[];
           return context;
@@ -171,28 +171,15 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   // this is the 'outermost' shell of calls -- entry points into the engine from a server
   // this is in the context --> context style used for the server processes and event handlers
   const entryPoints = {
-    {{#eachInMap databases}}
-    // database {{@key}}
-    {{#eachInMap value.sqlModules database=@key}}
-      {{value.contextName}}:  {
+    {{#eachInMap moduleExecutors}}
+      {{value.module.contextName}}:  {
         executor:
-          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+          async (context: types.{{value.module.contextName}}Context) : Promise<types.{{value.module.contextName}}Context> => {
             context.databases = entryPointCallableDatabases;
-            return typedExecutors.{{value.contextName}}(context);
+            return typedExecutors.{{value.module.contextName}}(context);
           },
-        sqlModule: internalContext.databases.{{@database}}.sqlModules.{{value.contextName}},
+        module: internalContext.moduleExecutors.{{value.module.contextName}}.module,
       },
-    {{/eachInMap}}
-    {{#eachInMap value.autocrudModules database=@key}}
-      {{value.contextName}}:  {
-        executor:
-          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-            context.databases = entryPointCallableDatabases;
-            return typedExecutors.{{value.contextName}}(context);
-          },
-        autocrudModule: internalContext.databases.{{@database}}.autocrudModules.{{value.contextName}},
-      },
-    {{/eachInMap}}
     {{/eachInMap}}
   };
 

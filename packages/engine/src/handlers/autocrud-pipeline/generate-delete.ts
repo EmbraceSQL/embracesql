@@ -35,8 +35,8 @@ export default async (
   });
   // and with an executor to run the thing
   const queries = await database.deleteSQL(deleteModule);
-  rootContext.autocrudModuleExecutors[deleteModule.contextName] = {
-    autocrudModule: deleteModule,
+  rootContext.moduleExecutors[deleteModule.contextName] = {
+    module: deleteModule,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // limit to the desired parameters to be forgiving

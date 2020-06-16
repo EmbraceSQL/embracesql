@@ -32,8 +32,8 @@ export default async (
     canModifyData: false,
   });
   const queries = await database.readSQL(readModule);
-  rootContext.autocrudModuleExecutors[readModule.contextName] = {
-    autocrudModule: readModule,
+  rootContext.moduleExecutors[readModule.contextName] = {
+    module: readModule,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
         return database.execute(queries.byKey, parameters);

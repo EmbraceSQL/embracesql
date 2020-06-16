@@ -3,12 +3,7 @@ import bodyparser from "koa-bodyparser";
 import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
 import path from "path";
-import {
-  HasConfiguration,
-  HasEntryPoints,
-  AutocrudExecutor,
-  SQLModuleExecutor,
-} from "./shared-context";
+import { HasConfiguration, HasEntryPoints } from "./shared-context";
 import { restructure } from "../../console/src/structured";
 import fs from "fs-extra";
 
@@ -40,12 +35,7 @@ export const createServer = async (
 
   // go ahead and make a handler for both GET and POST
   Object.keys(rootContext.entryPoints).forEach((contextName) => {
-    const canModifyData =
-      (rootContext.entryPoints[contextName] as AutocrudExecutor)?.autocrudModule
-        ?.canModifyData ||
-      (rootContext.entryPoints[contextName] as SQLModuleExecutor)?.sqlModule
-        ?.canModifyData;
-    if (!canModifyData) {
+    if (!rootContext.entryPoints[contextName].module.canModifyData) {
       handlers[`get__${contextName}`] = async (
         _openAPI,
         httpContext

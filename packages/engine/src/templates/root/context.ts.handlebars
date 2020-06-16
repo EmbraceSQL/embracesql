@@ -62,16 +62,9 @@ export type {{contextName}}Parameters = {{contextName}}ParameterSet | {{contextN
 
 // flat map of execution functions
 export type ExecutorMap = {
-    {{#eachInMap databases}}
-    // database {{@key}}
-    {{#eachInMap value.sqlModules database=@key}}
-      {{value.contextName}}:  
-          (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>,
-    {{/eachInMap}}
-    {{#eachInMap value.autocrudModules database=@key}}
-      {{value.contextName}}:  
-          (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>,
-    {{/eachInMap}}
+    {{#eachInMap moduleExecutors}}
+      {{value.module.contextName}}:  
+          (context: {{value.module.contextName}}Context) => Promise<{{value.contextName}}Context>,
     {{/eachInMap}}
 };
 

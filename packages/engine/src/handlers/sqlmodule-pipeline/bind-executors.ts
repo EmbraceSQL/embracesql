@@ -18,8 +18,8 @@ export default async (
   database: DatabaseInternal,
   sqlModule: SQLModuleInternal
 ): Promise<InternalContext> => {
-  rootContext.sqlModuleExecutors[sqlModule.contextName] = {
-    sqlModule: sqlModule,
+  rootContext.moduleExecutors[sqlModule.contextName] = {
+    module: sqlModule,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
         return await database.execute(sqlModule.sql, parameters);

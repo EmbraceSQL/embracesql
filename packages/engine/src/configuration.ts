@@ -24,8 +24,7 @@ export const loadConfiguration = async (
         embraceSQLRoot: root,
       },
       databases: undefined,
-      sqlModuleExecutors: {},
-      autocrudModuleExecutors: {},
+      moduleExecutors: {},
       close: (): Promise<void> => {
         return;
       },

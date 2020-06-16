@@ -398,22 +398,6 @@ export type ContextualExecutors<T> = {
 };
 
 /**
- * Execute a SQL module with this.
- */
-export type SQLModuleExecutor = {
-  readonly executor: ContextualExecutor<Context>;
-  readonly sqlModule: SQLModule;
-};
-
-/**
- * Execute an Autocrd with this.
- */
-export type AutocrudExecutor = {
-  readonly executor: ContextualExecutor<Context>;
-  readonly autocrudModule: AutocrudModule;
-};
-
-/**
  * A single sql module entry point. This is wrapped in an outer function call
  * or HTTP to provide actual EmbraceSQL service. An EntryPoint is a full featured
  * EmbraceSQL call.
@@ -421,7 +405,10 @@ export type AutocrudExecutor = {
  * This is using the DefaultContext -- at this layer executors are fairly generic.
  * The client library wrapper or OpenAPI provides specific typeing.
  */
-export type EntryPoint = SQLModuleExecutor | AutocrudExecutor;
+export type EntryPoint = {
+  readonly executor: ContextualExecutor<Context>;
+  readonly module: CommonDatabaseModule;
+};
 
 /**
  * A map of named, fully contextualized executors, complete

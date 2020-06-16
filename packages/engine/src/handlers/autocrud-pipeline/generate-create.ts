@@ -42,8 +42,8 @@ export default async (
   });
   // and with an executor to run the thing
   const queries = await database.createSQL(createModule);
-  rootContext.autocrudModuleExecutors[createModule.contextName] = {
-    autocrudModule: createModule,
+  rootContext.moduleExecutors[createModule.contextName] = {
+    module: createModule,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // this needs to be atomic so our read back goes right after our insert

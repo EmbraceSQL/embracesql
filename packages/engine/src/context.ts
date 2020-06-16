@@ -9,9 +9,8 @@ import {
   HasConfiguration,
   Configuration,
   AutocrudModule,
-  SQLModuleExecutor,
-  AutocrudExecutor,
   Closeable,
+  EntryPoint,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -176,14 +175,8 @@ export type InternalContext = HasConfiguration &
     /**
      * Ability to execute sql modules.
      */
-    sqlModuleExecutors: {
-      [index: string]: SQLModuleExecutor;
-    };
-    /**
-     * Ability to execute autocrud modules.
-     */
-    autocrudModuleExecutors: {
-      [index: string]: AutocrudExecutor;
+    moduleExecutors: {
+      [index: string]: EntryPoint;
     };
   };
 
@@ -203,8 +196,7 @@ export const buildInternalContext = async (
   const internalContext = {
     configuration,
     databases,
-    sqlModuleExecutors: {},
-    autocrudModuleExecutors: {},
+    moduleExecutors: {},
     close: async (): Promise<void> => {
       const waitForThem = Object.values(databases).map((database) =>
         database.close()

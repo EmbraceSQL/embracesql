@@ -41,8 +41,8 @@ export default async (
   });
   // and with an executor to run the thing
   const queries = await database.updateSQL(updateModule);
-  rootContext.autocrudModuleExecutors[updateModule.contextName] = {
-    autocrudModule: updateModule,
+  rootContext.moduleExecutors[updateModule.contextName] = {
+    module: updateModule,
     executor: async (context: Context): Promise<Context> => {
       const updateOne = async (
         parameters: SQLParameterSet
