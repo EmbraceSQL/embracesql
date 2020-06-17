@@ -30,7 +30,7 @@ export const EmbraceSQL = (serverUrl: string) => {
   {{name}}:
     {{#if value.namedParameters.length}}
     async (...parameters: context.{{value.contextName}}ParameterSet[]) : Promise<context.{{value.contextName}}Row[]> => {
-      return post(serverUrl, "/{{value.restPath}}", parameters) as unknown as context.{{value.contextName}}Row[];
+      return post(serverUrl, "/{{value.restPath}}", parameters.flat()) as unknown as context.{{value.contextName}}Row[];
     },
     {{else}}
     async () : Promise<context.{{value.contextName}}Row[]> => {

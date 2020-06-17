@@ -7,9 +7,8 @@ import {
   SQLRow,
   Configuration,
   CommonDatabaseModule,
-  SQLParameterSet,
   SQLTableMetadata,
-  Context,
+  SQLParameterSet,
 } from "../shared-context";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
@@ -98,7 +97,7 @@ export const embraceDatabases = async (
       // these are not re-entrant
       execute: async (
         sql: string,
-        parameters?: Context["parameters"]
+        parameters?: SQLParameterSet
       ): Promise<SQLRow[]> => {
         return oneAtATime(() => database.execute(sql, parameters));
       },

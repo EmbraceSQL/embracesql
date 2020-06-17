@@ -18,7 +18,12 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
     // database {{@key}}
     {{#eachInMap value.modules}}
       {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+        {{#if value.beforeHandlerPaths}}
         const {afterError} = require("./{{value.restPath}}.sql.afterError");
+        {{else}}
+        // no error handlers for autocrud
+        const afterError = undefined;
+        {{/if}}
         try {
           {{#if value.beforeHandlerPaths}}
           {{#each value.beforeHandlerPaths}}
@@ -75,7 +80,8 @@ export const decorateWithTransactions = (
 
 // EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
 // which can result in a result set -- an array or rows -- or a single record / row
-// this mapping deals with cardinality, treating arrays of 1 item as a single item
+// this mapping deals with cardinality, treating arrays of 1 item as a single item on return
+// to 'match' the varargs input style
 export const decorateWithCardinality = (
   innerExecutors: types.ExecutorMap) => {
     return {
@@ -84,7 +90,6 @@ export const decorateWithCardinality = (
     {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-              context.parameters = context.parameters?.length === 1 ? (context.parameters as types.{{value.contextName}}ParameterSet[])[0] : context.parameters;
               await innerExecutors.{{value.contextName}}(context);
               context.results = context.results?.length === 1 ? (context.results as types.{{value.contextName}}Row[])[0] : context.results;
               return context;
@@ -176,7 +181,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   : Promise<types.{{value.contextName}}Context["results"]> => {
       const context = 
         await {{@handlerMap}}.{{value.contextName}}({
-          parameters: parameters,
+          parameters: parameters.flat(),
           results: [], 
           databases: entryPointCallableDatabases
         });

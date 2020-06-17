@@ -6,8 +6,6 @@ import {
   AutocrudModule,
   Context,
   SQLRow,
-  isSQLParameterSet,
-  isSQLParameterSetBatch,
   SQLParameterSet,
 } from "../../shared-context";
 import { identifier } from "..";
@@ -53,21 +51,17 @@ export default async (
         // and no other query can sneak in between
         return await database.atomic(async () => {
           // make the row -- nothing to read here
-          await database.execute(
-            queries.create,
-            validParameters(createModule, parameters)
-          );
+          const immediateParameters = validParameters(createModule, parameters);
+          await database.execute(queries.create, immediateParameters);
           // and the keys come back -- no parameters needed -- use the DB 'last inserted row' capability
           // take advantage of the fact we are in the same transaction and connection
           const readBackKeys = await database.execute(queries.readback);
           return readBackKeys[0];
         });
       };
-      if (isSQLParameterSetBatch(context.parameters)) {
-        const updates = (context.parameters as SQLParameterSet[]).map(doOne);
+      if (context.parameters.length) {
+        const updates = context.parameters.map(doOne);
         context.results = await Promise.all(updates);
-      } else if (isSQLParameterSet(context.parameters)) {
-        context.results = [await doOne(context.parameters)];
       } else {
         throw new Error("no parameters");
       }

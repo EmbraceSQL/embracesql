@@ -6,8 +6,6 @@ import {
   AutocrudModule,
   Context,
   SQLParameterSet,
-  isSQLParameterSetBatch,
-  isSQLParameterSet,
   SQLRow,
 } from "../../shared-context";
 import { identifier } from "..";
@@ -51,12 +49,8 @@ export default async (
         await database.execute(queries.byKey, validatedParameters);
         return validatedParameters;
       };
-      if (isSQLParameterSetBatch(context.parameters)) {
-        context.results = await Promise.all(
-          (context.parameters as SQLParameterSet[]).map(doOne)
-        );
-      } else if (isSQLParameterSet(context.parameters)) {
-        context.results = [await doOne(context.parameters)];
+      if (context.parameters.length) {
+        context.results = await Promise.all(context.parameters.map(doOne));
       } else {
         throw new Error("no parameters");
       }

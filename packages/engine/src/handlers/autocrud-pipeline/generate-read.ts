@@ -5,8 +5,6 @@ import {
 import {
   AutocrudModule,
   Context,
-  isSQLParameterSetBatch,
-  isSQLParameterSet,
   SQLParameterSet,
   SQLRow,
 } from "../../shared-context";
@@ -41,14 +39,11 @@ export default async (
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
         return database.execute(queries.byKey, parameters);
       };
-      if (isSQLParameterSetBatch(context.parameters)) {
+      if (context.parameters.length) {
         // lots of ways to implement this, let's do the naive one for the moment
-        const resultSets = (context.parameters as SQLParameterSet[]).map(doOne);
+        const resultSets = context.parameters.map(doOne);
         // flatten out a bit so this looks like a result set
         context.results = (await Promise.all(resultSets)).flat(2);
-      } else if (isSQLParameterSet(context.parameters)) {
-        // this is a pretty simple case -- just run and return
-        context.results = await doOne(context.parameters);
       } else {
         // without parameters, just run a query to get all rows
         context.results = await database.execute(queries.allRows);

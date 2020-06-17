@@ -10,7 +10,7 @@ import {
   AutocrudModule,
   Closeable,
   EntryPoint,
-  Context,
+  SQLParameterSet,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -85,10 +85,7 @@ export type DatabaseInternal = Database & {
    * @param sql - sql string in the dialect of the target database, can include :name style paramters
    * @param parameters - name value pairs are the passed parameters
    */
-  execute: (
-    sql: string,
-    parameters?: Context["parameters"]
-  ) => Promise<SQLRow[]>;
+  execute: (sql: string, parameters?: SQLParameterSet) => Promise<SQLRow[]>;
   /**
    * Analyze the passed module and determine the resultset type(s).
    */

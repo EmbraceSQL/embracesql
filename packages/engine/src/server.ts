@@ -43,7 +43,7 @@ export const createServer = async (
         try {
           // parameters from the query
           const context = {
-            parameters: httpContext.request.query,
+            parameters: [httpContext.request.query],
             results: [],
           };
           await rootContext.entryPoints[contextName].executor(context);
@@ -65,7 +65,9 @@ export const createServer = async (
       try {
         // parameters from the body
         const context = {
-          parameters: httpContext.request.body,
+          parameters: Array.isArray(httpContext.request.body)
+            ? httpContext.request.body
+            : [httpContext.request.body],
           results: [],
         };
         await rootContext.entryPoints[contextName].executor(context);

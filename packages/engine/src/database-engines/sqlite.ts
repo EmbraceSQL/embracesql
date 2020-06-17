@@ -6,10 +6,10 @@ import {
   SQLTypeName,
   SQLColumnMetadata,
   SQLRow,
-  Context,
   Configuration,
   SQLTableMetadata,
   AutocrudModule,
+  SQLParameterSet,
 } from "../shared-context";
 import {
   DatabaseInternal,
@@ -169,7 +169,7 @@ export default async (
     },
     execute: async (
       sql: string,
-      parameters?: Context["parameters"]
+      parameters?: SQLParameterSet
     ): Promise<SQLRow[]> => {
       // execution wrapper to get transaction support
       const execute = async (): Promise<SQLRow[]> => {

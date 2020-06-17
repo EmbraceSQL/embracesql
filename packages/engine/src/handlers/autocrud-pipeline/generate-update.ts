@@ -7,8 +7,6 @@ import {
   Context,
   SQLRow,
   SQLParameterSet,
-  isSQLParameterSetBatch,
-  isSQLParameterSet,
 } from "../../shared-context";
 import { identifier } from "..";
 import { validParameters } from "../../database-engines";
@@ -57,13 +55,9 @@ export default async (
         );
         return parameters;
       };
-      if (isSQLParameterSetBatch(context.parameters)) {
-        const updates = (context.parameters as SQLParameterSet[]).map(
-          updateOne
-        );
+      if (context.parameters.length) {
+        const updates = context.parameters.map(updateOne);
         context.results = await Promise.all(updates);
-      } else if (isSQLParameterSet(context.parameters)) {
-        context.results = [await updateOne(context.parameters)];
       } else {
         throw new Error("no parameters");
       }

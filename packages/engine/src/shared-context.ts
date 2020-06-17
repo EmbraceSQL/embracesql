@@ -325,7 +325,7 @@ export type GenericContext<ParameterType, ResultType> = {
    * Parameters may be on here for the default context. This will get
    * generated and specified with specific named parameters per SQLModule.
    */
-  parameters: ValueOrArray<ParameterType>;
+  parameters: ParameterType[];
 
   /**
    * Results may be on here for the default context. This will get generated
@@ -344,32 +344,6 @@ export type Context = GenericContext<SQLParameterSet, SQLRow>;
  */
 export type SQLParameterSet = {
   [index: string]: SQLType;
-};
-
-/**
- * And some type guards.
- */
-
-/**
- * True if a single parameter set.
- */
-export const isSQLParameterSet = (
-  parameters: Context["parameters"]
-): parameters is SQLParameterSet => {
-  return (
-    parameters &&
-    Object.keys(parameters as SQLParameterSet).length > 0 &&
-    !Array.isArray(parameters)
-  );
-};
-
-/**
- * True if a batch of parameters.
- */
-export const isSQLParameterSetBatch = (
-  parameters: Context["parameters"]
-): parameters is SQLParameterSet[] => {
-  return Array.isArray(parameters) && parameters.length > 0;
 };
 
 /**
