@@ -97,18 +97,18 @@ export const decorateWithCardinality = (
     {{#eachInMap value.sqlModules database=@key}}
       {{value.contextName}}:  
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-              context.parameters = context?.parameters?.length === 1 ? context.parameters[0] : context.parameters;
+              context.parameters = context.parameters?.length === 1 ? (context.parameters as types.{{value.contextName}}ParameterSet[])[0] : context.parameters;
               await innerExecutors.{{value.contextName}}(context);
-              context.results = context?.results?.length === 1 ? context.results[0] : context.results;
+              context.results = context.results?.length === 1 ? (context.results as types.{{value.contextName}}Row[])[0] : context.results;
               return context;
           },
     {{/eachInMap}}
     {{#eachInMap value.autocrudModules database=@key}}
       {{value.contextName}}:  
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-              context.parameters = context?.parameters?.length === 1 ? context.parameters[0] : context.parameters;
+              context.parameters = context.parameters?.length === 1 ? (context.parameters as types.{{value.contextName}}ParameterSet[])[0] : context.parameters;
               await innerExecutors.{{value.contextName}}(context);
-              context.results = context?.results?.length === 1 ? context.results[0] : context.results;
+              context.results = context.results?.length === 1 ? (context.results as types.{{value.contextName}}Row[])[0] : context.results;
               return context;
           },
     {{/eachInMap}}
@@ -201,7 +201,8 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   {{/each}}
   },
   {{else}}
-  {{name}}: async (...parameters: types.{{value.contextName}}ParameterSet[]) : Promise<types.{{value.contextName}}Result> => {
+  {{name}}: async (...parameters: types.{{value.contextName}}ParameterSet[]) 
+  : Promise<types.{{value.contextName}}Context["results"]> => {
       const context = 
         await {{@handlerMap}}.{{value.contextName}}({
           parameters: parameters,

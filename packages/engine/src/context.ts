@@ -4,13 +4,13 @@ import {
   Database,
   SQLModule,
   SQLColumnMetadata,
-  SQLParameters,
   SQLRow,
   HasConfiguration,
   Configuration,
   AutocrudModule,
   Closeable,
   EntryPoint,
+  Context,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -93,7 +93,10 @@ export type DatabaseInternal = Database & {
    * @param sql - sql string in the dialect of the target database, can include :name style paramters
    * @param parameters - name value pairs are the passed parameters
    */
-  execute: (sql: string, parameters?: SQLParameters) => Promise<SQLRow[]>;
+  execute: (
+    sql: string,
+    parameters?: Context["parameters"]
+  ) => Promise<SQLRow[]>;
   /**
    * Analyze the passed module and determine the resultset type(s).
    */

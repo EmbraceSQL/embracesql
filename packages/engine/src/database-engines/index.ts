@@ -5,11 +5,11 @@ import pLimit from "p-limit";
 import {
   SQLColumnMetadata,
   SQLRow,
-  SQLParameters,
   Configuration,
   CommonDatabaseModule,
   SQLParameterSet,
   SQLTableMetadata,
+  Context,
 } from "../shared-context";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
@@ -99,7 +99,7 @@ export const embraceDatabases = async (
       // these are not re-entrant
       execute: async (
         sql: string,
-        parameters?: SQLParameters
+        parameters?: Context["parameters"]
       ): Promise<SQLRow[]> => {
         return oneAtATime(() => database.execute(sql, parameters));
       },

@@ -6,7 +6,7 @@ import {
   SQLTypeName,
   SQLColumnMetadata,
   SQLRow,
-  SQLParameters,
+  Context,
   Configuration,
   SQLTableMetadata,
   AutocrudModule,
@@ -169,7 +169,7 @@ export default async (
     },
     execute: async (
       sql: string,
-      parameters?: SQLParameters
+      parameters?: Context["parameters"]
     ): Promise<SQLRow[]> => {
       // execution wrapper to get transaction support
       const execute = async (): Promise<SQLRow[]> => {

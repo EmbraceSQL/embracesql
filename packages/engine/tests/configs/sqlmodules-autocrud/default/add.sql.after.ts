@@ -9,5 +9,4 @@ export const after: types.default_addHandler = async (context) => {
   // await context.databases.default.transactions.commit();
   // we could also explicitly rollback, but this will happen on its own
   // await context.databases.default.transactions.rollback();
-  return context;
 };

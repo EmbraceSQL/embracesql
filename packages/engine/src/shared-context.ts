@@ -12,6 +12,11 @@
  */
 
 /**
+ * Parameters and results can be single items, or array batches.
+ */
+type ValueOrArray<T> = Array<T> | T;
+
+/**
  * A message, passed for security and logging.
  */
 export type Message = string | Record<string, unknown>;
@@ -269,7 +274,7 @@ export type Database = {
  * that will be generated will be noted in comments.
  *
  */
-export type Context = {
+export type GenericContext<ParameterType, ResultType> = {
   /**
    * Set the current state of security to allow SQL execution against the database.
    *
@@ -320,14 +325,19 @@ export type Context = {
    * Parameters may be on here for the default context. This will get
    * generated and specified with specific named parameters per SQLModule.
    */
-  parameters?: SQLParameters;
+  parameters: ValueOrArray<ParameterType>;
 
   /**
    * Results may be on here for the default context. This will get generated
    * and specified per SQLModule.
    */
-  results?: SQLResults;
+  results: ValueOrArray<ResultType>;
 };
+
+/**
+ * This is our generic context type -- bound to the generic parameter and reult types.
+ */
+export type Context = GenericContext<SQLParameterSet, SQLRow>;
 
 /**
  * The core notion of sql parameters, name value pairs.
@@ -337,13 +347,6 @@ export type SQLParameterSet = {
 };
 
 /**
- * A SQL query may have parameters, this type constrains them. This single
- * type defines the conceptual constraint, an can be further constrained
- * with specific type names extracted by parsing queries.
- */
-export type SQLParameters = SQLParameterSet | SQLParameterSet[] | undefined;
-
-/**
  * And some type guards.
  */
 
@@ -351,7 +354,7 @@ export type SQLParameters = SQLParameterSet | SQLParameterSet[] | undefined;
  * True if a single parameter set.
  */
 export const isSQLParameterSet = (
-  parameters: SQLParameters
+  parameters: Context["parameters"]
 ): parameters is SQLParameterSet => {
   return (
     parameters &&
@@ -364,7 +367,7 @@ export const isSQLParameterSet = (
  * True if a batch of parameters.
  */
 export const isSQLParameterSetBatch = (
-  parameters: SQLParameters
+  parameters: Context["parameters"]
 ): parameters is SQLParameterSet[] => {
   return Array.isArray(parameters) && parameters.length > 0;
 };
@@ -378,11 +381,6 @@ export const isSQLParameterSetBatch = (
 export type SQLRow = {
   [index: string]: SQLType;
 };
-
-/**
- * Results can be a single row, or an array.
- */
-export type SQLResults = SQLRow | SQLRow[] | undefined;
 
 /**
  * Execute a SQL module with a context. This is what you use when

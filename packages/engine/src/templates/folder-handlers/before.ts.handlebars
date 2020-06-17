@@ -3,7 +3,6 @@ to: "{{folderPath}}/before.ts"
 ---
 import * as types from "{{relativeToRoot}}/context";
 
-export const before : types.FolderHandler = async (context) => {
-// handle me!
-return context;
+export const before : types.FolderHandler = async (_context) => {
+  // handle me!
 }

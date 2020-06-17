@@ -6,5 +6,4 @@ export const before: types.FolderHandler = async (context) => {
   if (context.parameters.stuff === "error") {
     throw new Error("Simulated Error -- this is expected");
   }
-  return context;
 };
