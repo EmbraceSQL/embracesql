@@ -55,13 +55,6 @@ export type UpdateSQL = {
 };
 
 /**
- * SQL for the D in CRUD.
- */
-export type DeleteSQL = {
-  byKey: string;
-};
-
-/**
  * Function wrapper for atomicicity in running in the database.
  */
 export interface AtomicDatabaseAction {
@@ -114,10 +107,6 @@ export type DatabaseInternal = Database & {
    * Get the SQL to update a table.
    */
   updateSQL: (autocrudModule: AutocrudModule) => Promise<UpdateSQL>;
-  /**
-   * Get the SQL to delete from a table.
-   */
-  deleteSQL: (autocrudModule: AutocrudModule) => Promise<DeleteSQL>;
   /**
    * Throttle access to a database for atomicity. This is needed when thre
    * are multiple parallel queries possible and you need to batch -- such

@@ -10,22 +10,29 @@ import {
   SQLTableMetadata,
   AutocrudModule,
   SQLParameterSet,
-} from "../shared-context";
+} from "../../shared-context";
 import {
   DatabaseInternal,
   MigrationFile,
   CreateAndReadbackSQL,
   ReadSQL,
   UpdateSQL,
-  DeleteSQL,
-} from "../internal-context";
+} from "../../internal-context";
 import { Parser, AST } from "node-sql-parser";
-import { identifier } from "../handlers";
-import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
+import { identifier } from "../../handlers";
+import { SQLModuleInternal } from "../../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
 import pLimit from "p-limit";
-import { buildReferentialGraph } from ".";
+import { buildReferentialGraph } from "..";
 const atomic = pLimit(1);
+
+/**
+ * SQLite metadata row.
+ */
+type MetadataRow = {
+  name: string;
+  type: string;
+};
 
 /**
  * Map SQLite to our neutral type strings.
@@ -45,7 +52,9 @@ const typeMap = (fromSQLite: string): SQLTypeName => {
  * One row per column, the name and type info are interesting,
  * pick them out and normalize them.
  */
-const columnMetadata = (readDescribeRows: any[]): SQLColumnMetadata[] => {
+const columnMetadata = (
+  readDescribeRows: MetadataRow[]
+): SQLColumnMetadata[] => {
   // OK so something to know -- columns with spaces in them are quoted
   // by sqlite so if a column is named
   // hi mom
@@ -53,7 +62,7 @@ const columnMetadata = (readDescribeRows: any[]): SQLColumnMetadata[] => {
   // which makes the javascript key ...["'hi mom'"] -- oh yeah
   // the ' is part of the key
   return readDescribeRows.map((row) => ({
-    name: identifier(row.name.toString()),
+    name: identifier(row.name),
     type: typeMap(row.type),
   }));
 };
@@ -327,14 +336,6 @@ export default async (
         .join(" AND ");
       return {
         byKey: `UPDATE ${autocrudModule.name} SET ${columnUpdates} WHERE ${keyFilter}`,
-      };
-    },
-    deleteSQL: async (autocrudModule: AutocrudModule): Promise<DeleteSQL> => {
-      const keyFilter = autocrudModule.namedParameters
-        .map((c) => `${c.name} = :${c.name}`)
-        .join(" AND ");
-      return {
-        byKey: `DELETE FROM ${autocrudModule.name}  WHERE ${keyFilter}`,
       };
     },
     atomic,

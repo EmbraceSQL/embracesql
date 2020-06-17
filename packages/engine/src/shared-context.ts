@@ -47,6 +47,23 @@ export type Grant = {
 export type SQLType = string | number | boolean | null;
 
 /**
+ * The core notion of sql parameters, name value pairs.
+ */
+export type SQLParameterSet = {
+  [index: string]: SQLType;
+};
+
+/**
+ * A single record coming back from a query -- one result from a result set.
+ *
+ * This is a conceptual type constraint, but individual SQL queries can be further
+ * constrained with specific column names determined by parsing queries.
+ */
+export type SQLRow = {
+  [index: string]: SQLType;
+};
+
+/**
  * Peer string naming used for generation.
  */
 export type SQLTypeName = "string" | "number" | "boolean" | "null";
@@ -339,22 +356,6 @@ export type GenericContext<ParameterType, ResultType> = {
  */
 export type Context = GenericContext<SQLParameterSet, SQLRow>;
 
-/**
- * The core notion of sql parameters, name value pairs.
- */
-export type SQLParameterSet = {
-  [index: string]: SQLType;
-};
-
-/**
- * A single record coming back from a query -- one result from a result set.
- *
- * This is a conceptual type constraint, but individual SQL queries can be further
- * constrained with specific column names determined by parsing queries.
- */
-export type SQLRow = {
-  [index: string]: SQLType;
-};
 
 /**
  * Execute a SQL module with a context. This is what you use when

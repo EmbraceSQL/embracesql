@@ -98,7 +98,6 @@ Object {
       "atomic": [Function],
       "close": [Function],
       "createSQL": [Function],
-      "deleteSQL": [Function],
       "execute": [Function],
       "migrate": [Function],
       "modules": Object {

@@ -24,7 +24,7 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   const restPath = `${autocrudModule.restPath}/delete`;
-  const deleteModule = (database.modules[restPath] = {
+  const module = (database.modules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
@@ -34,19 +34,23 @@ export default async (
     resultsetMetadata: [],
     canModifyData: true,
   });
+  // generic SQL
+  const keyFilter = module.namedParameters
+    .map((c) => `${c.name} = :${c.name}`)
+    .join(" AND ");
+  const deleteByKeys = `DELETE FROM ${module.name} WHERE ${keyFilter}`;
   // and with an executor to run the thing
-  const queries = await database.deleteSQL(deleteModule);
-  rootContext.moduleExecutors[deleteModule.contextName] = {
-    module: deleteModule,
+  rootContext.moduleExecutors[module.contextName] = {
+    module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // limit to the desired parameters to be forgiving
         parameters = Object.fromEntries(
-          deleteModule.namedParameters.map((p) => [p.name, parameters[p.name]])
+          module.namedParameters.map((p) => [p.name, parameters[p.name]])
         );
         // make the row -- nothing to read here
-        const validatedParameters = validParameters(deleteModule, parameters);
-        await database.execute(queries.byKey, validatedParameters);
+        const validatedParameters = validParameters(module, parameters);
+        await database.execute(deleteByKeys, validatedParameters);
         return validatedParameters;
       };
       if (context.parameters.length) {

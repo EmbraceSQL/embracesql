@@ -65,7 +65,7 @@ export const buildReferentialGraph = async (
   tables: SQLTableMetadata[]
 ): Promise<void> => {
   // each table is a node, each reference is an undirected edge
-  const graph = new graphlib.Graph({ multigraph: true });
+  const graph = new graphlib.Graph({ multigraph: true, directed: false });
   for (const table of tables) {
     graph.setNode(`${table.schema}.${table.name}`, table);
     for (const reference of table.references) {
@@ -75,6 +75,16 @@ export const buildReferentialGraph = async (
         reference
       );
     }
+  }
+  // now each table will have reference data
+  const components = graphlib.alg.components(graph);
+  console.assert(components);
+  for (const table of tables) {
+    const queryOrder = graphlib.alg.preorder(graph, [
+      `${table.schema}.${table.name}`,
+    ]);
+    // immediate neighbors
+    console.assert(queryOrder);
   }
 };
 
