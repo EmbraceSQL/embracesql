@@ -7,7 +7,7 @@
   "bin": "./src/bin/index.js",
   "scripts": {
     "start": "",
-    "test": "jest",
+    "test": "jest --clearCache && jest",
     "pretty": "prettier --write './src/**/*.ts'",
     "cli": "ts-node-script src/cli",
     "lint": "eslint ./src/**/*.ts",

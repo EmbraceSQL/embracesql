@@ -31,7 +31,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
         await before0(context);
         const before = require(\\"./default/hello.sql.before\\").before;
         await before(context);
-        const executor = rootContext.sqlModuleExecutors.default_hello.executor;
+        const executor = rootContext.moduleExecutors.default_hello.executor;
         const results = executor ? (await executor(context)).results : [];
         context.results = results as types.default_helloRow[];
         const after = require(\\"./default/hello.sql.after\\").after;
@@ -71,20 +71,19 @@ export const decorateWithTransactions = (
 
 // EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
 // which can result in a result set -- an array or rows -- or a single record / row
-// this mapping deals with cardinality, treating arrays of 1 item as a single item
+// this mapping deals with cardinality, treating arrays of 1 item as a single item on return
+// to 'match' the varargs input style
 export const decorateWithCardinality = (innerExecutors: types.ExecutorMap) => {
   return {
     // database default
     default_hello: async (
       context: types.default_helloContext
     ): Promise<types.default_helloContext> => {
-      context.parameters =
-        context?.parameters?.length === 1
-          ? context.parameters[0]
-          : context.parameters;
       await innerExecutors.default_hello(context);
       context.results =
-        context?.results?.length === 1 ? context.results[0] : context.results;
+        context.results?.length === 1
+          ? (context.results as types.default_helloRow[])[0]
+          : context.results;
       return context;
     },
   };
@@ -129,12 +128,11 @@ export const EmbraceSQLEmbedded = async (
           return internalContext.databases.default.transactions.depth();
         },
       },
-      autocrud: {},
       hello: async (
         ...parameters: types.default_helloParameterSet[]
-      ): Promise<types.default_helloResult> => {
+      ): Promise<types.default_helloContext[\\"results\\"]> => {
         const context = await typedExecutors.default_hello({
-          parameters: parameters,
+          parameters: parameters.flat(),
           results: [],
           databases: entryPointCallableDatabases,
         });
@@ -146,7 +144,6 @@ export const EmbraceSQLEmbedded = async (
   // this is the 'outermost' shell of calls -- entry points into the engine from a server
   // this is in the context --> context style used for the server processes and event handlers
   const entryPoints = {
-    // database default
     default_hello: {
       executor: async (
         context: types.default_helloContext
@@ -154,7 +151,7 @@ export const EmbraceSQLEmbedded = async (
         context.databases = entryPointCallableDatabases;
         return typedExecutors.default_hello(context);
       },
-      sqlModule: internalContext.databases.default.sqlModules.default_hello,
+      module: internalContext.moduleExecutors.default_hello.module,
     },
   };
 
