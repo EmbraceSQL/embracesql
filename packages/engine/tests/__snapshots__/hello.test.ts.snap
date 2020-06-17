@@ -196,7 +196,6 @@ Object {
         "depth": [Function],
         "rollback": [Function],
       },
-      "updateSQL": [Function],
     },
   },
   "moduleExecutors": Object {

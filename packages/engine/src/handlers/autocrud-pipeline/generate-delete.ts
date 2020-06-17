@@ -44,13 +44,12 @@ export default async (
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
-        // limit to the desired parameters to be forgiving
-        parameters = Object.fromEntries(
-          module.namedParameters.map((p) => [p.name, parameters[p.name]])
-        );
         // make the row -- nothing to read here
         const validatedParameters = validParameters(module, parameters);
-        await database.execute(deleteByKeys, validatedParameters);
+        await database.execute(
+          deleteByKeys,
+          validParameters(module, parameters)
+        );
         return validatedParameters;
       };
       if (context.parameters.length) {

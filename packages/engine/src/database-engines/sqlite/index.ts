@@ -16,7 +16,6 @@ import {
   MigrationFile,
   CreateAndReadbackSQL,
   ReadSQL,
-  UpdateSQL,
 } from "../../internal-context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../../handlers";
@@ -326,18 +325,7 @@ export default async (
         byKey: `SELECT ${columnString} FROM ${autocrudModule.name} WHERE ${keyWhere};`,
       };
     },
-    updateSQL: async (autocrudModule: AutocrudModule): Promise<UpdateSQL> => {
-      // COALESCE to just save the existing value, this means this is a full record update
-      const columnUpdates = autocrudModule.workOnTheseColumns
-        .map((c) => `${c.name} = COALESCE(:${c.name}, ${c.name})`)
-        .join(",");
-      const keyFilter = autocrudModule.keys
-        .map((c) => `${c.name} = :${c.name}`)
-        .join(" AND ");
-      return {
-        byKey: `UPDATE ${autocrudModule.name} SET ${columnUpdates} WHERE ${keyFilter}`,
-      };
-    },
+
     atomic,
     schemas,
   };

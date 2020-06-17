@@ -48,13 +48,6 @@ export type ReadSQL = {
 };
 
 /**
- * SQL for the U in CRUD.
- */
-export type UpdateSQL = {
-  byKey: string;
-};
-
-/**
  * Function wrapper for atomicicity in running in the database.
  */
 export interface AtomicDatabaseAction {
@@ -103,10 +96,6 @@ export type DatabaseInternal = Database & {
    * Get the SQL to read back a table.
    */
   readSQL: (autocrudModule: AutocrudModule) => Promise<ReadSQL>;
-  /**
-   * Get the SQL to update a table.
-   */
-  updateSQL: (autocrudModule: AutocrudModule) => Promise<UpdateSQL>;
   /**
    * Throttle access to a database for atomicity. This is needed when thre
    * are multiple parallel queries possible and you need to batch -- such
