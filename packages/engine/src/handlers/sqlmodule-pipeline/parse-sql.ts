@@ -1,4 +1,4 @@
-import { InternalContext, DatabaseInternal } from "../../context";
+import { InternalContext, DatabaseInternal } from "../../internal-context";
 import { SQLModuleInternal } from ".";
 import { AST } from "node-sql-parser";
 

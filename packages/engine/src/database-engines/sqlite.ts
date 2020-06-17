@@ -18,7 +18,7 @@ import {
   ReadSQL,
   UpdateSQL,
   DeleteSQL,
-} from "../context";
+} from "../internal-context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../handlers";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";

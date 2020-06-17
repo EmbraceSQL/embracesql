@@ -10,7 +10,7 @@ import path from "path";
 import md5 from "md5";
 import fs from "fs-extra";
 import { identifier } from "../index";
-import { InternalContext, DatabaseInternal } from "../../context";
+import { InternalContext, DatabaseInternal } from "../../internal-context";
 
 /**
  * Inside the EmbraceSQL exgine extension to the SQLModule type.
@@ -113,9 +113,7 @@ export default async (
       canModifyData: false,
     };
     // collate each module by the containing database
-    rootContext.databases[databaseName].sqlModules[
-      pathAfterDatabase
-    ] = sqlModule;
+    rootContext.databases[databaseName].modules[pathAfterDatabase] = sqlModule;
     return sqlModule;
   });
   // checkpoint -- wait for finish
@@ -127,11 +125,12 @@ export default async (
         // one big transaction around all oof our module building
         // so we can roll back and know we didn't modify our database
         database.transactions.begin();
-        const waitForThem = Object.values(
-          database.sqlModules
-        ).map(async (sqlModule) =>
-          sqlModulePipeline(rootContext, database, sqlModule)
-        );
+        const waitForThem = Object.values(database.modules)
+          .filter((maybeSQLModule) => (maybeSQLModule as SQLModule)?.fullPath)
+          .map((sqlModule) => sqlModule as SQLModule)
+          .map(async (sqlModule) =>
+            sqlModulePipeline(rootContext, database, sqlModule)
+          );
         await Promise.all(waitForThem);
         return database;
       } finally {

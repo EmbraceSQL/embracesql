@@ -1,6 +1,6 @@
 import embraceSQLite from "./sqlite";
-import { AllDatabasesInternal } from "../context";
-import { DatabaseInternal } from "../context";
+import { AllDatabasesInternal } from "../internal-context";
+import { DatabaseInternal } from "../internal-context";
 import pLimit from "p-limit";
 import {
   SQLColumnMetadata,
@@ -88,12 +88,11 @@ export const embraceDatabases = async (
   // name value pairs inside the root context -- there isn't a strongly
   // typed generated context type available to the generator itself
   const databases = {};
-  Object.keys(configuration.databases).forEach(async (databaseName) => {
+  for (const databaseName in configuration.databases) {
     const database = await embraceSingleDatabase(configuration, databaseName);
     databases[databaseName] = {
       ...database,
-      autocrudModules: {},
-      sqlModules: {},
+      modules: {},
       // here is wrapping the individual database driver execute and analyze
       // with a throttled promise limit -- since we have only one connection
       // these are not re-entrant
@@ -109,6 +108,6 @@ export const embraceDatabases = async (
         return oneAtATime(() => database.analyze(sqlModule));
       },
     };
-  });
+  }
   return databases;
 };

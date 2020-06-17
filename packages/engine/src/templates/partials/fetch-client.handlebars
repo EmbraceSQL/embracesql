@@ -7,18 +7,11 @@ export const EmbraceSQL = (serverUrl: string) => {
     databases: {
     {{#eachInMap databases}}
       {{@key}}: {
-      {{#treeAMap value.sqlModules database=value}}
+      {{#treeAMap value.modules database=value}}
         {{#each value}}
         {{> moduleTree this database=@database}}
         {{/each}}
       {{/treeAMap}}
-      autocrud: {
-        {{#treeAMap value.autocrudModules database=value}}
-          {{#each value}}
-          {{> moduleTree this database=@database}}
-          {{/each}}
-        {{/treeAMap}}
-        },
       },
     {{/eachInMap}}
     }

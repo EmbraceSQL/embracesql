@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import path from "path";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { createServer } from "../src/server";
 import request from "supertest";
 import rmfr from "rmfr";
 import { watchRoot } from "../src/watcher";
 import http from "http";
 import fs from "fs-extra";
+import { SQLModule } from "../src/shared-context";
 
 declare global {
   namespace jest {
@@ -30,21 +31,25 @@ describe("hello world configuration!", () => {
   let listening: http.Server;
   let callback;
   beforeAll(async () => {
-    // clean up
-    await rmfr(root);
-    // get the configuration and generate - let's do this just the once
-    // and have a few tests that asser things happened
-    const configuration = await loadConfiguration(root);
-    rootContext = await buildInternalContext(configuration);
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { EmbraceSQLEmbedded } = require(path.join(
-      process.cwd(),
-      rootContext.configuration.embraceSQLRoot
-    ));
-    const engine = await EmbraceSQLEmbedded();
-    const server = await createServer(engine);
-    callback = server.callback();
-    listening = server.listen(4567);
+    try {
+      // clean up
+      await rmfr(root);
+      // get the configuration and generate - let's do this just the once
+      // and have a few tests that asser things happened
+      const configuration = await loadConfiguration(root);
+      rootContext = await buildInternalContext(configuration);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { EmbraceSQLEmbedded } = require(path.join(
+        process.cwd(),
+        rootContext.configuration.embraceSQLRoot
+      ));
+      const engine = await EmbraceSQLEmbedded();
+      const server = await createServer(engine);
+      callback = server.callback();
+      listening = server.listen(4567);
+    } catch (e) {
+      console.error(e);
+    }
   });
   afterAll(async (done) => {
     listening.close(() => done());
@@ -82,12 +87,12 @@ describe("hello world configuration!", () => {
   });
   it("knows hello sql is read only", async () => {
     expect(
-      rootContext.databases["default"].sqlModules.hello.canModifyData
+      rootContext.databases["default"].modules.hello.canModifyData
     ).toBeFalsy();
   });
   it("exposes methods to run hello sql", async () => {
     expect(
-      rootContext.databases["default"].sqlModules.hello.sql
+      (rootContext.databases["default"].modules.hello as SQLModule).sql
     ).toMatchSnapshot();
   });
   it("generates an open api doc", async () => {
@@ -107,7 +112,7 @@ describe("hello world configuration!", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      rootContext.databases["default"].sqlModules["hello"].sql
+      (rootContext.databases["default"].modules["hello"] as SQLModule).sql
     );
     expect(results).toMatchSnapshot();
   });

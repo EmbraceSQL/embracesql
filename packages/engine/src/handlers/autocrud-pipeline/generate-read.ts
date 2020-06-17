@@ -1,4 +1,7 @@
-import { InternalContext, DatabaseInternalWithModules } from "../../context";
+import {
+  InternalContext,
+  DatabaseInternalWithModules,
+} from "../../internal-context";
 import {
   AutocrudModule,
   Context,
@@ -23,7 +26,7 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   const restPath = `${autocrudModule.restPath}/read`;
-  const readModule = (database.autocrudModules[restPath] = {
+  const readModule = (database.modules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,

@@ -1,4 +1,4 @@
-import { InternalContext } from "./context";
+import { InternalContext } from "./internal-context";
 import walk from "ignore-walk";
 import path from "path";
 import frontMatter from "front-matter";
@@ -116,7 +116,6 @@ export const renderTemplates = async (
   // as possible as just plain code with syntax highlighting and autocomplete
   // generated code takes these as a starting point and adds on generated types
   const waitForCodePartials = [
-    "shared-context.ts",
     "shared-browser-client.ts",
     "shared-node-client.ts",
   ].map(

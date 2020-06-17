@@ -1,4 +1,4 @@
-import { InternalContext } from "../../context";
+import { InternalContext } from "../../internal-context";
 import path from "path";
 import fs from "fs-extra";
 

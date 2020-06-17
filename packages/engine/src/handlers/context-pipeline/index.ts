@@ -1,4 +1,4 @@
-import { InternalContext } from "../../context";
+import { InternalContext } from "../../internal-context";
 import generateCombined from "./generate-combined";
 import generateMigrations from "./generate-migrations";
 

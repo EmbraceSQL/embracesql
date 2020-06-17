@@ -12,11 +12,7 @@ info:
 
 paths:
 {{#eachInMap databases}}
-{{#eachInMap value.sqlModules}}
-  /{{value.restPath}}:
-    {{> get module=value}}
-{{/eachInMap}}
-{{#eachInMap value.autocrudModules}}
+{{#eachInMap value.modules}}
   /{{value.restPath}}:
     {{> get module=value}}
 {{/eachInMap}}

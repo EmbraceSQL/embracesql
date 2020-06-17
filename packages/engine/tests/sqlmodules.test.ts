@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
 
@@ -24,7 +24,7 @@ describe("sqlmodules provide handlers", () => {
   });
   it("knows add.sql is not read only", async () => {
     expect(
-      rootContext.databases["default"].sqlModules.add.canModifyData
+      rootContext.databases["default"].modules.add.canModifyData
     ).toBeTruthy();
   });
   it("reads and writes things", async () => {

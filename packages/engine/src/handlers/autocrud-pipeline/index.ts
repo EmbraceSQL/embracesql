@@ -1,4 +1,7 @@
-import { InternalContext, DatabaseInternalWithModules } from "../../context";
+import {
+  InternalContext,
+  DatabaseInternalWithModules,
+} from "../../internal-context";
 import md5 from "md5";
 import { AutocrudModule } from "../../shared-context";
 import generateCreate from "./generate-create";
@@ -38,8 +41,8 @@ export default async (
         // rest paths follow a common schema that matches the notion
         // of the database as a file system with database/schema/table
         const restPath = table.schema
-          ? `${table.schema}/${table.name}`
-          : `${table.name}`;
+          ? `autocrud/${table.schema}/${table.name}`
+          : `autocrud/${table.name}`;
         // here is a basic module representing the table - this isn't a specific autocrud operation
         // so this module isn't attached to the database, it is just a free floating variable that will
         // be forgotten

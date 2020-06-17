@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { InternalContext, DatabaseInternal } from "../../context";
+import { InternalContext, DatabaseInternal } from "../../internal-context";
 import { SQLModuleInternal } from ".";
 
 /**

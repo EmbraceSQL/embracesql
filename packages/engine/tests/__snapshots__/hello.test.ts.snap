@@ -96,17 +96,12 @@ Object {
     "default": Object {
       "analyze": [Function],
       "atomic": [Function],
-      "autocrudModules": Object {},
       "close": [Function],
       "createSQL": [Function],
       "deleteSQL": [Function],
       "execute": [Function],
       "migrate": [Function],
-      "name": "default",
-      "parse": [Function],
-      "readSQL": [Function],
-      "schemas": Object {},
-      "sqlModules": Object {
+      "modules": Object {
         "hello": Object {
           "afterHandlerPaths": Array [
             "default",
@@ -192,6 +187,10 @@ Object {
           "sql": "SELECT 'yo'",
         },
       },
+      "name": "default",
+      "parse": [Function],
+      "readSQL": [Function],
+      "schemas": Object {},
       "transactions": Object {
         "begin": [Function],
         "commit": [Function],

@@ -16,39 +16,35 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
   return {
   {{#eachInMap databases}}
     // database {{@key}}
-    {{#eachInMap value.sqlModules}}
+    {{#eachInMap value.modules}}
       {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
         const {afterError} = require("./{{value.restPath}}.sql.afterError");
         try {
+          {{#if value.beforeHandlerPaths}}
           {{#each value.beforeHandlerPaths}}
           const before{{@index}} = require("./{{this}}/before").before;
           await before{{@index}}(context);
           {{/each}}
           const before = require("./{{value.restPath}}.sql.before").before;
           await before(context);
+          {{/if}}
           const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
           const results = executor ? (await executor(context)).results : [];
           context.results = results as types.{{value.contextName}}Row[];
+          {{#if value.afterHandlerPaths}}
           const after = require("./{{value.restPath}}.sql.after").after;
           await after(context);
           {{#each value.afterHandlerPaths}}
           const after{{@index}} = require("./{{this}}/after").after;
           await after{{@index}}(context);
           {{/each}}
+          {{/if}}
           return context;
         } catch (error) {
           context.error = error;
           if (afterError) afterError(context);
           throw error;
         }
-      },
-    {{/eachInMap}}
-    {{#eachInMap value.autocrudModules}}
-      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-          const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
-          const results = executor ? (await executor(context)).results : [];
-          context.results = results as types.{{value.contextName}}Row[];
-          return context;
       },
     {{/eachInMap}}
     {{/eachInMap}}
@@ -64,16 +60,7 @@ export const decorateWithTransactions = (
     return {
     {{#eachInMap databases}}
     // database {{@key}}
-    {{#eachInMap value.sqlModules database=@key}}
-      {{value.contextName}}:  
-          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-            return withTransaction(
-              rootContext.databases.{{@database}}, 
-              innerExecutors.{{value.contextName}}, 
-              context);
-          },
-    {{/eachInMap}}
-    {{#eachInMap value.autocrudModules database=@key}}
+    {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
             return withTransaction(
@@ -94,16 +81,7 @@ export const decorateWithCardinality = (
     return {
     {{#eachInMap databases}}
     // database {{@key}}
-    {{#eachInMap value.sqlModules database=@key}}
-      {{value.contextName}}:  
-          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-              context.parameters = context.parameters?.length === 1 ? (context.parameters as types.{{value.contextName}}ParameterSet[])[0] : context.parameters;
-              await innerExecutors.{{value.contextName}}(context);
-              context.results = context.results?.length === 1 ? (context.results as types.{{value.contextName}}Row[])[0] : context.results;
-              return context;
-          },
-    {{/eachInMap}}
-    {{#eachInMap value.autocrudModules database=@key}}
+    {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
           async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
               context.parameters = context.parameters?.length === 1 ? (context.parameters as types.{{value.contextName}}ParameterSet[])[0] : context.parameters;
@@ -151,14 +129,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             return internalContext.databases.{{@key}}.transactions.depth();
           }
         },
-        autocrud: {
-        {{#treeAMap value.autocrudModules database=value handlerMap="typedExecutors"}}
-          {{#each value}}
-          {{> moduleTree this database=@database }}
-          {{/each}}
-        {{/treeAMap}}
-        },
-      {{#treeAMap value.sqlModules database=value handlerMap="typedExecutors"}}
+      {{#treeAMap value.modules database=value handlerMap="typedExecutors"}}
         {{#each value}}
         {{> moduleTree this database=@database }}
         {{/each}}

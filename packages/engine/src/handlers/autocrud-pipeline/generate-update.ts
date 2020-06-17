@@ -1,4 +1,7 @@
-import { InternalContext, DatabaseInternalWithModules } from "../../context";
+import {
+  InternalContext,
+  DatabaseInternalWithModules,
+} from "../../internal-context";
 import {
   AutocrudModule,
   Context,
@@ -27,7 +30,7 @@ export default async (
   const otherThanKeys = autocrudModule.columns.filter(
     (column) => !autocrudModule.keys.map((c) => c.name).includes(column.name)
   );
-  const updateModule = (database.autocrudModules[restPath] = {
+  const updateModule = (database.modules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,

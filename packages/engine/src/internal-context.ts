@@ -27,16 +27,8 @@ export type MigrationFile = {
  * This is the tree of paths derived from SQL files on disk.
  * This is in a compressed path format, so each key can have / in it.
  */
-export type SQLModules = {
-  [index: string]: SQLModule;
-};
-
-/**
- * All available autocrud modules.
- * This is in a compressed path format, so each key can have / in it.
- */
-export type AutocrudModules = {
-  [index: string]: AutocrudModule;
+export type Modules = {
+  [index: string]: SQLModule | AutocrudModule;
 };
 
 /**
@@ -144,11 +136,7 @@ export type HasModules = {
   /**
    * All modules for this database.
    */
-  sqlModules: SQLModules;
-  /**
-   * Autocrud for this database.
-   */
-  autocrudModules: AutocrudModules;
+  modules: Modules;
 };
 
 /**

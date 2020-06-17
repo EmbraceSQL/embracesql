@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
 import { createServer } from "..";

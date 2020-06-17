@@ -19,16 +19,10 @@ export type FolderHandler = (context: types.Context) => Promise<void>;
 // parameters, result row, and context types
 {{#eachInMap databases}}
 // database {{@key}}
-{{#eachInMap value.sqlModules}}
-// sql module {{@key}} {{value}}
-{{> moduleMetadata module=value}}
-{{/eachInMap}}
-{{#eachInMap value.autocrudModules}}
-// autocrud module {{@key}} {{value}}
+{{#eachInMap value.modules}}
 {{> moduleMetadata module=value}}
 {{/eachInMap}}
 {{/eachInMap}}
-
 
 {{#*inline "moduleMetadata"}}
 
@@ -76,18 +70,11 @@ export type SQLModuleTree = {
   {{#eachInMap databases}}
     {{@key}}: {
       transactions: types.DatabaseTransactions,
-      {{#treeAMap value.sqlModules database=value}}
+      {{#treeAMap value.modules database=value}}
         {{#each value}}
         {{> moduleTree this database=@database }}
         {{/each}}
       {{/treeAMap}}
-      autocrud: {
-      {{#treeAMap value.autocrudModules database=value}}
-        {{#each value}}
-        {{> moduleTree this database=@database }}
-        {{/each}}
-      {{/treeAMap}}
-      },
     },
   {{/eachInMap}}
   }

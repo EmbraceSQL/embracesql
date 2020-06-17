@@ -1,4 +1,4 @@
-import { InternalContext } from "../../context";
+import { InternalContext } from "../../internal-context";
 import { generateFromTemplates } from "../../generator";
 import { SQLModuleInternal } from ".";
 import path from "path";

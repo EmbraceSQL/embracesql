@@ -1,4 +1,4 @@
-import { InternalContext } from "../context";
+import { InternalContext } from "../internal-context";
 import sqlModulePipeline from "./sqlmodule-pipeline";
 import contextPipeline from "./context-pipeline";
 import autoCrudPipeline from "./autocrud-pipeline";

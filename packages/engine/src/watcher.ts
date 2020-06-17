@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import { loadConfiguration } from "./configuration";
-import { buildInternalContext, InternalContext } from "./context";
+import { buildInternalContext, InternalContext } from "./internal-context";
 import chokidar from "chokidar";
 import path from "path";
 
