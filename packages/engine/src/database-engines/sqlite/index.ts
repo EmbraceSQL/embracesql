@@ -111,6 +111,7 @@ export default async (
           fromColumns: r.from.split(","),
         })),
         backReferences: [],
+        relatedData: [],
       };
     });
     return await Promise.all(tableMetadata);

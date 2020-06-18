@@ -42,15 +42,23 @@ export type Grant = {
 };
 
 /**
- * Types mapped back into API calls from SQL.
+ * Scalar SQL types. Individual atomic columns use these, as well
+ * as parameters to pass in.
  */
-export type SQLType = string | number | boolean | null;
+export type SQLScalarType = string | number | boolean | null;
+/**
+ * Types mapped back into API calls from SQL.
+ *
+ * A type -- can allow nested rows, this is useful to express
+ * graphs of related data as well as PostgreSQL array types.
+ */
+export type SQLType = SQLRow[] | SQLScalarType;
 
 /**
  * The core notion of sql parameters, name value pairs.
  */
 export type SQLParameterSet = {
-  [index: string]: SQLType;
+  [index: string]: SQLScalarType;
 };
 
 /**
@@ -66,24 +74,7 @@ export type SQLRow = {
 /**
  * Peer string naming used for generation.
  */
-export type SQLTypeName = "string" | "number" | "boolean" | "null";
-
-/**`0V
- * Named parameters. This is a name/value pair hash constrained
- * to our available SQL Types.
- *
- * This base type is elastic and can have any name value pairs
- */
-export type SQLParameter = {
-  /**
-   * Set your values by name.
-   */
-  name: string;
-  /**
-   * And a value.
-   */
-  value?: SQLType;
-};
+export type SQLTypeName = "string" | "number" | "boolean" | "null" | "SQLRow[]";
 
 /**
  * Information about a single column coming from SQL.
@@ -101,7 +92,7 @@ export type SQLColumnMetadata = {
 };
 
 /**
- * A single foeign key reference. This has 'all the things' to
+ * A single foreign key reference. This has 'all the things' to
  * allow it to generate a join clause.
  */
 export type SQLTableReference = {
@@ -111,6 +102,25 @@ export type SQLTableReference = {
   fromSchema: string;
   fromTable: string;
   fromColumns: string[];
+};
+
+/**
+ * Related data linkages built from SQLTableReference
+ * information.
+ */
+export type SQLTableRelatedData = {
+  /**
+   * The columns on 'this side'.
+   */
+  readonly joinColumns: SQLColumnMetadata[];
+  /**
+   * The target or related table.
+   */
+  readonly toTable: SQLTableMetadata;
+  /**
+   * The columns on the to side -- in the same order.
+   */
+  readonly toTableJoinColumns: SQLColumnMetadata[];
 };
 
 /**
@@ -145,6 +155,10 @@ export type SQLTableMetadata = {
    * Reversed references.
    */
   readonly backReferences: SQLTableReference[];
+  /**
+   * Related data relationships.
+   */
+  readonly relatedData: SQLTableRelatedData[];
 };
 
 /**

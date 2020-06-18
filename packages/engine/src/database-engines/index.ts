@@ -9,6 +9,7 @@ import {
   CommonDatabaseModule,
   SQLTableMetadata,
   SQLParameterSet,
+  SQLTableReference,
 } from "../shared-context";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
@@ -18,6 +19,29 @@ import graphlib from "graphlib";
  * Serialize database use per process as we really only have one connection.
  */
 const oneAtATime = pLimit(1);
+
+/**
+ * Build a consistent record name for a nested table with schema qualification.
+ */
+export const nestedTableName = (table: SQLTableMetadata): string => {
+  if (table.schema.length) {
+    return `${table.schema}_${table.name}`;
+  } else {
+    return table.name;
+  }
+};
+
+/**
+ * Similar to nested table name - and it needs to match, but generated
+ * from references on the 'to' or target table
+ */
+export const referenceToTableName = (reference: SQLTableReference): string => {
+  if (reference.toSchema.length) {
+    return `${reference.toSchema}_${reference.toTable}`;
+  } else {
+    return reference.toTable;
+  }
+};
 
 /**
  * Filter to just the declared parameters. This lets callers be a little sloppy
@@ -67,11 +91,11 @@ export const buildReferentialGraph = async (
   // each table is a node, each reference is an undirected edge
   const graph = new graphlib.Graph({ multigraph: true, directed: false });
   for (const table of tables) {
-    graph.setNode(`${table.schema}.${table.name}`, table);
+    graph.setNode(nestedTableName(table), table);
     for (const reference of table.references) {
       graph.setEdge(
-        `${table.schema}.${table.name}`,
-        `${reference.toSchema}.${reference.toTable}`,
+        nestedTableName(table),
+        referenceToTableName(reference),
         reference
       );
     }
@@ -81,7 +105,7 @@ export const buildReferentialGraph = async (
     // this table -- or may be referenced by this table -- the two and from swapped
     // let's call these `backreferences` -- and collect them here
     const neighbors =
-      (graph.neighbors(`${table.schema}.${table.name}`) as string[]) || [];
+      (graph.neighbors(nestedTableName(table)) as string[]) || [];
     for (const key of neighbors) {
       const neighbor = graph.node(key) as SQLTableMetadata;
       for (const reference of neighbor.references) {
@@ -103,7 +127,29 @@ export const buildReferentialGraph = async (
     }
   }
   // at this point -- the schema metadata itself is bidirectionally 'linked' with
-  // references and back references
+  // references and back references -- build up a more useful object graph
+  const tablesByName = new Map<string, SQLTableMetadata>();
+  for (const table of tables) {
+    tablesByName.set(nestedTableName(table), table);
+  }
+  // now build up that related data!
+  for (const table of tables) {
+    for (const reference of [...table.references, ...table.backReferences]) {
+      // need to keep these columns in order to align
+      const joinColumns = reference.fromColumns.map((c) =>
+        table.columns.find((cc) => cc.name === c)
+      );
+      const toTable = tablesByName.get(referenceToTableName(reference));
+      const toTableJoinColumns = reference.toColumns.map((c) =>
+        toTable.columns.find((cc) => cc.name === c)
+      );
+      table.relatedData.push({
+        joinColumns,
+        toTable,
+        toTableJoinColumns,
+      });
+    }
+  }
   return;
 };
 

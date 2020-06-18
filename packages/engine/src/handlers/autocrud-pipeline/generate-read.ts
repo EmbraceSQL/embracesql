@@ -32,12 +32,11 @@ export default async (
     resultsetMetadata: autocrudModule.columns,
     canModifyData: false,
   });
-  const columnString = module.resultsetMetadata.map((c) => c.name).join(",");
   const keyWhere = module.namedParameters
     .map((k) => `${k.name} = :${k.name}`)
     .join(" AND ");
-  const allRows = `SELECT ${columnString} FROM ${autocrudModule.name};`;
-  const byKey = `SELECT ${columnString} FROM ${autocrudModule.name} WHERE ${keyWhere};`;
+  const allRows = `SELECT * FROM ${autocrudModule.name};`;
+  const byKey = `SELECT * FROM ${autocrudModule.name} WHERE ${keyWhere};`;
   rootContext.moduleExecutors[module.contextName] = {
     module,
     executor: async (context: Context): Promise<Context> => {
