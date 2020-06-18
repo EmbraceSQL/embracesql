@@ -15,7 +15,6 @@ import {
   DatabaseInternal,
   MigrationFile,
   CreateAndReadbackSQL,
-  ReadSQL,
 } from "../../internal-context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../../handlers";
@@ -313,19 +312,6 @@ export default async (
         readback: `SELECT ${readbackKeyString} FROM ${autocrudModule.name} WHERE ROWID=last_insert_rowid()`,
       };
     },
-    readSQL: async (autocrudModule: AutocrudModule): Promise<ReadSQL> => {
-      const columnString = autocrudModule.resultsetMetadata
-        .map((c) => c.name)
-        .join(",");
-      const keyWhere = autocrudModule.namedParameters
-        .map((k) => `${k.name} = :${k.name}`)
-        .join(" AND ");
-      return {
-        allRows: `SELECT ${columnString} FROM ${autocrudModule.name};`,
-        byKey: `SELECT ${columnString} FROM ${autocrudModule.name} WHERE ${keyWhere};`,
-      };
-    },
-
     atomic,
     schemas,
   };

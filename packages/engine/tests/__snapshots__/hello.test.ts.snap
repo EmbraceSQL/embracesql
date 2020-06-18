@@ -188,7 +188,6 @@ Object {
       },
       "name": "default",
       "parse": [Function],
-      "readSQL": [Function],
       "schemas": Object {},
       "transactions": Object {
         "begin": [Function],

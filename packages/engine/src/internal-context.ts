@@ -40,14 +40,6 @@ export type CreateAndReadbackSQL = {
 };
 
 /**
- * SQL for the R in CRUD.
- */
-export type ReadSQL = {
-  allRows: string;
-  byKey: string;
-};
-
-/**
  * Function wrapper for atomicicity in running in the database.
  */
 export interface AtomicDatabaseAction {
@@ -92,10 +84,6 @@ export type DatabaseInternal = Database & {
    * Get the full create statement sql, with an immeidate readback
    */
   createSQL: (autocrudModule: AutocrudModule) => Promise<CreateAndReadbackSQL>;
-  /**
-   * Get the SQL to read back a table.
-   */
-  readSQL: (autocrudModule: AutocrudModule) => Promise<ReadSQL>;
   /**
    * Throttle access to a database for atomicity. This is needed when thre
    * are multiple parallel queries possible and you need to batch -- such

@@ -24,7 +24,7 @@ export default async (
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
   const restPath = `${autocrudModule.restPath}/read`;
-  const readModule = (database.modules[restPath] = {
+  const module = (database.modules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
@@ -32,12 +32,17 @@ export default async (
     resultsetMetadata: autocrudModule.columns,
     canModifyData: false,
   });
-  const queries = await database.readSQL(readModule);
-  rootContext.moduleExecutors[readModule.contextName] = {
-    module: readModule,
+  const columnString = module.resultsetMetadata.map((c) => c.name).join(",");
+  const keyWhere = module.namedParameters
+    .map((k) => `${k.name} = :${k.name}`)
+    .join(" AND ");
+  const allRows = `SELECT ${columnString} FROM ${autocrudModule.name};`;
+  const byKey = `SELECT ${columnString} FROM ${autocrudModule.name} WHERE ${keyWhere};`;
+  rootContext.moduleExecutors[module.contextName] = {
+    module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
-        return database.execute(queries.byKey, parameters);
+        return database.execute(byKey, parameters);
       };
       if (context.parameters.length) {
         // lots of ways to implement this, let's do the naive one for the moment
@@ -46,7 +51,7 @@ export default async (
         context.results = (await Promise.all(resultSets)).flat(2);
       } else {
         // without parameters, just run a query to get all rows
-        context.results = await database.execute(queries.allRows);
+        context.results = await database.execute(allRows);
       }
       return context;
     },
