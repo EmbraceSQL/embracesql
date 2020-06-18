@@ -54,7 +54,7 @@ const embraceSingleDatabase = async (
  * Referential graph. This is undirected, relationships are considered
  * symmetric even though the SQL references clause it actually directed.
  *
- * Reason being -- 1-man-1 jointer tables, those joiners 'reference' the parent, compared
+ * Reason being -- 1-man-1 joiner tables, those joiners 'reference' the parent, compared
  * to lookup value type tables where the parent references the child.
  *
  * And -- master detail 1-many, the child references the parent, but you will
@@ -76,16 +76,35 @@ export const buildReferentialGraph = async (
       );
     }
   }
-  // now each table will have reference data
-  const components = graphlib.alg.components(graph);
-  console.assert(components);
   for (const table of tables) {
-    const queryOrder = graphlib.alg.preorder(graph, [
-      `${table.schema}.${table.name}`,
-    ]);
-    // immediate neighbors
-    console.assert(queryOrder);
+    // each table has neighbors, and those neighbors may reference
+    // this table -- or may be referenced by this table -- the two and from swapped
+    // let's call these `backreferences` -- and collect them here
+    const neighbors =
+      (graph.neighbors(`${table.schema}.${table.name}`) as string[]) || [];
+    for (const key of neighbors) {
+      const neighbor = graph.node(key) as SQLTableMetadata;
+      for (const reference of neighbor.references) {
+        if (
+          reference.toSchema === table.schema &&
+          reference.toTable === table.name
+        ) {
+          // reverse the reference
+          table.backReferences.push({
+            fromSchema: table.schema,
+            fromTable: table.name,
+            fromColumns: reference.toColumns,
+            toSchema: reference.fromSchema,
+            toTable: reference.fromTable,
+            toColumns: reference.fromColumns,
+          });
+        }
+      }
+    }
   }
+  // at this point -- the schema metadata itself is bidirectionally 'linked' with
+  // references and back references
+  return;
 };
 
 /**

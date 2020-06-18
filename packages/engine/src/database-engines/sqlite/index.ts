@@ -110,6 +110,7 @@ export default async (
           fromTable: table,
           fromColumns: r.from.split(","),
         })),
+        backReferences: [],
       };
     });
     return await Promise.all(tableMetadata);

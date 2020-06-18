@@ -141,6 +141,10 @@ export type SQLTableMetadata = {
    * Relationships to to foreign tables.
    */
   readonly references: SQLTableReference[];
+  /**
+   * Reversed references.
+   */
+  readonly backReferences: SQLTableReference[];
 };
 
 /**

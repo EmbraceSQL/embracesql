@@ -9,22 +9,26 @@
       "type": "node",
       "request": "launch",
       "name": "Jest Tests",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "cwd": "${workspaceFolder}/packages/engine",
       "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
-      "args": ["--testTimeout", "500000", "--runInBand", "--coverage", "false", "-t", "works with arrays of parameters "],
+      "args": [
+        "--testTimeout",
+        "500000",
+        "--runInBand",
+        "--coverage",
+        "false",
+        "-t",
+        "autocrud"
+      ],
       "internalConsoleOptions": "openOnSessionStart"
     },
-        // test with jest -- update that * to any named test filter you like, very handy!
+    // test with jest -- update that * to any named test filter you like, very handy!
     {
       "type": "node",
       "request": "launch",
       "name": "CLI Start",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceRoot}/packages/cli/bin/index.js",
       "args": ["start", "packages/engine/.tests/sqlmodules"],
       "internalConsoleOptions": "openOnSessionStart"
