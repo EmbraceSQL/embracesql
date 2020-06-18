@@ -83,7 +83,48 @@ Array [
 
 exports[`sqlmodules provide autocrud works like the documentation over http 1`] = `
 Array [
-  Array [],
+  Object {
+    "name": "Sample",
+    "order_id": 2,
+    "order_items": Array [
+      Object {
+        "item_id": 4,
+        "items": Array [
+          Object {
+            "description": "Paper",
+            "item_id": 4,
+          },
+        ],
+        "order_id": 2,
+        "order_item_id": 4,
+        "quantity": 1,
+      },
+      Object {
+        "item_id": 5,
+        "items": Array [
+          Object {
+            "description": "Can",
+            "item_id": 5,
+          },
+        ],
+        "order_id": 2,
+        "order_item_id": 5,
+        "quantity": 1,
+      },
+      Object {
+        "item_id": 6,
+        "items": Array [
+          Object {
+            "description": "Loaf",
+            "item_id": 6,
+          },
+        ],
+        "order_id": 2,
+        "order_item_id": 6,
+        "quantity": 1,
+      },
+    ],
+  },
 ]
 `;
 
@@ -91,7 +132,7 @@ exports[`sqlmodules provide autocrud works like the documentation over http 2`] 
 Array [
   Object {
     "name": "Sample",
-    "order_id": 1,
+    "order_id": 2,
   },
 ]
 `;
@@ -101,15 +142,15 @@ Array [
   Array [
     Object {
       "description": "Paper",
-      "item_id": 1,
+      "item_id": 4,
     },
     Object {
       "description": "Can",
-      "item_id": 2,
+      "item_id": 5,
     },
     Object {
       "description": "Loaf",
-      "item_id": 3,
+      "item_id": 6,
     },
   ],
 ]

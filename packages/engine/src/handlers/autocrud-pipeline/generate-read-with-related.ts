@@ -8,10 +8,36 @@ import {
   SQLParameterSet,
   SQLRow,
   SQLTableMetadata,
+  SQLColumnMetadata,
 } from "../../shared-context";
 import { identifier } from "..";
 import { nestedTableName, schemaQualifiedName } from "../../database-engines";
 import { ArrayListMultimap } from "../../multimap";
+
+/**
+ * Generate the return / record type based on the relationships and related data.
+ *
+ */
+export const generateResultsetMetadata = (
+  autocrudModule: AutocrudModule
+): SQLColumnMetadata[] => {
+  const cycleDetector = new Set<string>();
+  const followTheGraph = (
+    table: SQLTableMetadata,
+    coreResultset: SQLColumnMetadata[]
+  ): SQLColumnMetadata[] => {
+    // first out of the gate -- prevent infinite recursion
+    if (cycleDetector.has(schemaQualifiedName(table))) return [];
+    cycleDetector.add(schemaQualifiedName(table));
+    for (const related of table.relatedData) {
+      if (!cycleDetector.has(schemaQualifiedName(related.toTable))) {
+        // this nested record is a sub-record
+      }
+    }
+    return coreResultset;
+  };
+  return followTheGraph(autocrudModule, [...autocrudModule.columns]);
+};
 
 /**
  * Generate a read method -- along with related data along the referential graph.
@@ -44,10 +70,12 @@ export default async (
     resultsetMetadata: autocrudModule.columns,
     canModifyData: false,
   });
+  // build up the execution function
   rootContext.moduleExecutors[module.contextName] = {
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
+        // multiple database reads, so make this atomic
         return database.atomic(async () => {
           // starting from 'this' table, build up a sql 'batch' -- a list
           // of statements, the first of which gets paraeterized by the key
@@ -65,7 +93,6 @@ export default async (
           const coreRecordSQL = `CREATE TEMPORARY TABLE ${coreRecordTable} AS SELECT * FROM ${schemaQualifiedName(
             module
           )} WHERE ${keyWhere};`;
-          drops.push(coreRecordTable);
           await database.execute(coreRecordSQL, parameters);
 
           const followTheGraph = async (
@@ -76,6 +103,7 @@ export default async (
             cycleDetector.add(schemaQualifiedName(table));
 
             const coreRecordTable = `_${nestedTableName(table)}`;
+            drops.push(coreRecordTable);
 
             // and the actual data
             const coreRecords = await database.execute(
