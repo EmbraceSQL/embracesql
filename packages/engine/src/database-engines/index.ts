@@ -21,6 +21,17 @@ import graphlib from "graphlib";
 const oneAtATime = pLimit(1);
 
 /**
+ * Schema qualified name -- if appropriate.
+ */
+export const schemaQualifiedName = (table: SQLTableMetadata): string => {
+  if (table.schema.length) {
+    return `${table.schema}.${table.name}`;
+  } else {
+    return table.name;
+  }
+};
+
+/**
  * Build a consistent record name for a nested table with schema qualification.
  */
 export const nestedTableName = (table: SQLTableMetadata): string => {

@@ -35,13 +35,8 @@ export const example = async (client): Promise<void> => {
   // notice three tables are joined automatically and you can get the description
   // EmbraceSQL inside created a query batch to pull in all this data
   // -- in one trip to the database, so it's not a chatterbox like ORMs
-  /*
-    console.log(
-      my_order.name,
-      my_order.order_items,
-      my_order.order_items[0].description
-    );
-    */
+  const my_order_and_related = await db.orders.readWithRelated(order_key);
+  console.log(my_order_and_related);
 
   // And sometimes you really do need the whole table
   // This is even simpler, just don't pass any parameters!

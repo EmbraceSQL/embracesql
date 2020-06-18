@@ -6,6 +6,7 @@ import md5 from "md5";
 import { AutocrudModule } from "../../shared-context";
 import generateCreate from "./generate-create";
 import generateRead from "./generate-read";
+import generateReadWithRelated from "./generate-read-with-related";
 import generateUpdate from "./generate-update";
 import generateDelete from "./generate-delete";
 import { identifier } from "..";
@@ -23,6 +24,7 @@ const autocrudModulePipeline = async (
   await generateRead(rootContext, database, autocrudModule);
   await generateUpdate(rootContext, database, autocrudModule);
   await generateDelete(rootContext, database, autocrudModule);
+  await generateReadWithRelated(rootContext, database, autocrudModule);
   return rootContext;
 };
 
