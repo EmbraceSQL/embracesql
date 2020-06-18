@@ -11,11 +11,7 @@ import {
   AutocrudModule,
   SQLParameterSet,
 } from "../../shared-context";
-import {
-  DatabaseInternal,
-  MigrationFile,
-  CreateAndReadbackSQL,
-} from "../../internal-context";
+import { DatabaseInternal, MigrationFile } from "../../internal-context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../../handlers";
 import { SQLModuleInternal } from "../../handlers/sqlmodule-pipeline";
@@ -292,25 +288,12 @@ export default async (
     /**
      * AutoCRUD query generation.
      */
-    createSQL: async (
-      autocrudModule: AutocrudModule
-    ): Promise<CreateAndReadbackSQL> => {
-      const columnString = autocrudModule.namedParameters
-        .map((c) => c.name)
-        .join(",");
-      const parameterString = autocrudModule.namedParameters
-        .map((c) => `:${c.name}`)
-        .join(",");
+    readLastKeySQL: async (autocrudModule: AutocrudModule): Promise<string> => {
       const readbackKeyString = autocrudModule.resultsetMetadata
         .map((c) => c.name)
         .join(",");
-      // no schema in SQLite..
-      return {
-        // make a row with all the values -- except for the auto values
-        create: `INSERT INTO ${autocrudModule.name}(${columnString}) VALUES(${parameterString});`,
-        // readback with the special column rowid for single crud inserts
-        readback: `SELECT ${readbackKeyString} FROM ${autocrudModule.name} WHERE ROWID=last_insert_rowid()`,
-      };
+      // readback with the special column rowid for single crud inserts
+      return `SELECT ${readbackKeyString} FROM ${autocrudModule.name} WHERE ROWID=last_insert_rowid()`;
     },
     atomic,
     schemas,

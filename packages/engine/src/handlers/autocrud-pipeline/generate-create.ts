@@ -30,32 +30,35 @@ export default async (
     (column) =>
       !autocrudModule.autoColumns.map((c) => c.name).includes(column.name)
   );
-  const createModule = (database.modules[restPath] = {
+  const module = (database.modules[restPath] = {
     ...autocrudModule,
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
     namedParameters,
-    // inserted columns will be 1-1 with parameters
-    workOnTheseColumns: namedParameters,
     // read back the keys
     resultsetMetadata: autocrudModule.keys,
     canModifyData: true,
   });
+  const columnString = module.namedParameters.map((c) => c.name).join(",");
+  const parameterString = module.namedParameters
+    .map((c) => `:${c.name}`)
+    .join(",");
+  const create = `INSERT INTO ${autocrudModule.name}(${columnString}) VALUES(${parameterString});`;
+  const readBack = await database.readLastKeySQL(module);
   // and with an executor to run the thing
-  const queries = await database.createSQL(createModule);
-  rootContext.moduleExecutors[createModule.contextName] = {
-    module: createModule,
+  rootContext.moduleExecutors[module.contextName] = {
+    module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // this needs to be atomic so our read back goes right after our insert
         // and no other query can sneak in between
         return await database.atomic(async () => {
           // make the row -- nothing to read here
-          const immediateParameters = validParameters(createModule, parameters);
-          await database.execute(queries.create, immediateParameters);
+          const immediateParameters = validParameters(module, parameters);
+          await database.execute(create, immediateParameters);
           // and the keys come back -- no parameters needed -- use the DB 'last inserted row' capability
           // take advantage of the fact we are in the same transaction and connection
-          const readBackKeys = await database.execute(queries.readback);
+          const readBackKeys = await database.execute(readBack);
           return readBackKeys[0];
         });
       };

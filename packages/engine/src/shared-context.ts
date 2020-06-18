@@ -179,15 +179,7 @@ export type CommonDatabaseModule = {
  * Auto crud module data. These are simpler than from disk sql modules
  * since the do not have handlers.
  */
-export type AutocrudModule = CommonDatabaseModule &
-  SQLTableMetadata & {
-    /**
-     * A subset of columns to be modified. Generally a subset of the columns
-     * minus the keys
-     */
-    readonly workOnTheseColumns?: SQLColumnMetadata[];
-  };
-
+export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
 /**
  * Each SQL found on disk has some data -- the SQL itself, and will
  * get additional metadata attached to it.
@@ -355,7 +347,6 @@ export type GenericContext<ParameterType, ResultType> = {
  * This is our generic context type -- bound to the generic parameter and reult types.
  */
 export type Context = GenericContext<SQLParameterSet, SQLRow>;
-
 
 /**
  * Execute a SQL module with a context. This is what you use when

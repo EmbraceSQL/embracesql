@@ -97,7 +97,6 @@ Object {
       "analyze": [Function],
       "atomic": [Function],
       "close": [Function],
-      "createSQL": [Function],
       "execute": [Function],
       "migrate": [Function],
       "modules": Object {
@@ -188,6 +187,7 @@ Object {
       },
       "name": "default",
       "parse": [Function],
+      "readLastKeySQL": [Function],
       "schemas": Object {},
       "transactions": Object {
         "begin": [Function],

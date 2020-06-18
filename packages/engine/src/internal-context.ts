@@ -32,14 +32,6 @@ export type Modules = {
 };
 
 /**
- * SQL Pair for C in CRUD.
- */
-export type CreateAndReadbackSQL = {
-  create: string;
-  readback: string;
-};
-
-/**
  * Function wrapper for atomicicity in running in the database.
  */
 export interface AtomicDatabaseAction {
@@ -81,9 +73,9 @@ export type DatabaseInternal = Database & {
    */
   close: () => Promise<void>;
   /**
-   * Get the full create statement sql, with an immeidate readback
+   * Read back query of an inserted row is always proprietary. Generate that SQL.
    */
-  createSQL: (autocrudModule: AutocrudModule) => Promise<CreateAndReadbackSQL>;
+  readLastKeySQL: (autocrudModule: AutocrudModule) => Promise<string>;
   /**
    * Throttle access to a database for atomicity. This is needed when thre
    * are multiple parallel queries possible and you need to batch -- such
