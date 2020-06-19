@@ -32,6 +32,11 @@ export const generateResultsetMetadata = (
     for (const related of table.relatedData) {
       if (!cycleDetector.has(schemaQualifiedName(related.toTable))) {
         // this nested record is a sub-record
+        const nestedRecord = {
+          name: nestedTableName(related.toTable),
+          type: followTheGraph(related.toTable, [...related.toTable.columns]),
+        };
+        coreResultset.push(nestedRecord);
       }
     }
     return coreResultset;
@@ -51,6 +56,10 @@ export default async (
   database: DatabaseInternalWithModules,
   autocrudModule: AutocrudModule
 ): Promise<InternalContext> => {
+  // quick check - if there are no related record, do not generate
+  if (autocrudModule.relatedData.length === 0) return rootContext;
+
+  // now then, on with the show of the related data reader
   const restPath = `${autocrudModule.restPath}/readWithRelated`;
 
   // computing the result-set is the big implementation challenge
@@ -67,7 +76,7 @@ export default async (
     contextName: identifier(`${database.name}/${restPath}`),
     restPath,
     namedParameters: autocrudModule.keys,
-    resultsetMetadata: autocrudModule.columns,
+    resultsetMetadata: generateResultsetMetadata(autocrudModule),
     canModifyData: false,
   });
   // build up the execution function

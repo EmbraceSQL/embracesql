@@ -88,7 +88,7 @@ export type SQLColumnMetadata = {
   /**
    * Type identifier.
    */
-  readonly type: SQLTypeName;
+  readonly type: SQLTypeName | SQLColumnMetadata[];
 };
 
 /**

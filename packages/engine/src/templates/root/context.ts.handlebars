@@ -38,9 +38,21 @@ export type {{module.contextName}}Handler = (context: {{module.contextName}}Cont
 export type {{contextName}}Row = types.SQLRow &
 {
   {{#each resultsetMetadata}}
-    {{name}}: {{type}}
+    {{name}}: {{> resultsetType type}}
   {{/each}}
 };
+{{/inline}}
+
+{{#*inline "resultsetType"}}
+{{#isArray this}}
+  {
+    {{#each this}}
+      {{name}}: {{> resultsetType type}}
+    {{/each}}
+  };
+{{else}}
+  {{this}};
+{{/isArray}}
 {{/inline}}
 
 {{#*inline "parametersMetadata"}}

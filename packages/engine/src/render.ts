@@ -14,6 +14,17 @@ import fs from "fs-extra";
  */
 
 /**
+ * Array or not
+ */
+handlebars.registerHelper("isArray", (arrayOrNot, options) => {
+  if (Array.isArray(arrayOrNot)) {
+    return options.fn(arrayOrNot);
+  } else {
+    return options.inverse(arrayOrNot);
+  }
+});
+
+/**
  * Map iteration, lots of maps in our metadata and handlebars is
  * sadly lacking a built in.
  */
