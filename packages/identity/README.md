@@ -7,9 +7,9 @@ Performs OpenID Connect discovery and key caching.
 ## Usage
 
 ```
-import identity from "@embracesql/identity";
+import {validate, FileCache} from "@embracesql/identity";
 
 // assumes top level async, will create the directory as needed
-const validIdToken = await identity.validate("<raw token>");
+const validIdToken = await validate("<raw token>", {cache: new FileCache(".keys")});
 
 ```
