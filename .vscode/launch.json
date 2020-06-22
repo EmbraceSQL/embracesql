@@ -10,7 +10,7 @@
       "request": "launch",
       "name": "Jest Tests",
       "skipFiles": ["<node_internals>/**"],
-      "cwd": "${workspaceFolder}/packages/engine",
+      "cwd": "${workspaceFolder}/packages/identity",
       "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
       "args": [
         "--testTimeout",
@@ -19,7 +19,7 @@
         "--coverage",
         "false",
         "-t",
-        "autocrud"
+        ""
       ],
       "internalConsoleOptions": "openOnSessionStart"
     },
