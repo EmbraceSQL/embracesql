@@ -1,6 +1,8 @@
 import { JWT, JWK } from "jose";
 import { Issuer } from "openid-client";
 import urlParse from "url-parse";
+import fs from "fs-extra";
+import path from "path";
 
 /**
  * Original encoded string, pass this in from a header.
@@ -20,7 +22,15 @@ export interface JWKCache {
    */
   set: (kid: string, jwk: JWK.Key) => Promise<JWK.Key>;
 }
-
+/**
+ * Decoded token header.
+ */
+export type JWTHeader = {
+  /**
+   * The key ID is the only part we're really worried about.
+   */
+  kid: string;
+};
 /**
  * Decoded token, this is your identity.
  *
@@ -76,6 +86,38 @@ export class MemoryCache implements JWKCache {
 }
 
 /**
+ * And cache keys on disk with files
+ */
+export class FileCache implements JWKCache {
+  root: string;
+  constructor(root: string) {
+    this.root = root;
+  }
+
+  buildPath(kid: string): string {
+    return path.join(this.root, `${kid}.json`);
+  }
+
+  async get(kid: string): Promise<JWK.Key> {
+    await fs.ensureDir(this.root);
+    const at = this.buildPath(kid);
+    const exists = await fs.pathExists(at);
+    if (exists) {
+      return JSON.parse(await fs.readFile(at, "utf8"));
+    } else {
+      return undefined;
+    }
+  }
+
+  async set(kid: string, jwk: JWK.Key): Promise<JWK.Key> {
+    await fs.ensureDir(this.root);
+    const at = this.buildPath(kid);
+    await fs.writeFile(at, JSON.stringify(jwk), "utf8");
+    return jwk;
+  }
+}
+
+/**
  * Options used in token validation.
  */
 export type validateOptions = {
@@ -99,6 +141,10 @@ export type validateOptions = {
   ignoreExp?: boolean;
 };
 
+/**
+ * Validate a JWT Identity token, returning the useable token payload or throwing
+ * an exception if no token is available.
+ */
 export const validate = async (
   idToken: JWTString,
   options?: validateOptions
@@ -106,23 +152,36 @@ export const validate = async (
   // add on some defaults
   const optionsAfterDefaults = {
     cache: new MemoryCache(),
-    now: Date.now(),
+    now: new Date(),
     ignoreExp: false,
     ...options,
   };
   // we'll need to see into the token, and this can throw an exception
   const decoded = JWT.decode(idToken, { complete: true });
-  // hopefully, the JWK we need is already cached, and it can be easily fetched
+  const getTheKey = async (): Promise<JWK.Key> => {
+    // hopefully, the JWK we need is already cached, and it can be easily fetched
+    const fromCache = await optionsAfterDefaults.cache.get(
+      (decoded.header as JWTHeader).kid
+    );
+    if (fromCache) return fromCache;
+    // but if not, go out to OIDC discovery
+    const issuer = await Issuer.discover(
+      cleanIssuer(decoded.payload as JWTPayload)
+    );
+    for (const jwk of (await issuer.keystore(true)).all()) {
+      await optionsAfterDefaults.cache.set(jwk.kid, jwk);
+      // found it!
+      if (jwk.kid === (decoded.header as JWTHeader).kid) return jwk;
+    }
+  };
 
-  // but if not, go out to OIDC discovery
-  const issuer = await Issuer.discover(
-    cleanIssuer(decoded.payload as JWTPayload)
-  );
-  for (const jwk of (await issuer.keystore(true)).all()) {
-    await optionsAfterDefaults.cache.set(jwk.kid, jwk);
+  const validateWith = await getTheKey();
+  if (validateWith) {
+    //let this throw on a fail
+    JWT.verify(idToken, validateWith, optionsAfterDefaults);
+    return decoded.payload as JWTPayload;
+  } else {
+    // and the failure of last resort
+    throw new Error("No key could be found to validate this token");
   }
-  return decoded.payload as JWTPayload;
-
-  // and the failure of last resort
-  throw new Error("You id token is not valid");
 };
