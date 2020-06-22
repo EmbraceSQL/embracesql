@@ -23,6 +23,7 @@
     "bootstrap": "lerna bootstrap --use-workspaces",
     "pretty": "prettier --write packages/**/*.ts",
     "lint": "eslint --ext .ts,.tsx .",
-    "test": "lerna run test"
+    "test": "lerna run test || true",
+    "docs": "yarn workspace @embracesql/docs start"
   }
 }

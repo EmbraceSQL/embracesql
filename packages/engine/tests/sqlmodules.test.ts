@@ -1,11 +1,11 @@
 import path from "path";
 import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
 
-describe("sqlmodules provide handlers and autocrud", () => {
+describe("sqlmodules provide handlers", () => {
   let rootContext: InternalContext;
   const root = path.relative(process.cwd(), "./.tests/sqlmodules");
   beforeAll(async () => {
@@ -16,7 +16,6 @@ describe("sqlmodules provide handlers and autocrud", () => {
     // get the configuration and generate - let's do this just the once
     // and have a few tests that asser things happened
     const configuration = await loadConfiguration(root);
-    configuration.embedded = true;
     rootContext = await buildInternalContext(configuration);
     await migrate(rootContext);
     // reset and go
@@ -25,7 +24,7 @@ describe("sqlmodules provide handlers and autocrud", () => {
   });
   it("knows add.sql is not read only", async () => {
     expect(
-      rootContext.databases["default"].SQLModules.add.canModifyData
+      rootContext.databases["default"].modules.add.canModifyData
     ).toBeTruthy();
   });
   it("reads and writes things", async () => {
@@ -36,12 +35,12 @@ describe("sqlmodules provide handlers and autocrud", () => {
     ));
     const engine = await EmbraceSQLEmbedded();
     // initial values
-    expect(await engine.databases.default.all.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.all()).toMatchSnapshot();
     // add a thing
     expect(
-      await engine.databases.default.add.sql({ id: 3, name: "automobiles" })
+      await engine.databases.default.add({ id: 3, name: "automobiles" })
     ).toMatchSnapshot();
     // and read again
-    expect(await engine.databases.default.all.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.all()).toMatchSnapshot();
   });
 });

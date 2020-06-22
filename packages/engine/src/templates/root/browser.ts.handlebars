@@ -1,0 +1,8 @@
+---
+to: "{{configuration.embraceSQLRoot}}/browser.ts"
+---
+import * as context from "./context";
+
+{{> shared-browser-client.ts }}
+{{> partials/fetch-client.handlebars }}
+

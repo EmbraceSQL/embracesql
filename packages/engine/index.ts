@@ -5,9 +5,10 @@
 import { generateFromTemplates } from "./src/generator";
 import { loadConfiguration } from "./src/configuration";
 import { watchRoot } from "./src/watcher";
-import { InternalContext, buildInternalContext } from "./src/context";
+import { InternalContext, buildInternalContext } from "./src/internal-context";
 import { migrate } from "./src/migrations";
 import { createServer } from "./src/server";
+import { withTransaction } from "./src/transactions";
 
 // re-export symbols as needed
 export {
@@ -18,4 +19,5 @@ export {
   buildInternalContext,
   migrate,
   createServer,
+  withTransaction,
 };

@@ -1,8 +1,8 @@
-import { InternalContext } from "./context";
+import { InternalContext } from "./internal-context";
 import path from "path";
 import walk from "ignore-walk";
-import readFile from "read-file-utf8";
 import limit from "p-limit";
+import fs from "fs-extra";
 
 // migrations will be serial
 const oneAtATime = limit(1);
@@ -28,7 +28,7 @@ export const migrate = async (rootContext: InternalContext): Promise<void> => {
       .sort() // migrations are ordered for each database
       .map(async (fullMigrationFilename) => ({
         name: fullMigrationFilename,
-        content: (await readFile(fullMigrationFilename)).trim(),
+        content: (await fs.readFile(fullMigrationFilename, "utf8")).trim(),
       }))
       .map(async (migrationSQLScriptFile) => {
         return oneAtATime(async () => {

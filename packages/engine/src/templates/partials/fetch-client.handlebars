@@ -7,7 +7,7 @@ export const EmbraceSQL = (serverUrl: string) => {
     databases: {
     {{#eachInMap databases}}
       {{@key}}: {
-      {{#treeAMap value.SQLModules database=value}}
+      {{#treeAMap value.modules database=value}}
         {{#each value}}
         {{> moduleTree this database=@database}}
         {{/each}}
@@ -20,20 +20,22 @@ export const EmbraceSQL = (serverUrl: string) => {
 };
 
 {{#*inline "moduleTree"}}
-{{name}}: {
-  {{#if value}}
-  {{#if value.namedParameters.length}}
-  sql: async (parameters: context.{{value.contextName}}Parameters) : Promise<context.{{value.contextName}}Row[]> => {
-    return post(serverUrl, "/{{value.restPath}}", parameters) as unknown as context.{{value.contextName}}Row[];
-  }
-  {{else}}
-  sql: async () : Promise<context.{{value.contextName}}Row[]> => {
-    return post(serverUrl, "/{{value.restPath}}", {}) as unknown as context.{{value.contextName}}Row[];
-  }
-  {{/if}}
-  {{/if}}
+  {{#if children.length}}
+  {{name}}: {
   {{#each children}}
     {{> moduleTree this database=database}}
   {{/each}}
-},
+  },
+  {{else}}
+  {{name}}:
+    {{#if value.namedParameters.length}}
+    async (...parameters: context.{{value.contextName}}ParameterSet[]) : Promise<context.{{value.contextName}}Row[]> => {
+      return post(serverUrl, "/{{value.restPath}}", parameters.flat()) as unknown as context.{{value.contextName}}Row[];
+    },
+    {{else}}
+    async () : Promise<context.{{value.contextName}}Row[]> => {
+      return post(serverUrl, "/{{value.restPath}}", {}) as unknown as context.{{value.contextName}}Row[];
+    },
+    {{/if}}
+  {{/if}}
 {{/inline}}

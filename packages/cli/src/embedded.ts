@@ -31,7 +31,7 @@ export default new Command()
           EMBRACEQL_ROOT || process.env.EMBRACEQL_ROOT || "/var/embracesql"
         )
       );
-      const configuration = await loadConfiguration(root, true);
+      const configuration = await loadConfiguration(root);
       const internalContext = await buildInternalContext(configuration);
       // just needed for generation -- so close it off.
       internalContext.close();

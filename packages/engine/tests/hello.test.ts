@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import path from "path";
-import fs from "fs-extra";
-import { loadConfiguration, Configuration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { loadConfiguration } from "../src/configuration";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { createServer } from "../src/server";
 import request from "supertest";
-import readFile from "read-file-utf8";
 import rmfr from "rmfr";
 import { watchRoot } from "../src/watcher";
 import http from "http";
+import fs from "fs-extra";
+import { SQLModule } from "../src/shared-context";
 
 declare global {
   namespace jest {
@@ -27,33 +27,39 @@ declare global {
  */
 describe("hello world configuration!", () => {
   const root = path.relative(process.cwd(), "./.tests/hello");
-  let theConfig: Configuration = undefined;
   let rootContext: InternalContext;
   let listening: http.Server;
   let callback;
   beforeAll(async () => {
-    // clean up
-    await rmfr(root);
-    // get the configuration and generate - let's do this just the once
-    // and have a few tests that asser things happened
-    const configuration = (theConfig = await loadConfiguration(root));
-    rootContext = await buildInternalContext(configuration);
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { EmbraceSQLEmbedded } = require(path.join(
-      process.cwd(),
-      rootContext.configuration.embraceSQLRoot
-    ));
-    const engine = await EmbraceSQLEmbedded();
-    const server = await createServer(engine);
-    callback = server.callback();
-    listening = server.listen(4567);
+    try {
+      // clean up
+      await rmfr(root);
+      // get the configuration and generate - let's do this just the once
+      // and have a few tests that asser things happened
+      const configuration = await loadConfiguration(root);
+      rootContext = await buildInternalContext(configuration);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { EmbraceSQLEmbedded } = require(path.join(
+        process.cwd(),
+        rootContext.configuration.embraceSQLRoot
+      ));
+      const engine = await EmbraceSQLEmbedded();
+      const server = await createServer(engine);
+      callback = server.callback();
+      listening = server.listen(4567);
+    } catch (e) {
+      console.error(e);
+    }
   });
   afterAll(async (done) => {
     listening.close(() => done());
   });
   expect.extend({
     toExist(fileName) {
-      const fullPath = path.join(theConfig.embraceSQLRoot, fileName);
+      const fullPath = path.join(
+        rootContext.configuration.embraceSQLRoot,
+        fileName
+      );
       const exists = fs.existsSync(fullPath);
       return exists
         ? { message: (): string => `${fullPath} exists`, pass: true }
@@ -61,13 +67,13 @@ describe("hello world configuration!", () => {
     },
   });
   it("reads a config", async () => {
-    expect(theConfig).toMatchSnapshot();
+    expect(rootContext.configuration).toMatchSnapshot();
   });
   it("makes a default config for you", async () => {
     expect("embracesql.yaml").toExist();
   });
   it("makes a sqlite database for you", async () => {
-    expect(theConfig.databases["default"].pathname).toExist();
+    expect("embracesql.db").toExist();
   });
   it("makes a hello world sql for you", async () => {
     expect("default/hello.sql").toExist();
@@ -81,18 +87,19 @@ describe("hello world configuration!", () => {
   });
   it("knows hello sql is read only", async () => {
     expect(
-      rootContext.databases["default"].SQLModules.hello.canModifyData
+      rootContext.databases["default"].modules.hello.canModifyData
     ).toBeFalsy();
   });
   it("exposes methods to run hello sql", async () => {
     expect(
-      rootContext.databases["default"].SQLModules.hello.sql
+      (rootContext.databases["default"].modules.hello as SQLModule).sql
     ).toMatchSnapshot();
   });
   it("generates an open api doc", async () => {
     expect("openapi.yaml").toExist();
-    const content = await readFile(
-      path.join(theConfig.embraceSQLRoot, "openapi.yaml")
+    const content = await fs.readFile(
+      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml"),
+      "utf8"
     );
     expect(content).toMatchSnapshot();
   });
@@ -105,7 +112,7 @@ describe("hello world configuration!", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      rootContext.databases["default"].SQLModules["hello"]
+      (rootContext.databases["default"].modules["hello"] as SQLModule).sql
     );
     expect(results).toMatchSnapshot();
   });
@@ -119,7 +126,7 @@ describe("hello world configuration!", () => {
       "node"
     ));
     const client = EmbraceSQL("http://localhost:4567");
-    expect(await client.databases.default.hello.sql()).toMatchSnapshot();
+    expect(await client.databases.default.hello()).toMatchSnapshot();
   });
   it("will make an embeddable engine", async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -128,7 +135,7 @@ describe("hello world configuration!", () => {
       rootContext.configuration.embraceSQLRoot
     ));
     const engine = await EmbraceSQLEmbedded();
-    expect(await engine.databases.default.hello.sql()).toMatchSnapshot();
+    expect(await engine.databases.default.hello()).toMatchSnapshot();
   });
   it("will watch for changes and create a new context", async (done) => {
     const watcher = watchRoot(rootContext);

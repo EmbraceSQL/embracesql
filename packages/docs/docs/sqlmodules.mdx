@@ -15,16 +15,12 @@ The SQL you write is the SQL that is going to run. You are in full control and w
 
 As a simple example, let's make two new API endpoints in a directory by creating some sql files. These are tucked under the `./default` meaning they are for the defatult database.
 
-```sql title="migrations/default/001.sql"
-CREATE TABLE things(
-  id integer PRIMARY KEY,
-  name text NOT NULL
-);
+```sql title="./migrations/001.sql" file=../../engine/tests/configs/sqlmodules-transactions/migrations/default/001.sql
+
 ```
 
-```sql title="migrations/default/002.sql"
-INSERT INTO things(id, name) values(1, "planes");
-INSERT INTO things(id, name) values(2, "trains");
+```sql title="./migrations/002.sql" file=../../engine/tests/configs/sqlmodules-transactions/migrations/default/002.sql
+
 ```
 
 ```shell
@@ -33,12 +29,12 @@ docker run -v ${PWD}:/var/embracesql embracesql/server migrate
 
 And now the sql scripts to define the sql modules.
 
-```sql title="./default/all.sql"
-SELECT * FROM things;
+```sql title="./default/all.sql" file=../../engine/tests/configs/sqlmodules-transactions/default/all.sql
+
 ```
 
-```sql title="./default/add.sql"
-INSERT INTO things(id, name) VALUES(:id, :name);
+```sql title="./default/add.sql" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql
+
 ```
 
 Notice the named parameters.
@@ -81,6 +77,10 @@ add.sql.afterError.ts
 
 Take a look inside -- these are data handlers, generated in TypeScript. `before` provides the ability to intercept a query on the way in, and `after` results on the way out.
 
+:::tip
+Handlers are optional -- you can just write SQL. You probably _should_ just write SQL.
+:::
+
 You are really limited only by your imagination, but some suggestions for `before` handlers:
 
 - Check security with code (more on our security model later)
@@ -92,8 +92,8 @@ And for `after` handlers:
 - Make an additional query for more or associated data with EmbraceSQL
 
 Data Handlers are hierarchical, to allow defaults, and to cut down copy and paste programming.
-Starting from a any `foo.sql`, EmbraceSQL looks for `foo.sql.[event].[extension]` for a given event, across all extensions. 
-From there, the local directory `[event].[extension]`, and repeatedly up each directory to the root directory where EmbraceSQL is running. 
+Starting from a any `foo.sql`, EmbraceSQL looks for `foo.sql.[event].ts` for a given event, across all extensions.
+From there, the local directory `[event].ts`, and repeatedly up each directory to the root directory where EmbraceSQL is running.
 This is the event handler chain.
 
 Here is a picture of the event handler chain:
@@ -119,23 +119,13 @@ stateDiagram
 
 Let’s look inside the `add` handlers, and tweak some parameters.
 
-```typescript title="./default/add.sql.before.ts"
-import * as types from "../context";
-
-export const before: types.default_addHandler = async (context) => {
-  context.parameters.name = context.parameters.name + "-ahoy";
-  return context;
-};
-
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules/default/add.sql.before.ts
 ```
 
-And after the query -- let's read back the rows. 
+And after the query -- let's read back the rows.
 This pretty handy as a general trick by the way to read back a lookup table.
 
-```javascript title="./default/add.sql.after.js"
-export const after = async (context) => {
-  context.results = await context.databases.default.things.all.sql({});
-};
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules/default/add.sql.after.ts
 ```
 
 And now -- give it a try, not only will you have a slightly different name than what you sent in -- you will get rows back as well, with one API call, instead of the two we previously ran.
@@ -149,7 +139,7 @@ The advantage here is you can batch up multiple interactions, even with multiple
 
 ### Context
 
-The Data Handler execution model relies on a `context`, which is shared between all handlers in a chain. 
+The Data Handler execution model relies on a `context`, which is shared between all handlers in a chain.
 This is the _one parameter_ passed to each handler, potentialy modified by a handler, and is available subsequent handlers.
 This one parameter approach allows for a simple call signature, and a shared 'blackboard' pattern between your handlers and the EmbraceSQL engine itself.
 
@@ -157,7 +147,7 @@ EmbraceSQL itself creates this context when an SQL module call starts, and augme
 
 This shared context, and single parameter call signature for handlers makes handlers more consistent and affords easy access to object destructuring syntax features to pick out the bits of context you find interesting in your application.
 
-The actual `context` is typed, and generated based on the SQL you write and the schema of your database. 
+The actual `context` is typed, and generated based on the SQL you write and the schema of your database.
 As you change the SQL, the type of the `parameters` and `results` properties in particular will change.
 This is particularly handy as it allows autocomplete while editing your handlers!
 
@@ -165,8 +155,8 @@ This is particularly handy as it allows autocomplete while editing your handlers
 
 We've seen in [Databases](./databases) that you can have multiple databases -- so then -- how does an API -- an .sql file -- know which database to use?
 
-The answer is -- folders. i
-Each folder under the EmbraceSQL root correspondes to a named database, with the exception of the reserved folders under `migrations`;
+The answer is -- folders.
+Each folder under the EmbraceSQL root correspondes to a named database, with the exception of the reserved folders under `migrations`.
 
 ## SQL Dialect
 
@@ -179,30 +169,15 @@ The trade-off is of couse, you need to know the SQL of you database! The good ne
 For any given database, you can begin, commit, or rollback a transaction at any time in any handler. You can do this in SQL, and you can do this in handler code.
 
 Any transaction that was not committed by the time data is returned is automatically rolled back, meaning and `INSERT` `UPDATE` or `DELETE` will have no permanent effect.
-Data can still return, which can let you do somewhat clever things like, insert data, read it back, and then an automatic roll back happen. This is a handy trick for database testing, where you can let transactions ‘undo’ the test data changes for you, restoring your database to a pristine state.
+Data can still return, which can let you do somewhat clever things like, insert data, read it back, and then an automatic roll back will happen.
+This is a handy trick for database testing, where you can let transactions ‘undo’ the test data changes for you, restoring your database to a pristine state by having a conditional on your `commit`.
 
 For example, let's modify a previous handler:
 
-```javascript title="./things/add.sql.before.js"
-export const before = async (context) => {
-  // start a database transaction
-  await context.databases.default.transactions.begin();
-  // modify a passed in parameter by name
-  context.parameters.name = context.parameters.name + “-ahem”;
-}
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql.before.ts
 ```
 
-```javascript title="./things/add.sql.after.js"
-export const after = async (context) => {
-  // run a SQL module inline, no parameters
-  context.results = await context.invoke.things.all.sql({});
-  // do not commit, as this is commented out
-  // note that by this time we have already done the insert
-  // and queried the database
-  // await context.databases.default.transactions.commit();
-  // we could also explicitly rollback, but this will happen on its own
-  // await context.databases.default.transactions.rollback();
-};
+```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql.after.ts
 ```
 
 And behold the rollback, which you can see in your shell.
@@ -221,23 +196,16 @@ It's great to be able to have the full power of SQL when you need it -- but some
 
 Let's set up some tables for a really vanilla shopping cart, in our default testing SQLite database and see how this works. We'll have a pretty normal set or orders, items to order, and an association table to put items in an order.
 
-```sql title="./migrations/default/002.sql"
-CREATE TABLE orders(
-  order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL
-);
-CREATE TABLE items(
-  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  description TEXT NOT NULL
-);
-CREATE TABLE order_items(
-  order_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id INTEGER NOT NULL,
-  item_id INTEGER NOT NULL,
-  quantity INTEGER NOT NULL,
-  FOREIGN KEY(order_id) REFERENCES orders(order_id),
-  FOREIGN KEY(item_id) REFERENCES items(item_id)
-);
+```sql title="./migrations/003.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/003.sql
+
+```
+
+```sql title="./migrations/004.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/004.sql
+
+```
+
+```sql title="./migrations/005.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/005.sql
+
 ```
 
 ```shell
@@ -260,97 +228,23 @@ Even more powerful, with [Generated Client Libraries](./clients), you have typin
 import EmbraceSQL from "./embrace-sql";
 
 const client = new EmbraceSQL("http://localhost:8765");
-
-const example = async () => {
-
-  // little shortcut to type less...
-  const db = client.databases.default;
-
-  // make some items we can order
-  const item_key = await db.items.create({description: "Paper"});
-
-  // and array valued, make a few records in one shot...
-  const more_item_keys = await db.items.create([
-    {description: "Can"},
-    {description: "Loaf"},
-  ]);
-
-  // no need to pass in the key, it is an auto increment, but you
-  // sure will need it to put in order items, so let's capture the created key
-  // whih EmbraceSQL thought of for you
-  const order_key = await db.orders.create({name: "Sample"});
-
-  // now join items and orders with one of each
-  // again notice we don't need to mention the autoincrement
-  await db.order_items.create([item_key, ...more_item_keys].map(
-    (item_key) => ({order_key.order_id, item_key.item_id, quantity: 1})
-  ));
-
-  // You can use that created key to 'read back' a record, kinda handy
-  // oh -- and it pulls back the whole associated referential graph
-  // your reward for embracing sql and referential integrity is not needing
-  // to query to get child records like order_items or lookup data like items
-  const my_order = await db.orders.read(order_key);
-
-  // notice three tables are joined automatically and you can get the description
-  // EmbraceSQL inside created a query batch to pull in all this data
-  // -- in one trip to the database, so it's not a chatterbox like ORMs
-  console.log(my_order.name, my_order.order_items, my_order.order_items[0].description);
-
-  // hmm -- I really want two of that... let's update, passing in all the order items
-  // and using nice object spread with one property of overwrite
-  await db.order_items.update({...my_order.order_items, quantity: 2});
-
-  // nope -- I don't want it at all
-  // delete the whole thing down the referentia graph
-  await db.orders.delete(order_key);
-
-  // but the items aren't deleted -- they are lookup data!
-  // EmbraceSQL is smart enough to only delete children
-  console.log(await db.items.all());
-
-  // clean up the items
-  await db.items.all.delete();
-};
-example();
 ```
 
-So, every SQL module has event handlers, and pure SQL inside. So you
-can actually spy on EmbraceSQL -- even change the SQL for AutoCRUD on the fly if you really wish it!
+```typescript file=../../engine/tests/examples/orders_items.ts
+```
 
-```javascript title="./default/items/before.js"
-export const before = (context) => {
-  // look inside EmbraceSQL and see what it is doing!
-  // this will run for the folder items, corresponding to the table items
-  // so will run for create, read, update and delete
-  console.log(context.sql, context.parameters);
-};
+```typescript
+example(client);
 ```
 
 ### Error Handling
 
 Some errors are more critical than others. Sometimes you want to keep going, sometimes you want to abort. EmbraceSQL is a bit of a perfectionist, and aborts the entire request on any unhandled error. You can be more forgiving though, and decide to keep going by creating an error handler:
 
-```javascript title="./things/add.sql.error.js"
-export const error = (context) => {
-  // see what happened and print it out, the error is on the context
-  console.log(context.error);
-  // do nothing and the error 'counts'
-
-  // optionally 'eat' the error
-  context.error = undefined;
-
-  // raise it again -- or any error and the transaction aborts
-  // throw "Oh! Noes!";
-};
+```typescript title="./default/hello.sql.afterError.ts" file=../../engine/tests/configs/hello-handler/default/hello.sql.afterError.ts
 ```
 
 You can also `try/catch` in your handler code, so in practice the `error` event handlers are useful to capture errors coming back from your database engine.
-
-### Supported Formats
-
-- TSV/CSV, parameter names are extracted from the 0th row
-- JSONS - one JSON per line, each line is self describing with parameter names
 
 ## Invoking SQL Modules
 
@@ -358,7 +252,7 @@ There are three styles of invocation:
 
 - Request/Response via REST
 - Request/Response via generated client libraries
-- Fire and Forget via messages
+- Request/Response -- embedded -- via generated client libraries
 
 ### REST
 
@@ -367,6 +261,12 @@ These work until complete and return to the caller, transactions roll back autom
 
 ### Cient Library
 
-Client libraries are typed wrappers that support auto-complete, but are really just REST.
+Client libraries are typed wrappers that support auto-complete, but are really just REST under the hood, using the client to give you nice autocomplete, communicating to the server with REST, and coming back.
+
+### Client Library -- Embedded
+
+In this style, there is no REST, your process has EmbraceSQL in it as a TypeScript module.
+Calls to the generated client library invoke database access directly from your process.
+This is useful for making your own node server that uses EmbraceSQL as the data access library, as well as to have autocomplete and strong types with SQLite in process in React Native applications.
 
 Having an API is great, now let's add [Security](./security).

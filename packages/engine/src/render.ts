@@ -1,7 +1,6 @@
-import { InternalContext } from "./context";
+import { InternalContext } from "./internal-context";
 import walk from "ignore-walk";
 import path from "path";
-import readFile from "read-file-utf8";
 import frontMatter from "front-matter";
 import handlebars from "handlebars";
 import prettier from "prettier";
@@ -13,6 +12,17 @@ import fs from "fs-extra";
  *
  * Up here -- setting up handlebars with some helpers.
  */
+
+/**
+ * Array or not
+ */
+handlebars.registerHelper("isArray", (arrayOrNot, options) => {
+  if (Array.isArray(arrayOrNot)) {
+    return options.fn(arrayOrNot);
+  } else {
+    return options.inverse(arrayOrNot);
+  }
+});
 
 /**
  * Map iteration, lots of maps in our metadata and handlebars is
@@ -27,6 +37,7 @@ handlebars.registerHelper("eachInMap", (map, block) => {
       },
       {
         data: {
+          ...block.hash,
           index: index,
           key: prop,
           first: index === 0,
@@ -116,12 +127,14 @@ export const renderTemplates = async (
   // as possible as just plain code with syntax highlighting and autocomplete
   // generated code takes these as a starting point and adds on generated types
   const waitForCodePartials = [
-    "shared-context.ts",
     "shared-browser-client.ts",
     "shared-node-client.ts",
   ].map(
     async (fileName): Promise<void> => {
-      const fileContent = await readFile(path.join(__dirname, fileName));
+      const fileContent = await fs.readFile(
+        path.join(__dirname, fileName),
+        "utf8"
+      );
       handlebars.registerPartial(fileName, handlebars.compile(fileContent));
     }
   );
@@ -134,8 +147,9 @@ export const renderTemplates = async (
   );
   const waitForPartials = partials.map(
     async (fileName): Promise<void> => {
-      const fileContent = await readFile(
-        path.join(__dirname, "templates", "partials", fileName)
+      const fileContent = await fs.readFile(
+        path.join(__dirname, "templates", "partials", fileName),
+        "utf8"
       );
       handlebars.registerPartial(
         `partials/${fileName}`,
@@ -149,7 +163,9 @@ export const renderTemplates = async (
       .then((fileNames) =>
         fileNames.map((fileName) => path.join(templatesInDirectory, fileName))
       )
-      .then(async (templatePaths) => templatePaths.map(readFile))
+      .then(async (templatePaths) =>
+        templatePaths.map((p) => fs.readFile(p, "utf8"))
+      )
       // the files themselves know their 'to' so we don't need to keep the file name
       // but might as well flatten out those promises
       .then((_) => Promise.all(_))
@@ -182,9 +198,16 @@ export const renderTemplates = async (
               }
             });
             if (parsers.length) {
-              return prettier.format(content, {
-                parser: (parsers[0] as unknown) as prettier.CustomParser,
-              });
+              try {
+                return prettier.format(content, {
+                  parser: (parsers[0] as unknown) as prettier.CustomParser,
+                });
+              } catch {
+                // forgive a lack of pretty -- the compiler will catch it
+                // and if you don't have this -- files won't regenerate unless
+                // they are pretty -- and it'll be really hard to debug template errors...
+                return content;
+              }
             } else {
               return content;
             }

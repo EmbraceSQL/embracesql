@@ -69,7 +69,7 @@ import { EmbraceSQL } from "./client/node";
 const client = EmbraceSQL("http://localhost:8765");
 
 const example = async (): Promise<void> => {
-  const echoed = await client.databases.default.hello.sql({ stuff: "world" });
+  const echoed = await client.databases.default.hello({ stuff: "world" });
   console.log(echoed);
 };
 example();

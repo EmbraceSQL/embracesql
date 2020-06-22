@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`sqlmodules provide handlers and autocrud reads and writes things 1`] = `
+exports[`sqlmodules provide handlers reads and writes things 1`] = `
 Array [
   Object {
     "id": 1,
@@ -13,7 +13,7 @@ Array [
 ]
 `;
 
-exports[`sqlmodules provide handlers and autocrud reads and writes things 2`] = `
+exports[`sqlmodules provide handlers reads and writes things 2`] = `
 Array [
   Object {
     "id": 1,
@@ -30,7 +30,7 @@ Array [
 ]
 `;
 
-exports[`sqlmodules provide handlers and autocrud reads and writes things 3`] = `
+exports[`sqlmodules provide handlers reads and writes things 3`] = `
 Array [
   Object {
     "id": 1,

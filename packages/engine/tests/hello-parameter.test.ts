@@ -1,11 +1,12 @@
 import path from "path";
 import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { createServer } from "../src/server";
 import request from "supertest";
 import rmfr from "rmfr";
 import http from "http";
+import { SQLModule } from "../src/shared-context";
 
 /**
  * Let's make sure we can use a parameter with a pbare query.
@@ -39,7 +40,7 @@ describe("hello world with a parameter", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      rootContext.databases["default"].SQLModules["hello"],
+      (rootContext.databases["default"].modules["hello"] as SQLModule).sql,
       { stuff: "Whirled" }
     );
     expect(results).toMatchSnapshot();
@@ -66,7 +67,7 @@ describe("hello world with a parameter", () => {
     ));
     const client = EmbraceSQL("http://localhost:45678");
     expect(
-      await client.databases.default.hello.sql({ stuff: "nodey thing" })
+      await client.databases.default.hello({ stuff: "nodey thing" })
     ).toMatchSnapshot();
   });
   it("will make an embeddable engine", async () => {
@@ -77,7 +78,7 @@ describe("hello world with a parameter", () => {
     ));
     const engine = await EmbraceSQLEmbedded();
     expect(
-      await engine.databases.default.hello.sql({ stuff: "hole" })
+      await engine.databases.default.hello({ stuff: "hole" })
     ).toMatchSnapshot();
   });
 });

@@ -2,31 +2,139 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { buildInternalContext, loadConfiguration, InternalContext } from "@embracesql/engine";
+import { buildInternalContext, loadConfiguration, InternalContext, withTransaction } from "@embracesql/engine";
 import * as types from "./context";
 
-type EmbeddedEngine = types.HasContextualSQLModuleExecutors & types.SQLModuleTree;
+type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration & types.Closeable;
+
+// each SQL Module has a direct execution decorator  -- this just talks to the database
+// this attaches handlers both before and after wrapping the direct executor
+// this ends up being a decorated map of handler+query execution capability
+// autocrud is a little different, there are no handlers to load up from disk
+// so this is a strong type wrapping
+export const decorateWithHandlers = (rootContext: InternalContext) => {
+  return {
+  {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.modules}}
+      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+        {{#if value.beforeHandlerPaths}}
+        const {afterError} = require("./{{value.restPath}}.sql.afterError");
+        {{else}}
+        // no error handlers for autocrud
+        const afterError = undefined;
+        {{/if}}
+        try {
+          {{#if value.beforeHandlerPaths}}
+          {{#each value.beforeHandlerPaths}}
+          const before{{@index}} = require("./{{this}}/before").before;
+          await before{{@index}}(context);
+          {{/each}}
+          const before = require("./{{value.restPath}}.sql.before").before;
+          await before(context);
+          {{/if}}
+          const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
+          const results = executor ? (await executor(context)).results : [];
+          context.results = results as types.{{value.contextName}}Row[];
+          {{#if value.afterHandlerPaths}}
+          const after = require("./{{value.restPath}}.sql.after").after;
+          await after(context);
+          {{#each value.afterHandlerPaths}}
+          const after{{@index}} = require("./{{this}}/after").after;
+          await after{{@index}}(context);
+          {{/each}}
+          {{/if}}
+          return context;
+        } catch (error) {
+          context.error = error;
+          if (afterError) afterError(context);
+          throw error;
+        }
+      },
+    {{/eachInMap}}
+    {{/eachInMap}}
+  }
+};
+
+// transaction wrappings very near the outside on each call
+// this the the first 'real' execution layer
+// so like - embedded engine -> entry point -> transactionwrapped 
+export const decorateWithTransactions = (
+  rootContext: InternalContext, 
+  innerExecutors: types.ExecutorMap) => {
+    return {
+    {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.modules database=@key}}
+      {{value.contextName}}:  
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+            return withTransaction(
+              rootContext.databases.{{@database}}, 
+              innerExecutors.{{value.contextName}}, 
+              context);
+          },
+    {{/eachInMap}}
+    {{/eachInMap}}
+    };
+};
+
+// EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
+// which can result in a result set -- an array or rows -- or a single record / row
+// this mapping deals with cardinality, treating arrays of 1 item as a single item on return
+// to 'match' the varargs input style
+export const decorateWithCardinality = (
+  innerExecutors: types.ExecutorMap) => {
+    return {
+    {{#eachInMap databases}}
+    // database {{@key}}
+    {{#eachInMap value.modules database=@key}}
+      {{value.contextName}}:  
+          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+              await innerExecutors.{{value.contextName}}(context);
+              context.results = context.results?.length === 1 ? (context.results as types.{{value.contextName}}Row[])[0] : context.results;
+              return context;
+          },
+    {{/eachInMap}}
+    {{/eachInMap}}
+    };
+};
 
 /**
 * This is in effect -- EmbraceSQL, the fully configured and ready to
 * run in process engine. It can be used directly in process, or wrapped
 * in a server.
 */
-export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promise<EmbeddedEngine> => {
+export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promise<EmbeddedEngine> => {
   // the package itself has the configuration and is the root
-  const context = rootContext ? 
+  const internalContext = rootContext ? 
       rootContext :
       await buildInternalContext(await loadConfiguration(__dirname));
   // at this point the context has the .directQueryExecutors and
   // can run a query to the database, but doesn't have handlers yet
-  const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(context);
-  // here is where things get tricky -- the context can have a database map too
-  // but it isn't built yet -- time for some ... self referential code -- we're
-  // making the databases and using the databases in the functions too
-  const databases = {
+  const handlerWrappedExecutors = decorateWithHandlers(internalContext);
+  const transactionWrappedExecutors = decorateWithTransactions(internalContext, handlerWrappedExecutors);
+  const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
+
+  // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
+  // and lets you call in a parameters --> results style, rather than the context --> context style
+  const entryPointCallableDatabases = {
     {{#eachInMap databases}}
       {{@key}}: {
-      {{#treeAMap value.SQLModules database=value}}
+        transactions: {
+          begin: async () : Promise<void> => {
+            return internalContext.databases.{{@key}}.transactions.begin();
+          },
+          rollback: async () : Promise<void> => {
+            return internalContext.databases.{{@key}}.transactions.rollback();
+          },
+          commit: async () : Promise<void> => {
+            return internalContext.databases.{{@key}}.transactions.commit();
+          },
+          depth: () : number => {
+            return internalContext.databases.{{@key}}.transactions.depth();
+          }
+        },
+      {{#treeAMap value.modules database=value handlerMap="typedExecutors"}}
         {{#each value}}
         {{> moduleTree this database=@database }}
         {{/each}}
@@ -34,52 +142,50 @@ export const EmbraceSQLEmbedded = async (rootContext ?: InternalContext) : Promi
       },
     {{/eachInMap}}
   }; 
-  // and contextual named handlers -- these are used by http server wrappers
-  const contextualSQLModuleExecutors = {
-    {{#eachInMap databases}}
-    // database {{@key}}
-    {{#eachInMap value.SQLModules}}
-      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-        context.databases = databases;
-        return handlerWrappedExecutors.{{value.contextName}}(context);
-      },
-    {{/eachInMap}}
-    {{/eachInMap}}
-  };
-  // map of our read only methods
-  const readOnlyContextualSQLModuleExecutors = {
-    {{#eachInMap databases}}
-    // database {{@key}}
-    {{#eachInMap value.SQLModules}}
-      {{#if value.canModifyData}}
-      // {{value.contextName}} is a mutation and does not get GET
-      {{else}}
-      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-        context.databases = databases;
-        return handlerWrappedExecutors.{{value.contextName}}(context);
-      },
-      {{/if}}
-    {{/eachInMap}}
-    {{/eachInMap}}
 
+
+  // this is the 'outermost' shell of calls -- entry points into the engine from a server
+  // this is in the context --> context style used for the server processes and event handlers
+  const entryPoints = {
+    {{#eachInMap moduleExecutors}}
+      {{value.module.contextName}}:  {
+        executor:
+          async (context: types.{{value.module.contextName}}Context) : Promise<types.{{value.module.contextName}}Context> => {
+            context.databases = entryPointCallableDatabases;
+            return typedExecutors.{{value.module.contextName}}(context);
+          },
+        module: internalContext.moduleExecutors.{{value.module.contextName}}.module,
+      },
+    {{/eachInMap}}
   };
+
+
+
   return {
-    ...context, 
-    databases, 
-    contextualSQLModuleExecutors, 
-    readOnlyContextualSQLModuleExecutors
+    configuration: internalContext.configuration,
+    databases: entryPointCallableDatabases, 
+    entryPoints,
+    close: internalContext.close,
   };
 }
 
 {{#*inline "moduleTree"}}
-{{name}}: {
-  {{#if value}}
-  sql: async (parameters: types.{{value.contextName}}Parameters) : Promise<types.{{value.contextName}}Row[]> => {
-    return (await handlerWrappedExecutors.{{value.contextName}}({parameters, results: [], databases})).results;
-  }
-  {{/if}}
+  {{#if children.length}}
+  {{name}}: {
   {{#each children}}
     {{> moduleTree this database=database}}
   {{/each}}
-},
+  },
+  {{else}}
+  {{name}}: async (...parameters: types.{{value.contextName}}ParameterSet[]) 
+  : Promise<types.{{value.contextName}}Context["results"]> => {
+      const context = 
+        await {{@handlerMap}}.{{value.contextName}}({
+          parameters: parameters.flat(),
+          results: [], 
+          databases: entryPointCallableDatabases
+        });
+      return context.results;
+  },
+  {{/if}}
 {{/inline}}

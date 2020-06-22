@@ -1,4 +1,4 @@
-import { InternalContext } from "./context";
+import { InternalContext } from "./internal-context";
 import { renderTemplates, ToFile } from "./render";
 import fs from "fs-extra";
 import path from "path";

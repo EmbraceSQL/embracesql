@@ -1,9 +1,10 @@
 import path from "path";
 import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { migrate } from "../src/migrations";
 import rmfr from "rmfr";
+import { SQLModule } from "../src/shared-context";
 
 describe("hello world of migrations", () => {
   let rootContext: InternalContext;
@@ -29,7 +30,7 @@ describe("hello world of migrations", () => {
     await rootContext.close();
     rootContext = await buildInternalContext(configuration);
     const results = await rootContext.databases["default"].execute(
-      rootContext.databases["default"].SQLModules["hello"]
+      (rootContext.databases["default"].modules["hello"] as SQLModule).sql
     );
     expect(results).toMatchSnapshot();
   });

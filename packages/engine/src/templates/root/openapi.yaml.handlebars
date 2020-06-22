@@ -12,7 +12,7 @@ info:
 
 paths:
 {{#eachInMap databases}}
-{{#eachInMap value.SQLModules}}
+{{#eachInMap value.modules}}
   /{{value.restPath}}:
     {{> get module=value}}
 {{/eachInMap}}
@@ -59,9 +59,24 @@ content:
         properties: 
         {{#each module.resultsetMetadata}}
           {{name}}:
-            type: {{type}}
+            {{> resultsetType type}}
         {{/each}}
 {{/if}}
+{{/inline}}
+
+{{#*inline "resultsetType"}}
+{{#isArray this}}
+type: array
+items:
+  type: object
+  properties:
+  {{#each this}}
+    {{name}}: 
+      {{> resultsetType type}}
+  {{/each}}
+{{else}}
+type: {{this}}
+{{/isArray}}
 {{/inline}}
 
 {{#*inline "parameters"}}

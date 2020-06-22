@@ -1,76 +1,63 @@
 ---
 to: "{{configuration.embraceSQLRoot}}/context.ts"
 ---
-/* eslint-disable @typescript-eslint/camelcase */
 
-/**
-* THIS FILE IS GENERATED -- edits will be lost
-*/
+import * as types from "@embracesql/engine/shared-context";
 
-{{> shared-context.ts}}
+// relay some types
+export type Closeable = types.Closeable;
+export type HasConfiguration = types.HasConfiguration;
+export type HasEntryPoints = types.HasEntryPoints;
 
 // Generation starts here
 
-// tree structure of the entire set of databases and handlers
-export type SQLModuleTree = {
-  databases: {
-  {{#eachInMap databases}}
-    {{@key}}: {
-    {{#treeAMap value.SQLModules database=value}}
-      {{#each value}}
-      {{> moduleTree this database=@database }}
-      {{/each}}
-    {{/treeAMap}}
-    },
-  {{/eachInMap}}
-  }
-};
-{{#*inline "moduleTree"}}
-{{name}}: {
-  {{#if value}}
-  sql: (parameters: {{value.contextName}}Parameters) => Promise<{{value.contextName}}Row[]>;
-  {{/if}}
-  {{#each children}}
-    {{> moduleTree this database=database}}
-  {{/each}}
-},
-{{/inline}}
+// handle a folder, these use the base types for rows and parameters
+// to allow them to be maximally generic
+export type FolderHandler = (context: types.Context) => Promise<void>;
 
-// each SQLModule gets its own unique context type
+
+// parameters, result row, and context types
 {{#eachInMap databases}}
 // database {{@key}}
-{{#eachInMap value.SQLModules}}
-// module {{value.restPath}}
-{{> resultsetMetadata value}}
-{{> parametersMetadata value}}
-export type {{value.contextName}}Context = 
-  SQLModuleTree & Context<{{value.contextName}}Row> & { 
-    parameters: {{value.contextName}}Parameters
-  };
-export type {{value.contextName}}Handler = 
-  (context: {{value.contextName}}Context) => Promise<{{value.contextName}}Context>;
+{{#eachInMap value.modules}}
+{{> moduleMetadata module=value}}
 {{/eachInMap}}
 {{/eachInMap}}
 
-// handle a folder, thse use the base types for rows and parameters
-// to allow them to be maximally generic
-export type FolderHandler = (context: Context<SQLRow>) => Promise<Context<SQLRow>>;
+{{#*inline "moduleMetadata"}}
 
+// module {{module.contextName}} parameters, row type, and context type
+{{> resultsetMetadata module}}
+{{> parametersMetadata module}}
+export type {{module.contextName}}Context = 
+  SQLModuleTree & types.GenericContext<{{module.contextName}}ParameterSet, {{module.contextName}}Row>;
+export type {{module.contextName}}Handler = (context: {{module.contextName}}Context) => Promise<void>;
+{{/inline}}
 
-// each sql module will have a row return type, adding required properties to the base
 {{#*inline "resultsetMetadata"}}
-export type {{contextName}}Row = 
-SQLRow & {
+export type {{contextName}}Row = types.SQLRow &
+{
   {{#each resultsetMetadata}}
-    {{name}}: {{type}}
+    {{name}}: {{> resultsetType type}}
   {{/each}}
 };
 {{/inline}}
 
-// each sql module will have a set of parameters, adding required parameters to the base
+{{#*inline "resultsetType"}}
+{{#isArray this}}
+  {
+    {{#each this}}
+      {{name}}: {{> resultsetType type}}
+    {{/each}}
+  };
+{{else}}
+  {{this}};
+{{/isArray}}
+{{/inline}}
+
 {{#*inline "parametersMetadata"}}
-export type {{contextName}}Parameters = 
-SQLParameters & {
+export type {{contextName}}ParameterSet = types.SQLParameterSet &
+{
   {{#each namedParameters}}
     {{name}}: {{type}}
   {{/each}}
@@ -78,42 +65,42 @@ SQLParameters & {
 {{/inline}}
 
 
-// each SQL Module has a direct execution decorator  -- this just talks to the database
-// this attaches handlers both before and after wrapping the direct executor
-// this ends up being a decorated map of handler+query execution capability
-export const SQLModuleExecutorsWithHandlers = ({directQueryExecutors}: SQLModuleDirectExecutors) => {
-  return {
+// flat map of execution functions
+export type ExecutorMap = {
+    {{#eachInMap moduleExecutors}}
+      {{value.module.contextName}}:  
+          (context: {{value.module.contextName}}Context) => Promise<{{value.module.contextName}}Context>,
+    {{/eachInMap}}
+};
+
+/**
+* Tree structure of the entire set of databases and handlers, used
+* inside event handlers to call back and run more queries.
+*/
+export type SQLModuleTree = {
+  databases?: {
   {{#eachInMap databases}}
-    // database {{@key}}
-    {{#eachInMap value.SQLModules}}
-      {{value.contextName}}:  async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
-        const {afterError} = require("./{{value.restPath}}.sql.afterError");
-        try {
-          {{#each value.beforeHandlerPaths}}
-          const before{{@index}} = require("./{{this}}/before").before;
-          await before{{@index}}(context);
-          {{/each}}
-          const before = require("./{{value.restPath}}.sql.before").before;
-          await before(context);
-          const executor = directQueryExecutors["{{value.contextName}}"];
-          const results = executor ? await executor(context.parameters) : [];
-          context.results = results as {{value.contextName}}Row[];
-          const after = require("./{{value.restPath}}.sql.after").after;
-          await after(context);
-          {{#each value.afterHandlerPaths}}
-          const after{{@index}} = require("./{{this}}/after").after;
-          await after{{@index}}(context);
-          {{/each}}
-          return context;
-        } catch (error) {
-          context.error = error;
-          if (afterError) afterError(context);
-          throw error;
-        }
-      },
-    {{/eachInMap}}
-    {{/eachInMap}}
+    {{@key}}: {
+      transactions: types.DatabaseTransactions,
+      {{#treeAMap value.modules database=value}}
+        {{#each value}}
+        {{> moduleTree this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+    },
+  {{/eachInMap}}
   }
 };
 
-export type SQLModuleExecutorsWithHandlers_T = ReturnType<typeof SQLModuleExecutorsWithHandlers>;
+{{#*inline "moduleTree"}}
+  {{#if children.length}}
+  {{name}}: {
+  {{#each children}}
+    {{> moduleTree this database=database}}
+  {{/each}}
+  },
+  {{else}}
+  {{name}}:(...parameters: {{value.contextName}}ParameterSet[]) => 
+    Promise<{{value.contextName}}Context["results"]>;
+  {{/if}}
+{{/inline}}

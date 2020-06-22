@@ -1,12 +1,11 @@
-import { InternalContext } from "./context";
 import Koa from "koa";
 import bodyparser from "koa-bodyparser";
 import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
-import readFile from "read-file-utf8";
 import path from "path";
-import { HasContextualSQLModuleExecutors } from "./shared-context";
+import { HasConfiguration, HasEntryPoints } from "./shared-context";
 import { restructure } from "../../console/src/structured";
+import fs from "fs-extra";
 
 /**
  * Create a HTTP server exposing an OpenAPI style set of endpoints for each Database
@@ -19,15 +18,15 @@ import { restructure } from "../../console/src/structured";
  * @param executionMap - context name to execution function mapping to actually 'run' a query
  */
 export const createServer = async (
-  rootContext: InternalContext & HasContextualSQLModuleExecutors
+  rootContext: HasConfiguration & HasEntryPoints
 ): Promise<Koa<Koa.DefaultState, Koa.DefaultContext>> => {
   const server = new Koa();
 
   // generated configuration is loaded up
-  // TODO: the configuration is left on disk for current debugging -- but probably should be hidden
   const definition = YAML.parse(
-    await readFile(
-      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml")
+    await fs.readFile(
+      path.join(rootContext.configuration.embraceSQLRoot, "openapi.yaml"),
+      "utf8"
     )
   );
 
@@ -35,56 +34,52 @@ export const createServer = async (
   const handlers = {};
 
   // go ahead and make a handler for both GET and POST
-  Object.keys(rootContext.contextualSQLModuleExecutors).forEach(
-    (contextName) => {
-      if (rootContext.readOnlyContextualSQLModuleExecutors[contextName]) {
-        handlers[`get__${contextName}`] = async (
-          _openAPI,
-          httpContext
-        ): Promise<void> => {
-          try {
-            // parameters from the query
-            const context = {
-              parameters: httpContext.request.query,
-              results: [],
-            };
-            await rootContext.contextualSQLModuleExecutors[contextName](
-              context
-            );
-            httpContext.body = context.results;
-            httpContext.status = 200;
-          } catch (e) {
-            // this is the very far edge of the system, time for a log
-            if (rootContext.configuration.logLevels.includes("error"))
-              console.error(e);
-            // send the full error to the client
-            httpContext.status = 500;
-            httpContext.body = restructure("error", e);
-          }
-        };
-      }
-      handlers[`post__${contextName}`] = async (
+  Object.keys(rootContext.entryPoints).forEach((contextName) => {
+    if (!rootContext.entryPoints[contextName].module.canModifyData) {
+      handlers[`get__${contextName}`] = async (
         _openAPI,
         httpContext
       ): Promise<void> => {
         try {
-          // parameters from the body
+          // parameters from the query
           const context = {
-            parameters: httpContext.request.body,
+            parameters: [httpContext.request.query],
             results: [],
           };
-          await rootContext.contextualSQLModuleExecutors[contextName](context);
+          await rootContext.entryPoints[contextName].executor(context);
           httpContext.body = context.results;
           httpContext.status = 200;
         } catch (e) {
-          if (rootContext.configuration.logLevels.includes("error"))
-            console.error(e);
+          // this is the very far edge of the system, time for a log
+          console.error(e);
+          // send the full error to the client
           httpContext.status = 500;
           httpContext.body = restructure("error", e);
         }
       };
     }
-  );
+    handlers[`post__${contextName}`] = async (
+      _openAPI,
+      httpContext
+    ): Promise<void> => {
+      try {
+        // parameters from the body
+        const context = {
+          parameters: Array.isArray(httpContext.request.body)
+            ? httpContext.request.body
+            : [httpContext.request.body],
+          results: [],
+        };
+        await rootContext.entryPoints[contextName].executor(context);
+        httpContext.body = context.results;
+        httpContext.status = 200;
+      } catch (e) {
+        console.error(e);
+        httpContext.status = 500;
+        httpContext.body = restructure("error", e);
+      }
+    };
+  });
 
   // merge up all the handlers just created with the OpenAPI definition
   // and we are ready to go -- this counts on OpenAPI doing some validation

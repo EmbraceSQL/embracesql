@@ -12,9 +12,14 @@
  */
 
 /**
+ * Parameters and results can be single items, or array batches.
+ */
+type ValueOrArray<T> = Array<T> | T;
+
+/**
  * A message, passed for security and logging.
  */
-export type Message = string | object;
+export type Message = string | Record<string, unknown>;
 
 /**
  * Security types.
@@ -37,34 +42,42 @@ export type Grant = {
 };
 
 /**
- * Types mapped back into API calls from SQL.
+ * Scalar SQL types. Individual atomic columns use these, as well
+ * as parameters to pass in.
  */
-export type SQLType = string | number | boolean | null;
+export type SQLScalarType = string | number | boolean | null;
+/**
+ * Types mapped back into API calls from SQL.
+ *
+ * A type -- can allow nested rows, this is useful to express
+ * graphs of related data as well as PostgreSQL array types.
+ */
+export type SQLType = SQLRow[] | SQLScalarType;
+
+/**
+ * The core notion of sql parameters, name value pairs.
+ */
+export type SQLParameterSet = {
+  [index: string]: SQLScalarType;
+};
+
+/**
+ * A single record coming back from a query -- one result from a result set.
+ *
+ * This is a conceptual type constraint, but individual SQL queries can be further
+ * constrained with specific column names determined by parsing queries.
+ */
+export type SQLRow = {
+  [index: string]: SQLType;
+};
 
 /**
  * Peer string naming used for generation.
  */
-export type SQLTypeName = "string" | "number" | "boolean" | "null";
+export type SQLTypeName = "string" | "number" | "boolean" | "null" | "SQLRow[]";
 
 /**
- * Named parameters. This is a name/value pair hash constrained
- * to our available SQL Types.
- *
- * This base type is elastic and can have any name value pairs
- */
-export type SQLParameter = {
-  /**
-   * Set your values by name.
-   */
-  name: string;
-  /**
-   * And a value.
-   */
-  value?: SQLType;
-};
-
-/**
- * One result set column metadata.
+ * Information about a single column coming from SQL.
  */
 export type SQLColumnMetadata = {
   /**
@@ -75,18 +88,121 @@ export type SQLColumnMetadata = {
   /**
    * Type identifier.
    */
-  readonly type: SQLTypeName;
+  readonly type: SQLTypeName | SQLColumnMetadata[];
 };
 
 /**
- * Each SQL found on disk has some data -- the SQL itself, and will
- * get additional metadata attached to it.
+ * A single foreign key reference. This has 'all the things' to
+ * allow it to generate a join clause.
  */
-export type SQLModule = {
+export type SQLTableReference = {
+  toSchema: string;
+  toTable: string;
+  toColumns: string[];
+  fromSchema: string;
+  fromTable: string;
+  fromColumns: string[];
+};
+
+/**
+ * Related data linkages built from SQLTableReference
+ * information.
+ */
+export type SQLTableRelatedData = {
+  /**
+   * The columns on 'this side'.
+   */
+  readonly joinColumns: SQLColumnMetadata[];
+  /**
+   * The target or related table.
+   */
+  readonly toTable: SQLTableMetadata;
+  /**
+   * The columns on the to side -- in the same order.
+   */
+  readonly toTableJoinColumns: SQLColumnMetadata[];
+};
+
+/**
+ * All about a table, used in generating AutoCrud.
+ */
+export type SQLTableMetadata = {
+  /**
+   * Tables are in schemas inside database.
+   */
+  readonly schema: string;
+  /**
+   * Tables have names. I call mine 'mid century modern'.
+   */
+  readonly name: string;
+  /**
+   * Get at all the columns.
+   */
+  readonly columns: SQLColumnMetadata[];
+  /**
+   * Autokey and Autoincrement columns.
+   */
+  readonly autoColumns: SQLColumnMetadata[];
+  /**
+   * Key columns by name.
+   */
+  readonly keys: SQLColumnMetadata[];
+  /**
+   * Relationships to to foreign tables.
+   */
+  readonly references: SQLTableReference[];
+  /**
+   * Reversed references.
+   */
+  readonly backReferences: SQLTableReference[];
+  /**
+   * Related data relationships.
+   */
+  readonly relatedData: SQLTableRelatedData[];
+};
+
+/**
+ * Common across autocrud and sqlmodules.
+ */
+export type CommonDatabaseModule = {
   /**
    * Relative path useful for REST.
    */
   readonly restPath: string;
+  /**
+   * Content based cache key to use for any hash lookups, so that content
+   * changes to the SQL equal cache misses.
+   */
+  readonly cacheKey: string;
+  /**
+   * Module safe name for the context.
+   */
+  readonly contextName: string;
+  /**
+   * All the parameters we found by looking at the query. These are in an array
+   * to facilitate conversion of named to positional parameters.
+   */
+  namedParameters: SQLColumnMetadata[];
+  /**
+   * Result set metadata, one entry for each column coming back.
+   */
+  resultsetMetadata: SQLColumnMetadata[];
+  /**
+   * When true, this module may modify data.
+   */
+  canModifyData: boolean;
+};
+
+/**
+ * Auto crud module data. These are simpler than from disk sql modules
+ * since the do not have handlers.
+ */
+export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
+/**
+ * Each SQL found on disk has some data -- the SQL itself, and will
+ * get additional metadata attached to it.
+ */
+export type SQLModule = CommonDatabaseModule & {
   /**
    * Fully qualified file name on disk.
    */
@@ -105,28 +221,6 @@ export type SQLModule = {
    * Actual SQL text source, unmodified, read from disk
    */
   readonly sql: string;
-  /**
-   * Content based cache key to use for any hash lookups, so that content
-   * changes to the SQL equal cache misses.
-   */
-  readonly cacheKey: string;
-  /**
-   * Module safe name for the context.
-   */
-  readonly contextName: string;
-  /**
-   * All the parameters we found by looking at the query. These are in an array
-   * to facilitate conversion of named to positional parameters.
-   */
-  namedParameters?: SQLParameter[];
-  /**
-   * Result set metadata, which may be an array because of semicolon batches.
-   */
-  resultsetMetadata?: SQLColumnMetadata[];
-  /**
-   * When true, this module may modify data.
-   */
-  canModifyData?: boolean;
 };
 
 /**
@@ -153,6 +247,25 @@ export type DatabaseTransactions = {
    * state changes are no saved.
    */
   rollback: () => Promise<void>;
+
+  /**
+   * How deep is the nested transaction stack?
+   */
+  depth: () => number;
+};
+
+/**
+ * Track all tables in a database schema.
+ */
+export type DatabaseSchema = {
+  [index: string]: SQLTableMetadata;
+};
+
+/**
+ * And databases can have more than one schema.
+ */
+export type DatabaseSchemas = {
+  [index: string]: DatabaseSchema;
 };
 
 /***
@@ -168,6 +281,10 @@ export type Database = {
    * Access transaction control of the database here.
    */
   readonly transactions: DatabaseTransactions;
+  /**
+   * All schemas in the database.
+   */
+  readonly schemas: DatabaseSchemas;
 };
 
 /**
@@ -184,7 +301,7 @@ export type Database = {
  * that will be generated will be noted in comments.
  *
  */
-export type Context<RowType> = {
+export type GenericContext<ParameterType, ResultType> = {
   /**
    * Set the current state of security to allow SQL execution against the database.
    *
@@ -208,7 +325,7 @@ export type Context<RowType> = {
    * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
    * decoded and verified, it will be here.
    */
-  token?: object;
+  token?: Record<string, unknown>;
 
   /**
    * Put the current user identifier string here in order to integrate with database
@@ -235,91 +352,103 @@ export type Context<RowType> = {
    * Parameters may be on here for the default context. This will get
    * generated and specified with specific named parameters per SQLModule.
    */
-  parameters?: SQLParameters;
+  parameters: ParameterType[];
 
   /**
    * Results may be on here for the default context. This will get generated
    * and specified per SQLModule.
    */
-  results?: RowType[];
+  results: ValueOrArray<ResultType>;
 };
 
 /**
- * A SQL query may have parameters, this type constrains them. This single
- * type defines the conceptual constraint, an can be further constrained
- * with specific type names extracted by parsing queries.
+ * This is our generic context type -- bound to the generic parameter and reult types.
  */
-export type SQLParameters = {
-  [index: string]: SQLType;
+export type Context = GenericContext<SQLParameterSet, SQLRow>;
+
+/**
+ * Execute a SQL module with a context. This is what you use when
+ * you have handlers wrapping a Executor.
+ */
+export type ContextualExecutor<T> = (context: T) => Promise<T>;
+
+/**
+ * A mapping of contextual executors.
+ */
+export type ContextualExecutors<T> = {
+  [index: string]: ContextualExecutor<T>;
 };
 
 /**
- * A single record coming back from a query -- one result from a result set.
+ * A single sql module entry point. This is wrapped in an outer function call
+ * or HTTP to provide actual EmbraceSQL service. An EntryPoint is a full featured
+ * EmbraceSQL call.
  *
- * This is a conceptual type constraint, but individual SQL queries can be further
- * constrained with specific column names determined by parsing queries.
+ * This is using the DefaultContext -- at this layer executors are fairly generic.
+ * The client library wrapper or OpenAPI provides specific typeing.
  */
-export type SQLRow = {
-  [index: string]: SQLType;
+export type EntryPoint = {
+  readonly executor: ContextualExecutor<Context>;
+  readonly module: CommonDatabaseModule;
 };
 
-/**
- * Generic executor, parameters to resultset via a sql module.
- *
- * This is used to bridge the gap between generated in process clients, which will
- * have well defined parameter and result types, to the internal engine which is looser.
- *
- * In process clients execute via a function call, where out of process clients get this
- * genericicity from JSON serialization over HTTP.
- */
-export type Executor = (parameters: SQLParameters) => Promise<SQLRow[]>;
-
-/**
- * Context named executors. This is a map of functions to execute sql modules by the
- * `contextName` which is usefull unique way to address a given sql module in given
- * database in a flattened tree without worryng about / and such.
- */
-export type Executors = {
-  [index: string]: Executor;
-};
-
-/**
- * This map is the ability to go from a SQL module `contextName` to a function
- * that will let you really query the database.
- */
-export type SQLModuleDirectExecutors = {
-  /**
-   * Store function mapping for query execution here.
-   */
-  directQueryExecutors: Executors;
-};
-
-export type DefaultContext = Context<SQLRow>;
-export type DefaultContextualExecutor = (
-  context: DefaultContext
-) => Promise<DefaultContext>;
 /**
  * A map of named, fully contextualized executors, complete
- * with handlers. This is used to wrap and mount the generated code in a runtime
- * server.
+ * with handlers. This is used to create entry points into EmbraceSQL
  */
-export type ContextualSQLModuleExecutors = {
-  [index: string]: DefaultContextualExecutor;
+export type EntryPoints = {
+  [index: string]: EntryPoint;
 };
 
 /**
- * An object with fully contextualized execution capability.
+ * Contains entry points. This is passed into 'servers' that will expose
+ * those entry poitns.
  */
-export type HasContextualSQLModuleExecutors = {
+export type HasEntryPoints = {
+  entryPoints: EntryPoints;
+};
+
+/**
+ * Named URLs to databases.
+ */
+type Databases = {
+  [index: string]: string;
+};
+
+/**
+ * The all important root configuration. This tells EmbraceSQL which databases to manage.
+ */
+export type Configuration = {
   /**
-   * `contextName` to function mapping. The idea is you get a fully enabled
-   * execution chain for a given SQLModule, and use the function to actually
-   * run a a SQLModule.
+   * The root directory used to start this config.
    */
-  contextualSQLModuleExecutors: ContextualSQLModuleExecutors;
+  embraceSQLRoot: string;
   /**
-   * `contextName` to function mapping for read only execution that is
-   * suitable for a GET.
+   * All available databases.
    */
-  readOnlyContextualSQLModuleExecutors: ContextualSQLModuleExecutors;
+  databases?: Databases;
+  /**
+   * Optional name used in bootsrap code generation.
+   */
+  name?: string;
+};
+
+/**
+ * Use this to get at the EmbraceSQL configuration.
+ */
+export type HasConfiguration = {
+  /**
+   * The configuration used to build a running EmbraceSQL engine.
+   */
+  configuration: Configuration;
+};
+
+/**
+ * Can -- and should -- be closed.
+ */
+export type Closeable = {
+  /**
+   * Close down all resourcs.
+   */
+  close: () => Promise<void>;
 };

@@ -17,5 +17,6 @@ to: "{{configuration.embraceSQLRoot}}/tsconfig.json"
     "declaration": true,
     "baseUrl": "{{configuration.embraceSQLRoot}}"
   },
-  "include": ["./client/**/*.ts"],
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
 }

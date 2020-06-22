@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import { loadConfiguration } from "../src/configuration";
-import { buildInternalContext, InternalContext } from "../src/context";
+import { buildInternalContext, InternalContext } from "../src/internal-context";
 import { createServer } from "../src/server";
 import request from "supertest";
 import rmfr from "rmfr";
@@ -37,8 +37,6 @@ describe("hello world with a handler", () => {
     const server = await createServer(engine);
     callback = server.callback();
     listening = server.listen(45679);
-    // non logging
-    rootContext.configuration.logLevels = [];
   });
   afterAll(async (done) => {
     listening.close(() => done());
@@ -77,7 +75,7 @@ describe("hello world with a handler", () => {
     ));
     const client = EmbraceSQL("http://localhost:45679");
     expect(
-      await client.databases.default.hello.sql({ stuff: "nodey thing" })
+      await client.databases.default.hello({ stuff: "nodey thing" })
     ).toMatchSnapshot();
   });
   it("will honor handlers with an embeddable engine", async () => {
@@ -88,7 +86,7 @@ describe("hello world with a handler", () => {
     ));
     const engine = await EmbraceSQLEmbedded();
     expect(
-      await engine.databases.default.hello.sql({
+      await engine.databases.default.hello({
         stuff: "hole",
       })
     ).toMatchSnapshot();
@@ -114,7 +112,7 @@ describe("hello world with a handler", () => {
     const client = EmbraceSQL("http://localhost:45679");
     // simulated error throw
     expect(
-      client.databases.default.hello.sql({ stuff: "error" })
+      client.databases.default.hello({ stuff: "error" })
     ).rejects.toMatchSnapshot();
   });
   it("will throw errors back out to the client - nested", async () => {
@@ -128,7 +126,7 @@ describe("hello world with a handler", () => {
     const client = EmbraceSQL("http://localhost:45679");
     // simulated error throw
     expect(
-      client.databases.default.nested.echo.sql({ stuff: "error" })
+      client.databases.default.nested.echo({ stuff: "error" })
     ).rejects.toMatchSnapshot();
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@embracesql/console",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "main": "src/structured.ts",
   "license": "MIT",
   "dependencies": {

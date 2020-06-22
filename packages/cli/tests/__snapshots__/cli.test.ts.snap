@@ -5,11 +5,89 @@ exports[`CLI generates an embedded client 1`] = `
   buildInternalContext,
   loadConfiguration,
   InternalContext,
+  withTransaction,
 } from \\"@embracesql/engine\\";
 import * as types from \\"./context\\";
 
-type EmbeddedEngine = types.HasContextualSQLModuleExecutors &
-  types.SQLModuleTree;
+type EmbeddedEngine = types.HasEntryPoints &
+  types.SQLModuleTree &
+  types.HasConfiguration &
+  types.Closeable;
+
+// each SQL Module has a direct execution decorator  -- this just talks to the database
+// this attaches handlers both before and after wrapping the direct executor
+// this ends up being a decorated map of handler+query execution capability
+// autocrud is a little different, there are no handlers to load up from disk
+// so this is a strong type wrapping
+export const decorateWithHandlers = (rootContext: InternalContext) => {
+  return {
+    // database default
+    default_hello: async (
+      context: types.default_helloContext
+    ): Promise<types.default_helloContext> => {
+      const { afterError } = require(\\"./default/hello.sql.afterError\\");
+      try {
+        const before0 = require(\\"./default/before\\").before;
+        await before0(context);
+        const before = require(\\"./default/hello.sql.before\\").before;
+        await before(context);
+        const executor = rootContext.moduleExecutors.default_hello.executor;
+        const results = executor ? (await executor(context)).results : [];
+        context.results = results as types.default_helloRow[];
+        const after = require(\\"./default/hello.sql.after\\").after;
+        await after(context);
+        const after0 = require(\\"./default/after\\").after;
+        await after0(context);
+        return context;
+      } catch (error) {
+        context.error = error;
+        if (afterError) afterError(context);
+        throw error;
+      }
+    },
+  };
+};
+
+// transaction wrappings very near the outside on each call
+// this the the first 'real' execution layer
+// so like - embedded engine -> entry point -> transactionwrapped
+export const decorateWithTransactions = (
+  rootContext: InternalContext,
+  innerExecutors: types.ExecutorMap
+) => {
+  return {
+    // database default
+    default_hello: async (
+      context: types.default_helloContext
+    ): Promise<types.default_helloContext> => {
+      return withTransaction(
+        rootContext.databases.default,
+        innerExecutors.default_hello,
+        context
+      );
+    },
+  };
+};
+
+// EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
+// which can result in a result set -- an array or rows -- or a single record / row
+// this mapping deals with cardinality, treating arrays of 1 item as a single item on return
+// to 'match' the varargs input style
+export const decorateWithCardinality = (innerExecutors: types.ExecutorMap) => {
+  return {
+    // database default
+    default_hello: async (
+      context: types.default_helloContext
+    ): Promise<types.default_helloContext> => {
+      await innerExecutors.default_hello(context);
+      context.results =
+        context.results?.length === 1
+          ? (context.results as types.default_helloRow[])[0]
+          : context.results;
+      return context;
+    },
+  };
+};
 
 /**
  * This is in effect -- EmbraceSQL, the fully configured and ready to
@@ -20,57 +98,68 @@ export const EmbraceSQLEmbedded = async (
   rootContext?: InternalContext
 ): Promise<EmbeddedEngine> => {
   // the package itself has the configuration and is the root
-  const context = rootContext
+  const internalContext = rootContext
     ? rootContext
     : await buildInternalContext(await loadConfiguration(__dirname));
   // at this point the context has the .directQueryExecutors and
   // can run a query to the database, but doesn't have handlers yet
-  const handlerWrappedExecutors = types.SQLModuleExecutorsWithHandlers(context);
-  // here is where things get tricky -- the context can have a database map too
-  // but it isn't built yet -- time for some ... self referential code -- we're
-  // making the databases and using the databases in the functions too
-  const databases = {
+  const handlerWrappedExecutors = decorateWithHandlers(internalContext);
+  const transactionWrappedExecutors = decorateWithTransactions(
+    internalContext,
+    handlerWrappedExecutors
+  );
+  const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
+
+  // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
+  // and lets you call in a parameters --> results style, rather than the context --> context style
+  const entryPointCallableDatabases = {
     default: {
-      hello: {
-        sql: async (
-          parameters: types.default_helloParameters
-        ): Promise<types.default_helloRow[]> => {
-          return (
-            await handlerWrappedExecutors.default_hello({
-              parameters,
-              results: [],
-              databases,
-            })
-          ).results;
+      transactions: {
+        begin: async (): Promise<void> => {
+          return internalContext.databases.default.transactions.begin();
         },
+        rollback: async (): Promise<void> => {
+          return internalContext.databases.default.transactions.rollback();
+        },
+        commit: async (): Promise<void> => {
+          return internalContext.databases.default.transactions.commit();
+        },
+        depth: (): number => {
+          return internalContext.databases.default.transactions.depth();
+        },
+      },
+      hello: async (
+        ...parameters: types.default_helloParameterSet[]
+      ): Promise<types.default_helloContext[\\"results\\"]> => {
+        const context = await typedExecutors.default_hello({
+          parameters: parameters.flat(),
+          results: [],
+          databases: entryPointCallableDatabases,
+        });
+        return context.results;
       },
     },
   };
-  // and contextual named handlers -- these are used by http server wrappers
-  const contextualSQLModuleExecutors = {
-    // database default
-    default_hello: async (
-      context: types.default_helloContext
-    ): Promise<types.default_helloContext> => {
-      context.databases = databases;
-      return handlerWrappedExecutors.default_hello(context);
+
+  // this is the 'outermost' shell of calls -- entry points into the engine from a server
+  // this is in the context --> context style used for the server processes and event handlers
+  const entryPoints = {
+    default_hello: {
+      executor: async (
+        context: types.default_helloContext
+      ): Promise<types.default_helloContext> => {
+        context.databases = entryPointCallableDatabases;
+        return typedExecutors.default_hello(context);
+      },
+      module: internalContext.moduleExecutors.default_hello.module,
     },
   };
-  // map of our read only methods
-  const readOnlyContextualSQLModuleExecutors = {
-    // database default
-    default_hello: async (
-      context: types.default_helloContext
-    ): Promise<types.default_helloContext> => {
-      context.databases = databases;
-      return handlerWrappedExecutors.default_hello(context);
-    },
-  };
+
   return {
-    ...context,
-    databases,
-    contextualSQLModuleExecutors,
-    readOnlyContextualSQLModuleExecutors,
+    configuration: internalContext.configuration,
+    databases: entryPointCallableDatabases,
+    entryPoints,
+    close: internalContext.close,
   };
 };
 "
