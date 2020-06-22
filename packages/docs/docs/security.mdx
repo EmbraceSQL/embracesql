@@ -33,11 +33,17 @@ This speeds authentication and verification by eliminating any need to go out ov
 ### Providers without OpenID Connect
 
 Some providers don't yet support OpenID Connect, so you can supply your own copies of public keys.
+You will need to get the provider's JSON Web Keys, which are JSON files with the keys stored encoded.
 
-Configuration is file based, with keys stored as `<issuer>/<keyid>.pem` files in the `${EMBRACE_SQL_ROOT}/.keys` folder.
-You can have multiple `.pem` files, and EmbraceSQL will try them for you, allowing multiple key providers if needed.
+### JSON Web Keys
 
-You can also use symmetric key, shared secret, encryption. Just store the secret key in a `.pem`. The difference is that both you and the issuer have the same secret, so don't lose it!
+Configuration is file based, with keys stored as JSON Web Key files in the `${EMBRACE_SQL_ROOT}/.keys/<keyid>.json` folder.
+You can have multiple `.json` files, and EmbraceSQL will try them for you, allowing multiple key providers if needed.
+
+So `${EMBRACE_SQL_ROOT}/.keys/b16de1b2ab0c16ac0acf662ef01f7567e544252a.json` for example.
+
+You can also use symmetric key, shared secret, encryption.
+The difference is that both you and the issuer have the same secret, so don't lose it!
 
 ## Accessing Tokens
 
