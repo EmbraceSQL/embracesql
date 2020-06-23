@@ -7,45 +7,45 @@ title: Security
 EmbraceSQL doesn't log users in itself -- it is counting on your app to do that -- and you pass along an ID Token in requests in order to establish user identity.
 You can use any id token style, transported in any HTTP header you like, and provide your own event handler to validate a token and add to the execution context.
 
-However, there is an open standard that works great. OpenID Connect.
+However, there is an open standard that works great. 
+
+## OpenID Connect
 
 EmbraceSQL supports OpenID Connect ID Tokens in the `Authorization: Bearer <id_token>` header, passed in with each API call, and made available through the context without any additional work on your part.
 
-JWT tokens need to be decoded, and verified. EmbraceSQL supports public key signatures for verification.
+JWT tokens need to be decoded, and verified. 
+EmbraceSQL supports automatic key discovery for Open ID Connect issuers.
+
 What EmbraceSQL does not do -- is create or issue tokens, you get these from your identity provider.
 
-## Cryptographic Keys
+### Cryptographic Keys
 
-OpenID connect ID Tokens are signed by Identity Providers, with the well known public providers (Google, Microsoft, etc) using public key encryption.
+OpenID Connect ID Tokens are signed by Identity Providers, with the well known public providers (Google, Microsoft, etc) using public key encryption.
 When EmbraceSQL sees `Authorization: Bearer <id_token>` in an http request, either direct via `POST` or `GET`, or through a generated client library, a few things happen:
 
 - EmbraceSQL _decodes_ the token, resulting in a plain object of name value pairs
 - Looking in the token, EmbraceSQL finds the `iss` -- the issuer -- and uses OpenID Connect Discovery to fetch public keys
+- If you have [configured](./configuration#openid) a list of supported OpenID issuers, `iss` is compared to that list.
 - The token's signature is verified
 - If the token signature verification fails, a `401` status is returned, which will be an exception in generated clients
 - Expired tokens fail validation
 
-### Providers with OpenID Connect
+So -- if you send the `Authorization: Bearer <id_token>` you can count on all requests being authenticated.
+
+### Key Caching
 
 EmbraceSQL will download and cache keys for you in the `${EMBRACE_SQL_ROOT}/.keys` folder.
 This speeds authentication and verification by eliminating any need to go out over the network.
 
-### Providers without OpenID Connect
-
-Some providers don't yet support OpenID Connect, so you can supply your own copies of public keys.
-You will need to get the provider's JSON Web Keys, which are JSON files with the keys stored encoded.
-
-### JSON Web Keys
-
-Configuration is file based, with keys stored as JSON Web Key files in the `${EMBRACE_SQL_ROOT}/.keys/<keyid>.json` folder.
+Keys are stored as JSON Web Key files named `${EMBRACE_SQL_ROOT}/.keys/<keyid>.json`.
 You can have multiple `.json` files, and EmbraceSQL will try them for you, allowing multiple key providers if needed.
 
-So `${EMBRACE_SQL_ROOT}/.keys/b16de1b2ab0c16ac0acf662ef01f7567e544252a.json` for example.
+## Authentication and Identity
 
-You can also use symmetric key, shared secret, encryption.
-The difference is that both you and the issuer have the same secret, so don't lose it!
+It's one thing to authenticate the user to allow them access at all -- but another to use that identity to authorize running specific queries.
+EmbraceSQL provides you user identity, and lets you use code in handlers to implement authorization.
 
-## Accessing Tokens
+### OpenID ID Tokens
 
 Once a token is decoded and verified, it is added to the context as `context.token`, you can get all the claims from a JWT token inline in any handler.
 This is the complete, original token, decoded from JSON into an object, with all fields available.
@@ -60,17 +60,24 @@ export const before = async (context) => {
 };
 ```
 
-## Allow and Deny Access
+### `allow` and `deny` Access
 
 In any given handler, you can `context.allow()` or `context.deny()` access at any location in code.
 
-You can pass any object you like to `context.allow()` and `context.deny()`, these passed objects are recorded and appended to an array `context.grants[]` that you can use in later event handlers, and as messages back to calling clients.
+You can pass any object you like to `context.allow()` and `context.deny()`. 
+These passed objects are recorded and appended to an array `context.grants[]` which provides a per query security access log.
 
 OK -- here is how this works, when you call `context.deny()`, the current access state of the context is set to prevent any query from executing.
 
-When you call `context.allow()`, query execution is allowed.
+When you call `context.allow()`, the current access state of the context is set to allow query processing.
+
+That's it -- it's a big on/off switch.
 
 So rather than devise a 'security markup language', EmbraceSQL just has you decide if you want to deny or allow access inside handlers, with real code, so you don't need to learn yet another security markup language.
+
+## Security Cookbook
+
+### Secure by Default
 
 To set up a secure by default system, you just create one root handler:
 
@@ -81,17 +88,18 @@ export const before = async (context) => {
 ```
 
 And that is it -- no query will run.
-Let's further assume you have set up Google OpenID Connect to authenticate your users, and you are passing that id token in your `Authorization: Bearer ...` on requests to EmbraceSQL.
-Google tokens have an `iss` issuer property that EmbraceSQL uses to automatically find the matching publc key, decodes, and verifies the token.
-No need to store the public key in a `.pem`, it'll happen for you with a compliance OpenID Connect provider.
 
-In the case that a token is valid, it is made available to your handlers.
-In the case that a token is invalid, `403` is returned.
-In the case that a token is not supplied, it simply is not available.
-So checking authentication is checking for token existence.
+### Secure by Authenticated User Domain
+
+Let's further assume you have set up Google OpenID Connect to authenticate your users, and you are passing that id token in your `Authorization: Bearer <id_token>` on requests to EmbraceSQL.
+
+Google tokens provide a validated email -- the user would have received an email to that address they needed to click to verify to have an active account.
+So we just check the domain name in the email with a simple regular expression - note the use of `$` -- we want to be at the end, so `user@yourdomain.com` but not `user@yourdomain.com.hackerz.co`.
 
 ```javascript title="${EMBRACE_SQL_ROOT}/all.before.js"
 export const before = async (context) => {
+  // secure by default
+  context.deny();
   // a token from a public provider, validate the email domain
   // this would be an approach if you were using Google Cloud or Azure Active Directory
   if (context.token && /.*@yourdomain.com$/.test(context.token.email)) {
@@ -103,7 +111,7 @@ export const before = async (context) => {
 };
 ```
 
-## Row Security
+### SQL Driven Row Security
 
 Assume you have a multi-tenant, or multi-user database and you want to limit which rows can be seen.
 
@@ -118,7 +126,9 @@ CREATE TABLE tenants (
   domain TEXT NOT NULL,
   UNIQUE(domain)
 );
+```
 
+```sql title="${EMBRACE_SQL_ROOT}/migrations/default/001_multitenant.sql"
 CREATE TABLE multi_tenant_things (
   thing_id INTEGER PRIMARY KEY,
   thing_value TEXT NOT NULL,
@@ -154,7 +164,7 @@ export const before = (context) => {
     // issue a query to get the tenant
     // and add it to the context parameters -- matching the named parameter in my_things.sql
     // notice you don't need to tell it a row, or iterate rows here -- just a little convenience!
-    const tenant_id = await context.databases.default.tenant({domain}).tenant_id;
+    const {tenant_id} = await context.databases.default.tenant({domain}).tenant_id;
     context.parameters.tenant_id = tenant_id;
     context.allow({ domain, tenant_id });
   }
@@ -165,15 +175,15 @@ And that is it -- now every query will be passed a `tenant_id` parameter, valida
 
 What you'll need to remember to do:
 
-- Put the `:tenant_id` in your where clauses
+- Put the `:tenant_id` in your where clauses in your SQL
 - Authenticate your users with OpenID Connect
-- Pass the `Authorization: Bearer ...` header
+- Pass the `Authorization: Bearer <id_token>` header
 
-## PostgreSQL Row Security
+### PostgreSQL Row Security
 
 Integrating with PostgreSQL [row level security](https://www.postgresql.org/docs/12/ddl-rowsecurity.html) is even easier.
 You set your policies in SQL as specified by PostgreSQL, and all you need to do is tell EmbraceSQL who is the current user.
-Note that you don't need to create a database user for each possible user in PostgreSQL.
+Note that you don't need to create a database user for each possible user in PostgreSQL, and you don't need to have an extra parameter tacked on to all your SQL.
 
 ```javascript title="./before.js"
 export const before = async (context) => {
@@ -195,9 +205,11 @@ export const before = async (context) => {
 
 And that is it, EmbraceSQL will call `SET LOCAL SESSION AUTHORIZATION ${context.current_user}` and `SET LOCAL ROLE ${context.role}` for you, bridging in to the native access control concepts in PostgreSQL.
 
-## SQL Security
+## Database Account Security
+
+EmbraceSQL connects to your database, so it needs an account in your database to work.
 
 The database account you use for EmbraceSQL can have any access level you like, but know that if you limit access, some features may not work.
 For example, if you do not grant `DELETE` to your database account, AutoCRUD cannot delete.
 
-Migration support requires EmbraceSQL to create one table `_embrace_sql_migrations_` in each database.
+Migration support requires EmbraceSQL to create one table `_embrace_sql_migrations_` in each database, and have permissions that match the contents of your migration scripts.
