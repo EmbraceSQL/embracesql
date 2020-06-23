@@ -1,0 +1,1 @@
+INSERT INTO strings(string) VALUES("hello world");

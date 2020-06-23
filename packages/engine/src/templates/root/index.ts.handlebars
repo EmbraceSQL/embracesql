@@ -12,42 +12,45 @@ type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConf
 // this ends up being a decorated map of handler+query execution capability
 // autocrud is a little different, there are no handlers to load up from disk
 // so this is a strong type wrapping
+{{#eachInMap databases}}
+{{#eachInMap value.modules}}
+ import { before as {{value.contextName}}before } from "./{{value.restPath}}.before";
+ import { after as {{value.contextName}}after } from "./{{value.restPath}}.after";
+ import { afterError as {{value.contextName}}afterError } from "./{{value.restPath}}.afterError";
+{{#each value.beforeHandlerPaths }}
+ import { before as {{../value.contextName}}before{{@index}} } from "{{this}}/before";
+{{/each}}
+{{#each value.afterHandlerPaths }}
+ import { after as {{../value.contextName}}after{{@index}} } from "{{this}}/after";
+{{/each}}
+{{/eachInMap}}
+{{/eachInMap}}
 export const decorateWithHandlers = (rootContext: InternalContext) => {
   return {
   {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.modules}}
       {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
-        {{#if value.beforeHandlerPaths}}
-        const {afterError} = require("./{{value.restPath}}.sql.afterError");
-        {{else}}
-        // no error handlers for autocrud
-        const afterError = undefined;
-        {{/if}}
         try {
           {{#if value.beforeHandlerPaths}}
           {{#each value.beforeHandlerPaths}}
-          const before{{@index}} = require("./{{this}}/before").before;
-          await before{{@index}}(context);
+          await {{../value.contextName}}before{{@index}}(context);
           {{/each}}
-          const before = require("./{{value.restPath}}.sql.before").before;
-          await before(context);
+          await {{value.contextName}}before(context);
           {{/if}}
           const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
           const results = executor ? (await executor(context)).results : [];
           context.results = results as types.{{value.contextName}}Row[];
           {{#if value.afterHandlerPaths}}
-          const after = require("./{{value.restPath}}.sql.after").after;
-          await after(context);
+          await {{value.contextName}}after(context);
           {{#each value.afterHandlerPaths}}
-          const after{{@index}} = require("./{{this}}/after").after;
-          await after{{@index}}(context);
+          await {{../value.contextName}}after{{@index}}(context);
           {{/each}}
           {{/if}}
           return context;
         } catch (error) {
           context.error = error;
-          if (afterError) afterError(context);
+          if ({{value.contextName}}afterError) {{value.contextName}}afterError(context);
           throw error;
         }
       },

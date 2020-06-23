@@ -10,6 +10,7 @@ import generateReadWithRelated from "./generate-read-with-related";
 import generateUpdate from "./generate-update";
 import generateDelete from "./generate-delete";
 import { identifier } from "..";
+import path from "path";
 
 /**
  * Each autocrud module runs through the pipeline to generate each
@@ -42,15 +43,26 @@ export default async (
       for (const table of Object.values(schema)) {
         // rest paths follow a common schema that matches the notion
         // of the database as a file system with database/schema/table
-        const restPath = table.schema
-          ? `autocrud/${table.schema}/${table.name}`
-          : `autocrud/${table.name}`;
+        const segments = table.schema
+          ? ["autocrud", table.schema, table.name]
+          : ["autocrud", table.name];
+        const restPath = segments.join(path.sep);
+        const handlerPaths = [".", ...segments].map(
+          (_segment, index, array) => {
+            // path join isn't handling leading "."
+            return array.slice(0, index + 1).join(path.sep);
+          }
+        );
         // here is a basic module representing the table - this isn't a specific autocrud operation
         // so this module isn't attached to the database, it is just a free floating variable that will
         // be forgotten
         const module = {
           ...table,
           restPath,
+          // before handlers run from the root down toward the sql file
+          beforeHandlerPaths: handlerPaths,
+          // and after handlers are in reverse, from the sql file back toward the root
+          afterHandlerPaths: [...handlerPaths].reverse(),
           cacheKey: md5(JSON.stringify(table.columns)),
           contextName: identifier(`${database.name}/${restPath}`),
           namedParameters: [],
@@ -62,5 +74,6 @@ export default async (
       }
     }
   }
+
   return rootContext;
 };

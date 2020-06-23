@@ -34,10 +34,10 @@ So -- if you send the `Authorization: Bearer <id_token>` you can count on all re
 
 ### Key Caching
 
-EmbraceSQL will download and cache keys for you in the `${EMBRACE_SQL_ROOT}/.keys` folder.
+EmbraceSQL will download and cache keys for you in the `${EMBRACESQL_ROOT}/.keys` folder.
 This speeds authentication and verification by eliminating any need to go out over the network.
 
-Keys are stored as JSON Web Key files named `${EMBRACE_SQL_ROOT}/.keys/<keyid>.json`.
+Keys are stored as JSON Web Key files named `${EMBRACESQL_ROOT}/.keys/<keyid>.json`.
 You can have multiple `.json` files, and EmbraceSQL will try them for you, allowing multiple key providers if needed.
 
 ## Authentication and Identity
@@ -52,7 +52,7 @@ This is the complete, original token, decoded from JSON into an object, with all
 
 For example:
 
-```javascript title="${EMBRACE_SQL_ROOT}/default/things/all.sql.before.js"
+```javascript title="${EMBRACESQL_ROOT}/default/things/all.before.js"
 export const before = async (context) => {
   // destructure the token if you like
   const { sub, iat } = context.token;
@@ -81,7 +81,7 @@ So rather than devise a 'security markup language', EmbraceSQL just has you deci
 
 To set up a secure by default system, you just create one root handler:
 
-```typescript title="${EMBRACE_SQL_ROOT}/before.ts" file=../../engine/tests/configs/security-secure-by-default/before.ts
+```typescript title="${EMBRACESQL_ROOT}/before.ts" file=../../engine/tests/configs/security/before.ts
 ``
 
 And that is it -- no query will run.
@@ -93,7 +93,7 @@ Let's further assume you have set up Google OpenID Connect to authenticate your 
 Google tokens provide a validated email -- the user would have received an email to that address they needed to click to verify to have an active account.
 So we just check the domain name in the email with a simple regular expression - note the use of `$` -- we want to be at the end, so `user@yourdomain.com` but not `user@yourdomain.com.hackerz.co`.
 
-```javascript title="${EMBRACE_SQL_ROOT}/all.before.js"
+```javascript title="${EMBRACESQL_ROOT}/all.before.js"
 export const before = async (context) => {
   // secure by default
   context.deny();
@@ -116,7 +116,7 @@ One way to do this -- but you have a lot of flexibility with code and handlers, 
 
 Here is a sample migration:
 
-```sql title="${EMBRACE_SQL_ROOT}/migrations/default/000_multitenant.sql"
+```sql title="${EMBRACESQL_ROOT}/migrations/default/000_multitenant.sql"
 -- SQLite style
 CREATE TABLE tenants (
   tenant_id INTEGER PRIMARY KEY,
@@ -125,7 +125,7 @@ CREATE TABLE tenants (
 );
 ```
 
-```sql title="${EMBRACE_SQL_ROOT}/migrations/default/001_multitenant.sql"
+```sql title="${EMBRACESQL_ROOT}/migrations/default/001_multitenant.sql"
 CREATE TABLE multi_tenant_things (
   thing_id INTEGER PRIMARY KEY,
   thing_value TEXT NOT NULL,
@@ -136,11 +136,11 @@ CREATE TABLE multi_tenant_things (
 
 Here is the SQL you need to make this work:
 
-```sql title="${EMBRACE_SQL_ROOT}/default/tenant.sql"
+```sql title="${EMBRACESQL_ROOT}/default/tenant.sql"
 SELECT tenant_id WHERE domain = :domain
 ```
 
-```sql title="${EMBRACE_SQL_ROOT}/default/my_things.sql"
+```sql title="${EMBRACESQL_ROOT}/default/my_things.sql"
 SELECT thing_id, thing_value
 FROM multi_tenant_things
 WHERE tenant_id = :tenant_id
@@ -150,7 +150,7 @@ And some handlers, we'll limit access to known domains, and be secure by default
 Remember you will need to pass a bearer token that will decode and validate.
 Remember that this is a root folder handler, so you only need to have this one time in your whole system.
 
-```javascript title="${EMBRACE_SQL_ROOT}/before.js"
+```javascript title="${EMBRACESQL_ROOT}/before.js"
 export const before = (context) => {
   // secure by default, nobody can query
   context.deny({});
@@ -182,7 +182,7 @@ Integrating with PostgreSQL [row level security](https://www.postgresql.org/docs
 You set your policies in SQL as specified by PostgreSQL, and all you need to do is tell EmbraceSQL who is the current user.
 Note that you don't need to create a database user for each possible user in PostgreSQL, and you don't need to have an extra parameter tacked on to all your SQL.
 
-```javascript title="./before.js"
+```javascript title="./before.ts"
 export const before = async (context) => {
   // secure by default, no queries allowed
   context.deny({});

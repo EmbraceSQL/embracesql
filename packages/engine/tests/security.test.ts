@@ -18,6 +18,7 @@ describe("security", () => {
   let nodeHttpClient;
   const clients = {};
   beforeAll(async () => {
+    const port = 3355;
     // clean up
     await fs.ensureDir(root);
     await rmfr(root);
@@ -36,14 +37,14 @@ describe("security", () => {
     ));
     engine = await EmbraceSQLEmbedded();
     const server = await createServer(engine);
-    listening = server.listen(5678);
+    listening = server.listen(port);
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
       rootContext.configuration.embraceSQLRoot,
       "node"
     ));
-    nodeHttpClient = EmbraceSQL("http://localhost:5678");
+    nodeHttpClient = EmbraceSQL(`http://localhost:${port}`);
     clients["engine"] = engine;
     clients["http"] = nodeHttpClient;
   });

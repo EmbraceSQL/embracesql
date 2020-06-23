@@ -191,6 +191,16 @@ export type CommonDatabaseModule = {
    * When true, this module may modify data.
    */
   canModifyData: boolean;
+  /**
+   * Chain of relative to EmbraceSQLRoot folder paths, shallow to deep,
+   * that is used to build up handler chains.
+   */
+  readonly beforeHandlerPaths: string[];
+  /**
+   * Chain of relative to EmbraceSQLRoot folder paths, deep to shallow,
+   * that is used to build up handler chains.
+   */
+  readonly afterHandlerPaths: string[];
 };
 
 /**
@@ -207,16 +217,7 @@ export type SQLModule = CommonDatabaseModule & {
    * Fully qualified file name on disk.
    */
   readonly fullPath: string;
-  /**
-   * Chain of relative to EmbraceSQLRoot folder paths, shallow to deep,
-   * that is used to build up handler chains.
-   */
-  readonly beforeHandlerPaths: string[];
-  /**
-   * Chain of relative to EmbraceSQLRoot folder paths, deep to shallow,
-   * that is used to build up handler chains.
-   */
-  readonly afterHandlerPaths: string[];
+
   /**
    * Actual SQL text source, unmodified, read from disk
    */

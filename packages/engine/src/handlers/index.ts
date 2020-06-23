@@ -2,6 +2,7 @@ import { InternalContext } from "../internal-context";
 import sqlModulePipeline from "./sqlmodule-pipeline";
 import contextPipeline from "./context-pipeline";
 import autoCrudPipeline from "./autocrud-pipeline";
+import generateDefaultHandlers from "./generate-default-handlers";
 
 /**
  * Scrub up identifiers to be valid JavaScript names.
@@ -36,6 +37,12 @@ export const embraceEventHandlers = async (
   await sqlModulePipeline(rootContext);
   // auto auto CRUD ... I wannt be ... an Auto CRUD
   await autoCrudPipeline(rootContext);
+  // every module is now generated -- time for handler generation
+  for (const database of Object.values(rootContext.databases)) {
+    for (const module of Object.values(database.modules)) {
+      await generateDefaultHandlers(rootContext, module);
+    }
+  }
   // stitch together the full context and final combined files
   // this is the 'pack' phase
   await contextPipeline(rootContext);

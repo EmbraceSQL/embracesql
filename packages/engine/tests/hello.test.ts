@@ -80,10 +80,10 @@ describe("hello world configuration!", () => {
   });
   it("makes empty handlers for you", async () => {
     expect("default/before.ts").toExist();
-    expect("default/hello.sql.before.ts").toExist();
-    expect("default/hello.sql.after.ts").toExist();
+    expect("default/hello.before.ts").toExist();
+    expect("default/hello.after.ts").toExist();
     expect("default/after.ts").toExist();
-    expect("default/hello.sql.afterError.ts").toExist();
+    expect("default/hello.afterError.ts").toExist();
   });
   it("knows hello sql is read only", async () => {
     expect(

@@ -102,7 +102,8 @@ Object {
       "modules": Object {
         "hello": Object {
           "afterHandlerPaths": Array [
-            "default",
+            "./default",
+            ".",
           ],
           "ast": Object {
             "columns": Array [
@@ -126,7 +127,8 @@ Object {
             "with": null,
           },
           "beforeHandlerPaths": Array [
-            "default",
+            ".",
+            "./default",
           ],
           "cacheKey": "4726f48a1467bab00568c7c5b8610040",
           "canModifyData": false,
@@ -144,7 +146,8 @@ Object {
         },
         "yo": Object {
           "afterHandlerPaths": Array [
-            "default",
+            "./default",
+            ".",
           ],
           "ast": Object {
             "columns": Array [
@@ -168,7 +171,8 @@ Object {
             "with": null,
           },
           "beforeHandlerPaths": Array [
-            "default",
+            ".",
+            "./default",
           ],
           "cacheKey": "54d6f4897bf10f8219c6fc94e11bf7a4",
           "canModifyData": false,
@@ -202,7 +206,8 @@ Object {
       "executor": [Function],
       "module": Object {
         "afterHandlerPaths": Array [
-          "default",
+          "./default",
+          ".",
         ],
         "ast": Object {
           "columns": Array [
@@ -226,7 +231,8 @@ Object {
           "with": null,
         },
         "beforeHandlerPaths": Array [
-          "default",
+          ".",
+          "./default",
         ],
         "cacheKey": "4726f48a1467bab00568c7c5b8610040",
         "canModifyData": false,
@@ -247,7 +253,8 @@ Object {
       "executor": [Function],
       "module": Object {
         "afterHandlerPaths": Array [
-          "default",
+          "./default",
+          ".",
         ],
         "ast": Object {
           "columns": Array [
@@ -271,7 +278,8 @@ Object {
           "with": null,
         },
         "beforeHandlerPaths": Array [
-          "default",
+          ".",
+          "./default",
         ],
         "cacheKey": "54d6f4897bf10f8219c6fc94e11bf7a4",
         "canModifyData": false,
