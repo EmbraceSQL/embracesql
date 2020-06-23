@@ -8,6 +8,8 @@ exports[`hello world with a handler will honor handlers over an HTTP call - POST
 
 exports[`hello world with a handler will honor handlers over an HTTP call - POST 2`] = `"[{\\"echo\\":\\"marklar\\"},{\\"echo\\":\\"marklar\\"}]"`;
 
+exports[`hello world with a handler will honor handlers over an HTTP call - POST 3`] = `"[{\\"echo\\":\\"marklar\\"},{\\"echo\\":\\"marklar\\"}]"`;
+
 exports[`hello world with a handler will honor handlers with a client call 1`] = `
 Array [
   Object {

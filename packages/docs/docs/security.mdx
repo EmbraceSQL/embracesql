@@ -81,11 +81,8 @@ So rather than devise a 'security markup language', EmbraceSQL just has you deci
 
 To set up a secure by default system, you just create one root handler:
 
-```javascript title="${EMBRACE_SQL_ROOT}/before.js"
-export const before = async (context) => {
-  context.deny();
-};
-```
+```typescript title="${EMBRACE_SQL_ROOT}/before.ts" file=../../engine/tests/configs/security-secure-by-default/before.ts
+``
 
 And that is it -- no query will run.
 
