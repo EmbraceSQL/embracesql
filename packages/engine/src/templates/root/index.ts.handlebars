@@ -134,7 +134,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             return internalContext.databases.{{@key}}.transactions.depth();
           }
         },
-      {{#treeAMap value.modules database=value handlerMap="typedExecutors"}}
+      {{#treeAMap value.modules database=value handlerMap="entryPoints"}}
         {{#each value}}
         {{> moduleTree this database=@database }}
         {{/each}}
@@ -145,14 +145,18 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
 
 
   // this is the 'outermost' shell of calls -- entry points into the engine from a server
+  // which sets up the actual execution context
   // this is in the context --> context style used for the server processes and event handlers
   const entryPoints = {
     {{#eachInMap moduleExecutors}}
       {{value.module.contextName}}:  {
         executor:
-          async (context: types.{{value.module.contextName}}Context) : Promise<types.{{value.module.contextName}}Context> => {
-            context.databases = entryPointCallableDatabases;
-            return typedExecutors.{{value.module.contextName}}(context);
+          async (parameters: types.{{value.module.contextName}}Context["parameters"]) : Promise<types.{{value.module.contextName}}Context["results"]> => {
+            const executedContext = await typedExecutors.{{value.module.contextName}}({
+              databases: entryPointCallableDatabases,
+              parameters
+            });
+            return executedContext.results;
           },
         module: internalContext.moduleExecutors.{{value.module.contextName}}.module,
       },
@@ -179,13 +183,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   {{else}}
   {{name}}: async (...parameters: types.{{value.contextName}}ParameterSet[]) 
   : Promise<types.{{value.contextName}}Context["results"]> => {
-      const context = 
-        await {{@handlerMap}}.{{value.contextName}}({
-          parameters: parameters.flat(),
-          results: [], 
-          databases: entryPointCallableDatabases
-        });
-      return context.results;
+      return {{@handlerMap}}.{{value.contextName}}.executor(parameters.flat());
   },
   {{/if}}
 {{/inline}}

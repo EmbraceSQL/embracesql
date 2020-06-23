@@ -3,7 +3,11 @@ import bodyparser from "koa-bodyparser";
 import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
 import path from "path";
-import { HasConfiguration, HasEntryPoints } from "./shared-context";
+import {
+  HasConfiguration,
+  HasEntryPoints,
+  SQLParameterSet,
+} from "./shared-context";
 import { restructure } from "../../console/src/structured";
 import fs from "fs-extra";
 
@@ -42,12 +46,10 @@ export const createServer = async (
       ): Promise<void> => {
         try {
           // parameters from the query
-          const context = {
-            parameters: [httpContext.request.query],
-            results: [],
-          };
-          await rootContext.entryPoints[contextName].executor(context);
-          httpContext.body = context.results;
+          const parameters = [httpContext.request.query];
+          httpContext.body = await rootContext.entryPoints[
+            contextName
+          ].executor((parameters as unknown) as SQLParameterSet);
           httpContext.status = 200;
         } catch (e) {
           // this is the very far edge of the system, time for a log
@@ -64,14 +66,12 @@ export const createServer = async (
     ): Promise<void> => {
       try {
         // parameters from the body
-        const context = {
-          parameters: Array.isArray(httpContext.request.body)
-            ? httpContext.request.body
-            : [httpContext.request.body],
-          results: [],
-        };
-        await rootContext.entryPoints[contextName].executor(context);
-        httpContext.body = context.results;
+        const parameters = Array.isArray(httpContext.request.body)
+          ? httpContext.request.body
+          : [httpContext.request.body];
+        httpContext.body = await rootContext.entryPoints[contextName].executor(
+          (parameters as unknown) as SQLParameterSet
+        );
         httpContext.status = 200;
       } catch (e) {
         console.error(e);

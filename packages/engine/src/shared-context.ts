@@ -307,14 +307,14 @@ export type GenericContext<ParameterType, ResultType> = {
    *
    * @param message - Any helpful message you see fit, will be appended to [[grants]].
    */
-  allow?: (message: Message) => void;
+  allow: (message: Message) => void;
 
   /**
    * Set the current start of security to deny SQL execution against the database.
    *
    * @param message - Any helpful message you see fit, will be appended to [[grants]].
    */
-  deny?: (message: Message) => void;
+  deny: (message?: Message) => void;
 
   /**
    * View all the reasons security might have been [[allow]] or [[deny]].
@@ -380,15 +380,23 @@ export type ContextualExecutors<T> = {
 };
 
 /**
+ * Entry points take parameters and generate results.
+ */
+export type EntryPointExecutor<ParameterType, ResultType> = (
+  parameters: ParameterType
+) => Promise<ValueOrArray<ResultType>>;
+
+/**
  * A single sql module entry point. This is wrapped in an outer function call
  * or HTTP to provide actual EmbraceSQL service. An EntryPoint is a full featured
  * EmbraceSQL call.
  *
  * This is using the DefaultContext -- at this layer executors are fairly generic.
- * The client library wrapper or OpenAPI provides specific typeing.
+ * The client library wrapper or OpenAPI provides specific typeing and call this
+ * entry point.
  */
 export type EntryPoint = {
-  readonly executor: ContextualExecutor<Context>;
+  readonly executor: EntryPointExecutor<SQLParameterSet, SQLRow>;
   readonly module: CommonDatabaseModule;
 };
 
