@@ -67,7 +67,7 @@ describe("@embracesql/identity", () => {
           nockBackConfig
         );
         await validate(token, {
-          cache: new FileCache(cacheIn),
+          cache: FileCache(cacheIn),
           now: new Date("2020/06/22"),
         });
         nockDone();
@@ -78,7 +78,7 @@ describe("@embracesql/identity", () => {
           nockBackConfig
         );
         const validToken = await validate(token, {
-          cache: new FileCache(cacheIn),
+          cache: FileCache(cacheIn),
           now: new Date("2020/06/22"),
         });
         expect(validToken.email).toEqual(checkName);
@@ -87,7 +87,7 @@ describe("@embracesql/identity", () => {
       it("blows up on far future expiration", async () => {
         expect(
           validate(token, {
-            cache: new FileCache(cacheIn),
+            cache: FileCache(cacheIn),
             now: new Date("2100/01/01"),
           })
         ).rejects.toThrowError('"exp" claim timestamp check failed');

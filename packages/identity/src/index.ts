@@ -12,7 +12,7 @@ export type JWTString = string;
 /**
  * Keys need to live somewhere, this is a key cache.
  */
-export interface JWKCache {
+export type JWKCache = {
   /**
    * Get a key by kid -- key id.
    */
@@ -21,7 +21,8 @@ export interface JWKCache {
    * And -- stash a key, echoing it back.
    */
   set: (kid: string, jwk: JWK.Key) => Promise<JWK.Key>;
-}
+};
+
 /**
  * Decoded token header.
  */
@@ -68,54 +69,46 @@ const cleanIssuer = (jwt: JWTPayload): string => {
 /**
  * Just in memory -- useful for testing.
  */
-export class MemoryCache implements JWKCache {
-  buffer: Map<string, JWK.Key>;
+export const MemoryCache = (): JWKCache => {
+  const buffer = new Map<string, JWK.Key>();
 
-  constructor() {
-    this.buffer = new Map<string, JWK.Key>();
-  }
-
-  async get(kid: string): Promise<JWK.Key> {
-    return this.buffer.get(kid);
-  }
-
-  async set(kid: string, jwk: JWK.Key): Promise<JWK.Key> {
-    this.buffer.set(kid, jwk);
-    return jwk;
-  }
-}
+  return {
+    get: async (kid: string): Promise<JWK.Key> => {
+      return buffer.get(kid);
+    },
+    set: async (kid: string, jwk: JWK.Key): Promise<JWK.Key> => {
+      buffer.set(kid, jwk);
+      return jwk;
+    },
+  };
+};
 
 /**
  * And cache keys on disk with files
  */
-export class FileCache implements JWKCache {
-  root: string;
-  constructor(root: string) {
-    this.root = root;
-  }
-
-  buildPath(kid: string): string {
-    return path.join(this.root, `${kid}.json`);
-  }
-
-  async get(kid: string): Promise<JWK.Key> {
-    await fs.ensureDir(this.root);
-    const at = this.buildPath(kid);
-    const exists = await fs.pathExists(at);
-    if (exists) {
-      return JSON.parse(await fs.readFile(at, "utf8"));
-    } else {
-      return undefined;
-    }
-  }
-
-  async set(kid: string, jwk: JWK.Key): Promise<JWK.Key> {
-    await fs.ensureDir(this.root);
-    const at = this.buildPath(kid);
-    await fs.writeFile(at, JSON.stringify(jwk), "utf8");
-    return jwk;
-  }
-}
+export const FileCache = (root: string): JWKCache => {
+  const buildPath = (kid: string): string => {
+    return path.join(root, `${kid}.json`);
+  };
+  return {
+    get: async (kid: string): Promise<JWK.Key> => {
+      await fs.ensureDir(root);
+      const at = buildPath(kid);
+      const exists = await fs.pathExists(at);
+      if (exists) {
+        return JSON.parse(await fs.readFile(at, "utf8"));
+      } else {
+        return undefined;
+      }
+    },
+    set: async (kid: string, jwk: JWK.Key): Promise<JWK.Key> => {
+      await fs.ensureDir(root);
+      const at = buildPath(kid);
+      await fs.writeFile(at, JSON.stringify(jwk), "utf8");
+      return jwk;
+    },
+  };
+};
 
 /**
  * Options used in token validation.
@@ -151,7 +144,7 @@ export const validate = async (
 ): Promise<JWTPayload> => {
   // add on some defaults
   const optionsAfterDefaults = {
-    cache: new MemoryCache(),
+    cache: MemoryCache(),
     now: new Date(),
     ignoreExp: false,
     ...options,
