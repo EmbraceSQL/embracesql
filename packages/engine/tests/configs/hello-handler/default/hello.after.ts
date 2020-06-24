@@ -1,6 +1,5 @@
-// double results === double fun
-import * as types from "../context";
+import * as types from "../index";
 
 export const after: types.default_helloHandler = async (context) => {
-  context.results = [...context.results, ...context.results];
+  context.results = [...(context.results as []), ...(context.results as [])];
 };

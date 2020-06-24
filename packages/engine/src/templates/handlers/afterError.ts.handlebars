@@ -2,7 +2,7 @@
 to: "{{configuration.embraceSQLRoot}}/{{module.restPath}}.afterError.ts"
 ---
 
-import * as types from "{{relativeToRoot}}/context";
+import * as types from "{{relativeToRoot}}/index";
 
 export const afterError : types.{{module.contextName}}Handler = async (_context) => {
   // handle me!

@@ -9,6 +9,20 @@ import { InternalContext, buildInternalContext } from "./src/internal-context";
 import { migrate } from "./src/migrations";
 import { createServer } from "./src/server";
 import { withTransaction } from "./src/transactions";
+import {
+  SQLRow,
+  SQLParameterSet,
+  DatabaseTransactions,
+  HasEntryPoints,
+  HasConfiguration,
+  Closeable,
+  GenericContext,
+  Context,
+  Grant,
+  GrantType,
+  Message,
+  ValueOrArray
+} from "./src/shared-context";
 
 // re-export symbols as needed
 export {
@@ -20,4 +34,16 @@ export {
   migrate,
   createServer,
   withTransaction,
+  SQLRow,
+  SQLParameterSet,
+  DatabaseTransactions,
+  HasEntryPoints,
+  HasConfiguration,
+  Closeable,
+  GenericContext,
+  Context,
+  Grant,
+  GrantType,
+  Message,
+  ValueOrArray,
 };

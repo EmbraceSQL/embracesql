@@ -1,4 +1,4 @@
-import * as types from "../context";
+import * as types from "../index";
 
 export const after: types.default_addHandler = async (context) => {
   // run a SQL module inline, no parameters

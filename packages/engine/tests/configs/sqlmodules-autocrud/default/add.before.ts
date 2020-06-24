@@ -1,4 +1,4 @@
-import * as types from "../context";
+import * as types from "../index";
 
 export const before: types.default_addHandler = async (context) => {
   // start a database transaction

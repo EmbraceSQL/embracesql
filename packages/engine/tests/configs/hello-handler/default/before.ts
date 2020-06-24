@@ -1,5 +1,4 @@
-// folder level
-import * as types from "../context";
+import * as types from "../index";
 
 export const before: types.FolderHandler = async (context) => {
   // simulated error

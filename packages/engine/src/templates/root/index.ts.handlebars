@@ -2,10 +2,114 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { buildInternalContext, loadConfiguration, InternalContext, withTransaction } from "@embracesql/engine";
-import * as types from "./context";
+import { buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
 
-type EmbeddedEngine = types.HasEntryPoints & types.SQLModuleTree & types.HasConfiguration & types.Closeable;
+// Generation starts here
+
+// handle a folder, these use the base types for rows and parameters
+// to allow them to be maximally generic
+export type FolderHandler = (context: Context) => Promise<void>;
+
+
+// parameters, result row, and context types
+{{#eachInMap databases}}
+// database {{@key}}
+{{#eachInMap value.modules}}
+{{> moduleMetadata module=value}}
+{{/eachInMap}}
+{{/eachInMap}}
+
+{{#*inline "moduleMetadata"}}
+
+// module {{module.contextName}} parameters, row type, and context type
+{{> resultsetMetadata module}}
+{{> parametersMetadata module}}
+export type {{module.contextName}}Context = 
+  SQLModuleTree & GenericContext<{{module.contextName}}ParameterSet, {{module.contextName}}Row>;
+export type {{module.contextName}}Handler = (context: {{module.contextName}}Context) => Promise<void>;
+{{/inline}}
+
+{{#*inline "resultsetMetadata"}}
+export type {{contextName}}Row = SQLRow &
+{
+  {{#each resultsetMetadata}}
+    {{name}}: {{> resultsetType type}}
+  {{/each}}
+};
+{{/inline}}
+
+{{#*inline "resultsetType"}}
+{{#isArray this}}
+  {
+    {{#each this}}
+      {{name}}: {{> resultsetType type}}
+    {{/each}}
+  };
+{{else}}
+  {{this}};
+{{/isArray}}
+{{/inline}}
+
+{{#*inline "parametersMetadata"}}
+{{#if namedParameters.length}}
+export type {{contextName}}ParameterSet = SQLParameterSet &
+{
+  {{#each namedParameters}}
+    {{name}}: {{type}}
+  {{/each}}
+};
+{{else}}
+export type {{contextName}}ParameterSet = SQLParameterSet;
+{{/if}}
+{{/inline}}
+
+
+// flat map of execution functions
+export type ExecutorMap = {
+    {{#eachInMap moduleExecutors}}
+      {{value.module.contextName}}:  
+          (context: {{value.module.contextName}}Context) => Promise<{{value.module.contextName}}Context>,
+    {{/eachInMap}}
+};
+
+/**
+* Tree structure of the entire set of databases and handlers, used
+* inside event handlers to call back and run more queries.
+*/
+export type SQLModuleTree = {
+  databases?: {
+  {{#eachInMap databases}}
+    {{@key}}: {
+      transactions: DatabaseTransactions,
+      {{#treeAMap value.modules database=value}}
+        {{#each value}}
+        {{> moduleTreeType this database=@database }}
+        {{/each}}
+      {{/treeAMap}}
+    },
+  {{/eachInMap}}
+  }
+};
+
+{{#*inline "moduleTreeType"}}
+  {{#if children.length}}
+  {{name}}: {
+  {{#each children}}
+    {{> moduleTreeType this database=database}}
+  {{/each}}
+  },
+  {{else}}
+  {{name}}:(...parameters: {{value.contextName}}ParameterSet[]) => 
+    Promise<ValueOrArray<{{value.contextName}}Row>>;
+  {{/if}}
+{{/inline}}
+
+// We'll be making one of these
+type EmbeddedEngine = HasEntryPoints &
+  SQLModuleTree &
+  HasConfiguration &
+  Closeable;
+
 
 // each SQL Module has a direct execution decorator  -- this just talks to the database
 // this attaches handlers both before and after wrapping the direct executor
@@ -30,7 +134,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
   {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.modules}}
-      {{value.contextName}}:  async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+      {{value.contextName}}:  async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
         try {
           {{#if value.beforeHandlerPaths}}
           {{#each value.beforeHandlerPaths}}
@@ -40,7 +144,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
           {{/if}}
           const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
           const results = executor ? (await executor(context)).results : [];
-          context.results = results as types.{{value.contextName}}Row[];
+          context.results = results as {{value.contextName}}Row[];
           {{#if value.afterHandlerPaths}}
           await {{value.contextName}}after(context);
           {{#each value.afterHandlerPaths}}
@@ -64,13 +168,13 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
 // so like - embedded engine -> entry point -> transactionwrapped 
 export const decorateWithTransactions = (
   rootContext: InternalContext, 
-  innerExecutors: types.ExecutorMap) => {
+  innerExecutors: ExecutorMap) => {
     return {
     {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
-          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+          async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
             return withTransaction(
               rootContext.databases.{{@database}}, 
               innerExecutors.{{value.contextName}}, 
@@ -86,16 +190,15 @@ export const decorateWithTransactions = (
 // this mapping deals with cardinality, treating arrays of 1 item as a single item on return
 // to 'match' the varargs input style
 export const decorateWithCardinality = (
-  innerExecutors: types.ExecutorMap) => {
+  innerExecutors: ExecutorMap) => {
     return {
     {{#eachInMap databases}}
     // database {{@key}}
     {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
-          async (context: types.{{value.contextName}}Context) : Promise<types.{{value.contextName}}Context> => {
+          async (context: {{value.contextName}}Context) : Promise<ValueOrArray<{{value.contextName}}Row>> => {
               await innerExecutors.{{value.contextName}}(context);
-              context.results = context.results?.length === 1 ? (context.results as types.{{value.contextName}}Row[])[0] : context.results;
-              return context;
+              return context.results?.length === 1 ? (context.results as {{value.contextName}}Row[])[0] : context.results;
           },
     {{/eachInMap}}
     {{/eachInMap}}
@@ -154,12 +257,22 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
     {{#eachInMap moduleExecutors}}
       {{value.module.contextName}}:  {
         executor:
-          async (parameters: types.{{value.module.contextName}}Context["parameters"]) : Promise<types.{{value.module.contextName}}Context["results"]> => {
-            const executedContext = await typedExecutors.{{value.module.contextName}}({
-              databases: entryPointCallableDatabases,
-              parameters
-            });
-            return executedContext.results;
+          async (parameters: {{value.module.contextName}}Context["parameters"]) : Promise<ValueOrArray<{{value.module.contextName}}Row>> => {
+            const grants = new Array<Grant>();
+            return typedExecutors.{{value.module.contextName}}(
+                 {
+                  databases: entryPointCallableDatabases,
+                  parameters,
+                  results: [],
+                  grants,
+                  allow: (message?: Message) => {
+                    grants.push({ type: "allow", message });
+                  },
+                  deny: (message?: Message) => {
+                    grants.push({ type: "deny", message });
+                  },
+                }
+            );
           },
         module: internalContext.moduleExecutors.{{value.module.contextName}}.module,
       },
@@ -184,8 +297,8 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   {{/each}}
   },
   {{else}}
-  {{name}}: async (...parameters: types.{{value.contextName}}ParameterSet[]) 
-  : Promise<types.{{value.contextName}}Context["results"]> => {
+  {{name}}: async (...parameters: {{value.contextName}}ParameterSet[]) 
+  : Promise<ValueOrArray<{{value.contextName}}Row>> => {
       return {{@handlerMap}}.{{value.contextName}}.executor(parameters.flat());
   },
   {{/if}}

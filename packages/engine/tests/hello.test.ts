@@ -104,7 +104,7 @@ describe("hello world configuration!", () => {
     expect(content).toMatchSnapshot();
   });
   it("generates a typed context object", async () => {
-    expect("context.ts").toExist();
+    expect("index.ts").toExist();
   });
   it("generates client library for you", async () => {
     expect("node.ts").toExist();

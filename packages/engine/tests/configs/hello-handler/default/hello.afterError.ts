@@ -1,4 +1,4 @@
-import * as types from "../context";
+import * as types from "../index";
 
 export const afterError: types.default_helloHandler = async (context) => {
   // see what happened and print it out, the error is on the context

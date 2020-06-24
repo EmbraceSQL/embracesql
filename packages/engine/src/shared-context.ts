@@ -14,12 +14,12 @@
 /**
  * Parameters and results can be single items, or array batches.
  */
-type ValueOrArray<T> = Array<T> | T;
+export type ValueOrArray<T> = Array<T> | T;
 
 /**
  * A message, passed for security and logging.
  */
-export type Message = string | Record<string, unknown>;
+export type Message = string | Record<string, unknown> | undefined;
 
 /**
  * Security types.
@@ -289,6 +289,33 @@ export type Database = {
 };
 
 /**
+ * The access control section of the context.
+ *
+ * This provides a notion of allow/deny/grant logging, so
+ * is authorization and audit data.
+ */
+export type ContextAccessControl = {
+  /**
+   * Set the current state of security to allow SQL execution against the database.
+   *
+   * @param message - Any helpful message you see fit, will be appended to [[grants]].
+   */
+  allow: (message?: Message) => void;
+
+  /**
+   * Set the current start of security to deny SQL execution against the database.
+   *
+   * @param message - Any helpful message you see fit, will be appended to [[grants]].
+   */
+  deny: (message?: Message) => void;
+
+  /**
+   * View all the reasons security might have been [[allow]] or [[deny]].
+   */
+  grants: Array<Grant>;
+};
+
+/**
  * This context is the 'one true parameter' passed to every Embrace SQL
  * event handler. It is created by EmbraceSQL at the start of each API
  * request, and serves as a shared state allowing handlers broad access
@@ -302,26 +329,7 @@ export type Database = {
  * that will be generated will be noted in comments.
  *
  */
-export type GenericContext<ParameterType, ResultType> = {
-  /**
-   * Set the current state of security to allow SQL execution against the database.
-   *
-   * @param message - Any helpful message you see fit, will be appended to [[grants]].
-   */
-  allow: (message: Message) => void;
-
-  /**
-   * Set the current start of security to deny SQL execution against the database.
-   *
-   * @param message - Any helpful message you see fit, will be appended to [[grants]].
-   */
-  deny: (message?: Message) => void;
-
-  /**
-   * View all the reasons security might have been [[allow]] or [[deny]].
-   */
-  grants?: Array<Grant>;
-
+export type GenericContext<ParameterType, ResultType> = ContextAccessControl & {
   /**
    * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
    * decoded and verified, it will be here.
@@ -384,7 +392,7 @@ export type ContextualExecutors<T> = {
  * Entry points take parameters and generate results.
  */
 export type EntryPointExecutor<ParameterType, ResultType> = (
-  parameters: ParameterType
+  parameters: ParameterType[]
 ) => Promise<ValueOrArray<ResultType>>;
 
 /**
