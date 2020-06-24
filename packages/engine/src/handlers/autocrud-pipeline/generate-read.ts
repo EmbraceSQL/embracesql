@@ -38,6 +38,7 @@ export default async (
   const allRows = `SELECT * FROM ${autocrudModule.name};`;
   const byKey = `SELECT * FROM ${autocrudModule.name} WHERE ${keyWhere};`;
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {

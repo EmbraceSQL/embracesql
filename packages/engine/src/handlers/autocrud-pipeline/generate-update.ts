@@ -47,6 +47,7 @@ export default async (
   const updateByKey = `UPDATE ${module.name} SET ${columnUpdates} WHERE ${keyFilter}`;
   // and with an executor to run the thing
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const updateOne = async (

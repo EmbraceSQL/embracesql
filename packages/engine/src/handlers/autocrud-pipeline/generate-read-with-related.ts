@@ -81,6 +81,7 @@ export default async (
   });
   // build up the execution function
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {

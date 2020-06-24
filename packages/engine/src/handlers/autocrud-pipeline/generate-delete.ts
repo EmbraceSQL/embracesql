@@ -40,6 +40,7 @@ export default async (
   const deleteByKeys = `DELETE FROM ${module.name} WHERE ${keyFilter}`;
   // and with an executor to run the thing
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
