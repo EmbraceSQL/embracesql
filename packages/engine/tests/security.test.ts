@@ -59,13 +59,13 @@ describe("security", () => {
     describe("secure by default", () => {
       it("will deny access with an SQL call", async () => {
         const client = clients[clientName];
-        expect(
+        await expect(
           client.databases.default.hello({ stuff: "nodey thing" })
         ).rejects.toThrowError("Unauthorized");
       });
       it("will deny access with an AutoCRUD call", async () => {
         const client = clients[clientName];
-        expect(
+        await expect(
           client.databases.default.autocrud.things.read()
         ).rejects.toThrowError("Unauthorized");
       });

@@ -166,6 +166,8 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
 // transaction wrappings very near the outside on each call
 // this the the first 'real' execution layer
 // so like - embedded engine -> entry point -> transactionwrapped 
+// this ends up needeing to be generated to be this 'far' toward the client calling
+// to start up before handlers -- which must be generated
 export const decorateWithTransactions = (
   rootContext: InternalContext, 
   innerExecutors: ExecutorMap) => {

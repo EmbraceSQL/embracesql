@@ -6,42 +6,99 @@ exports[`CLI generates an embedded client 1`] = `
   loadConfiguration,
   InternalContext,
   withTransaction,
+  SQLRow,
+  Context,
+  GenericContext,
+  Closeable,
+  HasConfiguration,
+  HasEntryPoints,
+  SQLParameterSet,
+  DatabaseTransactions,
+  Grant,
+  Message,
+  ValueOrArray,
 } from \\"@embracesql/engine\\";
-import * as types from \\"./context\\";
 
-type EmbeddedEngine = types.HasEntryPoints &
-  types.SQLModuleTree &
-  types.HasConfiguration &
-  types.Closeable;
+// Generation starts here
+
+// handle a folder, these use the base types for rows and parameters
+// to allow them to be maximally generic
+export type FolderHandler = (context: Context) => Promise<void>;
+
+// parameters, result row, and context types
+// database default
+
+// module default_hello parameters, row type, and context type
+export type default_helloRow = SQLRow & {
+  hello_world: string;
+};
+export type default_helloParameterSet = SQLParameterSet;
+export type default_helloContext = SQLModuleTree &
+  GenericContext<default_helloParameterSet, default_helloRow>;
+export type default_helloHandler = (
+  context: default_helloContext
+) => Promise<void>;
+
+// flat map of execution functions
+export type ExecutorMap = {
+  default_hello: (
+    context: default_helloContext
+  ) => Promise<default_helloContext>;
+};
+
+/**
+ * Tree structure of the entire set of databases and handlers, used
+ * inside event handlers to call back and run more queries.
+ */
+export type SQLModuleTree = {
+  databases?: {
+    default: {
+      transactions: DatabaseTransactions;
+      hello: (
+        ...parameters: default_helloParameterSet[]
+      ) => Promise<ValueOrArray<default_helloRow>>;
+    };
+  };
+};
+
+// We'll be making one of these
+type EmbeddedEngine = HasEntryPoints &
+  SQLModuleTree &
+  HasConfiguration &
+  Closeable;
 
 // each SQL Module has a direct execution decorator  -- this just talks to the database
 // this attaches handlers both before and after wrapping the direct executor
 // this ends up being a decorated map of handler+query execution capability
 // autocrud is a little different, there are no handlers to load up from disk
 // so this is a strong type wrapping
+import { before as default_hellobefore } from \\"./default/hello.before\\";
+import { after as default_helloafter } from \\"./default/hello.after\\";
+import { afterError as default_helloafterError } from \\"./default/hello.afterError\\";
+import { before as default_hellobefore0 } from \\"./before\\";
+import { before as default_hellobefore1 } from \\"./default/before\\";
+import { after as default_helloafter0 } from \\"./default/after\\";
+import { after as default_helloafter1 } from \\"./after\\";
 export const decorateWithHandlers = (rootContext: InternalContext) => {
   return {
     // database default
     default_hello: async (
-      context: types.default_helloContext
-    ): Promise<types.default_helloContext> => {
-      const { afterError } = require(\\"./default/hello.sql.afterError\\");
+      context: default_helloContext
+    ): Promise<default_helloContext> => {
       try {
-        const before0 = require(\\"./default/before\\").before;
-        await before0(context);
-        const before = require(\\"./default/hello.sql.before\\").before;
-        await before(context);
+        await default_hellobefore0(context);
+        await default_hellobefore1(context);
+        await default_hellobefore(context);
         const executor = rootContext.moduleExecutors.default_hello.executor;
         const results = executor ? (await executor(context)).results : [];
-        context.results = results as types.default_helloRow[];
-        const after = require(\\"./default/hello.sql.after\\").after;
-        await after(context);
-        const after0 = require(\\"./default/after\\").after;
-        await after0(context);
+        context.results = results as default_helloRow[];
+        await default_helloafter(context);
+        await default_helloafter0(context);
+        await default_helloafter1(context);
         return context;
       } catch (error) {
         context.error = error;
-        if (afterError) afterError(context);
+        if (default_helloafterError) default_helloafterError(context);
         throw error;
       }
     },
@@ -51,15 +108,17 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
 // transaction wrappings very near the outside on each call
 // this the the first 'real' execution layer
 // so like - embedded engine -> entry point -> transactionwrapped
+// this ends up needeing to be generated to be this 'far' toward the client calling
+// to start up before handlers -- which must be generated
 export const decorateWithTransactions = (
   rootContext: InternalContext,
-  innerExecutors: types.ExecutorMap
+  innerExecutors: ExecutorMap
 ) => {
   return {
     // database default
     default_hello: async (
-      context: types.default_helloContext
-    ): Promise<types.default_helloContext> => {
+      context: default_helloContext
+    ): Promise<default_helloContext> => {
       return withTransaction(
         rootContext.databases.default,
         innerExecutors.default_hello,
@@ -73,18 +132,16 @@ export const decorateWithTransactions = (
 // which can result in a result set -- an array or rows -- or a single record / row
 // this mapping deals with cardinality, treating arrays of 1 item as a single item on return
 // to 'match' the varargs input style
-export const decorateWithCardinality = (innerExecutors: types.ExecutorMap) => {
+export const decorateWithCardinality = (innerExecutors: ExecutorMap) => {
   return {
     // database default
     default_hello: async (
-      context: types.default_helloContext
-    ): Promise<types.default_helloContext> => {
+      context: default_helloContext
+    ): Promise<ValueOrArray<default_helloRow>> => {
       await innerExecutors.default_hello(context);
-      context.results =
-        context.results?.length === 1
-          ? (context.results as types.default_helloRow[])[0]
-          : context.results;
-      return context;
+      return context.results?.length === 1
+        ? (context.results as default_helloRow[])[0]
+        : context.results;
     },
   };
 };
@@ -129,27 +186,34 @@ export const EmbraceSQLEmbedded = async (
         },
       },
       hello: async (
-        ...parameters: types.default_helloParameterSet[]
-      ): Promise<types.default_helloContext[\\"results\\"]> => {
-        const context = await typedExecutors.default_hello({
-          parameters: parameters.flat(),
-          results: [],
-          databases: entryPointCallableDatabases,
-        });
-        return context.results;
+        ...parameters: default_helloParameterSet[]
+      ): Promise<ValueOrArray<default_helloRow>> => {
+        return entryPoints.default_hello.executor(parameters.flat());
       },
     },
   };
 
   // this is the 'outermost' shell of calls -- entry points into the engine from a server
+  // which sets up the actual execution context
   // this is in the context --> context style used for the server processes and event handlers
   const entryPoints = {
     default_hello: {
       executor: async (
-        context: types.default_helloContext
-      ): Promise<types.default_helloContext> => {
-        context.databases = entryPointCallableDatabases;
-        return typedExecutors.default_hello(context);
+        parameters: default_helloContext[\\"parameters\\"]
+      ): Promise<ValueOrArray<default_helloRow>> => {
+        const grants = new Array<Grant>();
+        return typedExecutors.default_hello({
+          databases: entryPointCallableDatabases,
+          parameters,
+          results: [],
+          grants,
+          allow: (message?: Message) => {
+            grants.push({ type: \\"allow\\", message });
+          },
+          deny: (message?: Message) => {
+            grants.push({ type: \\"deny\\", message });
+          },
+        });
       },
       module: internalContext.moduleExecutors.default_hello.module,
     },

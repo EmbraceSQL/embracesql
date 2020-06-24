@@ -112,9 +112,9 @@ export type AllDatabasesInternal = {
  * Module, paired up with an actual execution functtion that works on a context.
  */
 export type ContextualExecutableModule = {
-  database: DatabaseInternal;
-  executor: ContextualExecutor<Context>;
+  readonly database: DatabaseInternal;
   readonly module: CommonDatabaseModule;
+  executor: ContextualExecutor<Context>;
 };
 
 /**

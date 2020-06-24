@@ -203,6 +203,113 @@ Object {
   },
   "moduleExecutors": Object {
     "default_hello": Object {
+      "database": Object {
+        "analyze": [Function],
+        "atomic": [Function],
+        "close": [Function],
+        "execute": [Function],
+        "migrate": [Function],
+        "modules": Object {
+          "hello": Object {
+            "afterHandlerPaths": Array [
+              "./default",
+              ".",
+            ],
+            "ast": Object {
+              "columns": Array [
+                Object {
+                  "as": null,
+                  "expr": Object {
+                    "type": "string",
+                    "value": "hello world",
+                  },
+                },
+              ],
+              "distinct": null,
+              "from": null,
+              "groupby": null,
+              "having": null,
+              "limit": null,
+              "options": null,
+              "orderby": null,
+              "type": "select",
+              "where": null,
+              "with": null,
+            },
+            "beforeHandlerPaths": Array [
+              ".",
+              "./default",
+            ],
+            "cacheKey": "4726f48a1467bab00568c7c5b8610040",
+            "canModifyData": false,
+            "contextName": "default_hello",
+            "fullPath": ".tests/hello/default/hello.sql",
+            "namedParameters": Array [],
+            "restPath": "default/hello",
+            "resultsetMetadata": Array [
+              Object {
+                "name": "hello_world",
+                "type": "string",
+              },
+            ],
+            "sql": "SELECT \\"hello world\\"",
+          },
+          "yo": Object {
+            "afterHandlerPaths": Array [
+              "./default",
+              ".",
+            ],
+            "ast": Object {
+              "columns": Array [
+                Object {
+                  "as": null,
+                  "expr": Object {
+                    "type": "single_quote_string",
+                    "value": "yo",
+                  },
+                },
+              ],
+              "distinct": null,
+              "from": null,
+              "groupby": null,
+              "having": null,
+              "limit": null,
+              "options": null,
+              "orderby": null,
+              "type": "select",
+              "where": null,
+              "with": null,
+            },
+            "beforeHandlerPaths": Array [
+              ".",
+              "./default",
+            ],
+            "cacheKey": "54d6f4897bf10f8219c6fc94e11bf7a4",
+            "canModifyData": false,
+            "contextName": "default_yo",
+            "fullPath": ".tests/hello/default/yo.sql",
+            "namedParameters": Array [],
+            "restPath": "default/yo",
+            "resultsetMetadata": Array [
+              Object {
+                "name": "yo",
+                "type": "string",
+              },
+            ],
+            "sql": "SELECT 'yo'",
+          },
+        },
+        "name": "default",
+        "parse": [Function],
+        "readLastKeySQL": [Function],
+        "schemas": Object {},
+        "transactions": Object {
+          "begin": [Function],
+          "commit": [Function],
+          "depth": [Function],
+          "rollback": [Function],
+        },
+      },
       "executor": [Function],
       "module": Object {
         "afterHandlerPaths": Array [
@@ -250,6 +357,113 @@ Object {
       },
     },
     "default_yo": Object {
+      "database": Object {
+        "analyze": [Function],
+        "atomic": [Function],
+        "close": [Function],
+        "execute": [Function],
+        "migrate": [Function],
+        "modules": Object {
+          "hello": Object {
+            "afterHandlerPaths": Array [
+              "./default",
+              ".",
+            ],
+            "ast": Object {
+              "columns": Array [
+                Object {
+                  "as": null,
+                  "expr": Object {
+                    "type": "string",
+                    "value": "hello world",
+                  },
+                },
+              ],
+              "distinct": null,
+              "from": null,
+              "groupby": null,
+              "having": null,
+              "limit": null,
+              "options": null,
+              "orderby": null,
+              "type": "select",
+              "where": null,
+              "with": null,
+            },
+            "beforeHandlerPaths": Array [
+              ".",
+              "./default",
+            ],
+            "cacheKey": "4726f48a1467bab00568c7c5b8610040",
+            "canModifyData": false,
+            "contextName": "default_hello",
+            "fullPath": ".tests/hello/default/hello.sql",
+            "namedParameters": Array [],
+            "restPath": "default/hello",
+            "resultsetMetadata": Array [
+              Object {
+                "name": "hello_world",
+                "type": "string",
+              },
+            ],
+            "sql": "SELECT \\"hello world\\"",
+          },
+          "yo": Object {
+            "afterHandlerPaths": Array [
+              "./default",
+              ".",
+            ],
+            "ast": Object {
+              "columns": Array [
+                Object {
+                  "as": null,
+                  "expr": Object {
+                    "type": "single_quote_string",
+                    "value": "yo",
+                  },
+                },
+              ],
+              "distinct": null,
+              "from": null,
+              "groupby": null,
+              "having": null,
+              "limit": null,
+              "options": null,
+              "orderby": null,
+              "type": "select",
+              "where": null,
+              "with": null,
+            },
+            "beforeHandlerPaths": Array [
+              ".",
+              "./default",
+            ],
+            "cacheKey": "54d6f4897bf10f8219c6fc94e11bf7a4",
+            "canModifyData": false,
+            "contextName": "default_yo",
+            "fullPath": ".tests/hello/default/yo.sql",
+            "namedParameters": Array [],
+            "restPath": "default/yo",
+            "resultsetMetadata": Array [
+              Object {
+                "name": "yo",
+                "type": "string",
+              },
+            ],
+            "sql": "SELECT 'yo'",
+          },
+        },
+        "name": "default",
+        "parse": [Function],
+        "readLastKeySQL": [Function],
+        "schemas": Object {},
+        "transactions": Object {
+          "begin": [Function],
+          "commit": [Function],
+          "depth": [Function],
+          "rollback": [Function],
+        },
+      },
       "executor": [Function],
       "module": Object {
         "afterHandlerPaths": Array [
