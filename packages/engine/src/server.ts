@@ -55,8 +55,6 @@ export const createServer = async (
           );
           httpContext.status = 200;
         } catch (e) {
-          // this is the very far edge of the system, time for a log
-          console.error(e);
           // send the full error to the client
           httpContext.status = 500;
           httpContext.body = restructure("error", e);
@@ -78,7 +76,6 @@ export const createServer = async (
         );
         httpContext.status = 200;
       } catch (e) {
-        console.error(e);
         httpContext.status = 500;
         httpContext.body = restructure("error", e);
       }

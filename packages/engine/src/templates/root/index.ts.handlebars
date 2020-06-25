@@ -2,8 +2,7 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { IncomingHttpHeaders } from "http";
-import { buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
+import { HasHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
 
 // Generation starts here
 
@@ -109,6 +108,7 @@ export type SQLModuleTree = {
 type EmbeddedEngine = HasEntryPoints &
   SQLModuleTree &
   HasConfiguration &
+  HasHeaders &
   Closeable;
 
 
@@ -174,7 +174,6 @@ export const decorateWithTransactions = (
   innerExecutors: ExecutorMap) => {
     return {
     {{#eachInMap databases}}
-    // database {{@key}}
     {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
           async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context> => {
@@ -188,6 +187,8 @@ export const decorateWithTransactions = (
     };
 };
 
+
+import {validateToken} from "./validateToken";
 // EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
 // which can result in a result set -- an array or rows -- or a single record / row
 // this mapping deals with cardinality, treating arrays of 1 item as a single item on return
@@ -196,10 +197,13 @@ export const decorateWithCardinality = (
   innerExecutors: ExecutorMap) => {
     return {
     {{#eachInMap databases}}
-    // database {{@key}}
     {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
           async (context: {{value.contextName}}Context) : Promise<ValueOrArray<{{value.contextName}}Row>> => {
+              // token validation is early in the execution process
+              // might as well except out early before wasting a lot of processing!
+              await validateToken(context);
+              // token out of the way -- let's execute
               await innerExecutors.{{value.contextName}}(context);
               return context.results?.length === 1 ? (context.results as {{value.contextName}}Row[])[0] : context.results;
           },
@@ -223,6 +227,8 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   const handlerWrappedExecutors = decorateWithHandlers(internalContext);
   const transactionWrappedExecutors = decorateWithTransactions(internalContext, handlerWrappedExecutors);
   const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
+  // headers that will go through on requests
+  let sendHeaders = {};
 
   // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
   // and lets you call in a parameters --> results style, rather than the context --> context style
@@ -260,11 +266,15 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
     {{#eachInMap moduleExecutors}}
       {{value.module.contextName}}:  {
         executor:
-          async (parameters: {{value.module.contextName}}Context["parameters"], headers?: IncomingHttpHeaders) : Promise<ValueOrArray<{{value.module.contextName}}Row>> => {
+          async (parameters: {{value.module.contextName}}Context["parameters"], headers = {} as Headers) : Promise<ValueOrArray<{{value.module.contextName}}Row>> => {
             const grants = new Array<Grant>();
             return typedExecutors.{{value.module.contextName}}(
                  {
-                  headers: headers || {},
+                  //base and override header concept
+                  headers: {
+                    ...sendHeaders,
+                    ...headers
+                  },
                   databases: entryPointCallableDatabases,
                   parameters,
                   results: [],
@@ -286,6 +296,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
 
 
   return {
+    setHeaders: (headers: Headers) => sendHeaders = headers,
     configuration: internalContext.configuration,
     databases: entryPointCallableDatabases, 
     entryPoints,

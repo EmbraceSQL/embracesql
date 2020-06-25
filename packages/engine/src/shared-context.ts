@@ -1,5 +1,4 @@
 import { JWTPayload } from "@embracesql/identity";
-import { IncomingHttpHeaders } from "http";
 
 /**
  * This containes context types shared between the EmbraceSQL server
@@ -13,6 +12,11 @@ import { IncomingHttpHeaders } from "http";
  * Even though this isn't really a handlebars template, it is registered
  * as a partial, so resist the urge to use mustaches in here.
  */
+
+/**
+ * String name value pairs as headers.
+ */
+export type Headers = { [key: string]: string };
 
 /**
  * Parameters and results can be single items, or array batches.
@@ -337,7 +341,7 @@ export type GenericContext<ParameterType, ResultType> = ContextAccessControl & {
   /**
    * Coming in from HTTP, this will be loaded up with headers.
    */
-  headers: IncomingHttpHeaders;
+  headers: Headers;
 
   /**
    * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
@@ -405,7 +409,7 @@ export type ContextualExecutors<T> = {
  */
 export type EntryPointExecutor<ParameterType, ResultType> = (
   parameters: ParameterType[],
-  headers?: IncomingHttpHeaders
+  headers: Headers
 ) => Promise<ValueOrArray<ResultType>>;
 
 /**
@@ -481,4 +485,14 @@ export type Closeable = {
    * Close down all resourcs.
    */
   close: () => Promise<void>;
+};
+
+/**
+ * Can hold on to headers.
+ */
+export type HasHeaders = {
+  /**
+   * Set these as default headers.
+   */
+  setHeaders: (headers: Headers) => void;
 };

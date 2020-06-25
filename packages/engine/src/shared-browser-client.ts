@@ -11,10 +11,16 @@
  * handlebars so avoid mustaches.
  */
 
+type Headers = { [key: string]: string };
+
+/**
+ * Use the browser based fetch to execute a post.
+ */
 export const post = async (
   serverUrl: string,
   apiPath: string,
-  parameters = {}
+  parameters = {},
+  headers = {} as Headers
 ): Promise<Array<Record<string, unknown>>> => {
   const cleaned = serverUrl.endsWith("/") ? serverUrl.slice(0, -1) : serverUrl;
   // let any exception leak out to the client
@@ -24,6 +30,7 @@ export const post = async (
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
+      ...headers,
       "Content-Type": "application/json",
     },
     redirect: "follow",

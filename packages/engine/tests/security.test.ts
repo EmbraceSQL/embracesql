@@ -11,14 +11,17 @@ import { migrate } from "../src/migrations";
  * The -- most secure scenario -- no query can run.
  */
 describe("security", () => {
+  const tokens = fs
+    .readdirSync(path.join(__dirname, "tokens", "jwt"))
+    .map((name) => path.resolve(__dirname, "tokens", "jwt", name));
   const root = path.relative(process.cwd(), "./.tests/security");
   let rootContext: InternalContext;
   let listening: http.Server;
   let engine;
   let nodeHttpClient;
   const clients = {};
+  const port = 45678;
   beforeAll(async () => {
-    const port = 3355;
     // clean up
     await fs.ensureDir(root);
     await rmfr(root);
@@ -37,7 +40,9 @@ describe("security", () => {
     ));
     engine = await EmbraceSQLEmbedded();
     const server = await createServer(engine);
-    listening = server.listen(port);
+    await new Promise((resolve) => {
+      listening = server.listen(port, resolve);
+    });
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { EmbraceSQL } = require(path.join(
       process.cwd(),
@@ -51,6 +56,11 @@ describe("security", () => {
   afterAll(async (done) => {
     listening.close(() => done());
   });
+  beforeEach(() => {
+    // reset to blank headers
+    clients["engine"].setHeaders({});
+    clients["http"].setHeaders({});
+  });
   it("has clients", () => {
     expect(engine).toBeTruthy();
     expect(nodeHttpClient).toBeTruthy();
@@ -59,15 +69,28 @@ describe("security", () => {
     describe("secure by default", () => {
       it("will deny access with an SQL call", async () => {
         const client = clients[clientName];
-        await expect(
+        await expect(async () =>
           client.databases.default.hello({ stuff: "nodey thing" })
         ).rejects.toThrowError("Unauthorized");
       });
       it("will deny access with an AutoCRUD call", async () => {
         const client = clients[clientName];
-        await expect(
+        await expect(async () =>
           client.databases.default.autocrud.things.read()
         ).rejects.toThrowError("Unauthorized");
+      });
+    });
+    describe.each(tokens)("with token %s", (tokenname) => {
+      const token = fs.readFileSync(tokenname, "utf8");
+      it("will allow access with an SQL call", async () => {
+        const client = clients[clientName];
+        client.setHeaders({ authorization: `bearer ${token}` });
+        expect(
+          await client.databases.default.hello(
+            { stuff: "nodey thing" },
+            { Authorization: `Bearer ${token}` }
+          )
+        ).toMatchSnapshot();
       });
     });
   });

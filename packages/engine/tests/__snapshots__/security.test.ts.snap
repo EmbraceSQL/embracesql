@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `Promise {}`;
+
+exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `Promise {}`;

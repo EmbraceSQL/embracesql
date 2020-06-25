@@ -13,6 +13,8 @@ import fetch from "node-fetch";
  * handlebars so avoid mustaches.
  */
 
+type Headers = { [key: string]: string };
+
 /**
  * The generated client libraries only use POST. Only once code path needed
  * this way!
@@ -22,13 +24,15 @@ import fetch from "node-fetch";
 export const post = async (
   serverUrl: string,
   apiPath: string,
-  parameters = {}
+  parameters = {},
+  headers = {} as Headers
 ): Promise<Array<Record<string, unknown>>> => {
   const cleaned = serverUrl.endsWith("/") ? serverUrl.slice(0, -1) : serverUrl;
   // let any exception leak out to the client
   const response = await fetch(`${cleaned}${apiPath}`, {
     method: "POST",
     headers: {
+      ...headers,
       "Content-Type": "application/json",
     },
     redirect: "follow",

@@ -21,7 +21,9 @@ import {
   Grant,
   GrantType,
   Message,
-  ValueOrArray
+  ValueOrArray,
+  Headers,
+  HasHeaders,
 } from "./src/shared-context";
 
 // re-export symbols as needed
@@ -46,4 +48,6 @@ export {
   GrantType,
   Message,
   ValueOrArray,
+  Headers,
+  HasHeaders,
 };

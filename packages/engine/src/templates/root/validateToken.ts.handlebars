@@ -1,0 +1,9 @@
+---
+to: "{{configuration.embraceSQLRoot}}/validateToken.ts"
+---
+
+import * as types from "./index";
+
+export const validateToken : types.FolderHandler = async (context) => {
+  console.log(context);
+}
