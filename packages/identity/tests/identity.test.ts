@@ -1,7 +1,9 @@
-import { validate, FileCache, parseBearerToken } from "../index";
+import { validate, FileCache, jwtIdentity } from "../index";
 import nock from "nock";
 import path from "path";
 import fs from "fs-extra";
+import Koa from "koa";
+import request from "supertest";
 
 // testing with nock
 const nockBackConfig = {
@@ -15,8 +17,8 @@ nockBack.fixtures = path.join(__dirname, "__nock-fixtures__");
 
 describe("@embracesql/identity", () => {
   const tokens = fs
-    .readdirSync(path.join(__dirname, "tokens"))
-    .map((name) => path.resolve(__dirname, "tokens", name));
+    .readdirSync(path.join(__dirname, "tokens", "jwt"))
+    .map((name) => path.resolve(__dirname, "tokens", "jwt", name));
 
   it("will not validate a blank token", async () => {
     expect(validate("")).rejects.toThrowError("JWT must be a string");
@@ -28,6 +30,7 @@ describe("@embracesql/identity", () => {
     ).rejects.toThrowError("JWTs must have three components");
   });
 
+  // add in additional tokens for different providers as needed
   describe.each(tokens)("%s", (tokenname) => {
     const token = fs.readFileSync(tokenname, "utf8");
     const checkName = path.basename(tokenname);
@@ -52,14 +55,6 @@ describe("@embracesql/identity", () => {
       });
       it("blows up on gibberish", async () => {
         expect(validate(token.slice(10))).rejects.toThrow();
-      });
-      it("parses as a header", () => {
-        expect(parseBearerToken({ Authorization: `Bearer ${token}` })).toMatch(
-          token
-        );
-        expect(parseBearerToken({ authorization: `bearer ${token}` })).toMatch(
-          token
-        );
       });
     });
 
@@ -99,6 +94,39 @@ describe("@embracesql/identity", () => {
             now: new Date("2100/01/01"),
           })
         ).rejects.toThrowError('"exp" claim timestamp check failed');
+      });
+    });
+    /**
+     * Middleware testing.
+     */
+    describe("koa", () => {
+      const cacheIn = path.join(__dirname, "tokens", "jwt");
+      const app = new Koa();
+      app.use(jwtIdentity({ cache: FileCache(cacheIn) }));
+      app.use((ctx) => {
+        ctx.body = ctx.state?.token?.email;
+      });
+
+      it("does nothing if there is no token", (done) => {
+        request(app.listen()).get("/").expect(204).expect(" Error").end(done);
+      });
+      it("should 401 on a malformed token", (done) => {
+        request(app.listen())
+          .get("/")
+          .set("Authorization", "wrong")
+          .expect(401)
+          .expect(
+            'Bad Authorization header format. Format is "Authorization: Bearer <token>"'
+          )
+          .end(done);
+      });
+      it("should 200 on a valid token", (done) => {
+        request(app.listen())
+          .get("/")
+          .set("Authorization", `Bearer: ${token}`)
+          .expect(200)
+          .expect(checkName)
+          .end(done);
       });
     });
   });
