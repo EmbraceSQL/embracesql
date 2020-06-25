@@ -194,6 +194,7 @@ import {validateToken} from "./validateToken";
 // this mapping deals with cardinality, treating arrays of 1 item as a single item on return
 // to 'match' the varargs input style
 export const decorateWithCardinality = (
+  rootContext: InternalContext,
   innerExecutors: ExecutorMap) => {
     return {
     {{#eachInMap databases}}
@@ -226,7 +227,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   // can run a query to the database, but doesn't have handlers yet
   const handlerWrappedExecutors = decorateWithHandlers(internalContext);
   const transactionWrappedExecutors = decorateWithTransactions(internalContext, handlerWrappedExecutors);
-  const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
+  const typedExecutors = decorateWithCardinality(rootContext, transactionWrappedExecutors);
   // headers that will go through on requests
   let sendHeaders = {};
 
