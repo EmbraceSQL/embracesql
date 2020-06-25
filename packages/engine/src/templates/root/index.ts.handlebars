@@ -2,6 +2,7 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
+import { IncomingHttpHeaders } from "http";
 import { buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
 
 // Generation starts here
@@ -259,10 +260,11 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
     {{#eachInMap moduleExecutors}}
       {{value.module.contextName}}:  {
         executor:
-          async (parameters: {{value.module.contextName}}Context["parameters"]) : Promise<ValueOrArray<{{value.module.contextName}}Row>> => {
+          async (parameters: {{value.module.contextName}}Context["parameters"], headers?: IncomingHttpHeaders) : Promise<ValueOrArray<{{value.module.contextName}}Row>> => {
             const grants = new Array<Grant>();
             return typedExecutors.{{value.module.contextName}}(
                  {
+                  headers: headers || {},
                   databases: entryPointCallableDatabases,
                   parameters,
                   results: [],

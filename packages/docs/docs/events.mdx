@@ -95,6 +95,13 @@ While data events fire in response to SQL module invocations, system events can 
 
 OpenID Connect authorization tokens are decoded and validated by default. But you can provide your own event handler that does your own token validation.
 
+The `context` parameter will have `headers` available, passed in via HTTP, or explicitly set with an embedded client library. The default implementation provided in the handler will:
+
+* Look for `Authorization: Bearer <id_token>`
+* Validate that token
+* Set `context.token` on success
+* Throw on failure
+
 ### `beforeMigration`
 
 Just before a migration is going to start, this event is fired for each distinct migration SQL script that will run.

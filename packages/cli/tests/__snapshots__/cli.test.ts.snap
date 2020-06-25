@@ -1,7 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`CLI generates an embedded client 1`] = `
-"import {
+"import { IncomingHttpHeaders } from \\"http\\";
+import {
   buildInternalContext,
   loadConfiguration,
   InternalContext,
@@ -199,10 +200,12 @@ export const EmbraceSQLEmbedded = async (
   const entryPoints = {
     default_hello: {
       executor: async (
-        parameters: default_helloContext[\\"parameters\\"]
+        parameters: default_helloContext[\\"parameters\\"],
+        headers?: IncomingHttpHeaders
       ): Promise<ValueOrArray<default_helloRow>> => {
         const grants = new Array<Grant>();
         return typedExecutors.default_hello({
+          headers: headers || {},
           databases: entryPointCallableDatabases,
           parameters,
           results: [],

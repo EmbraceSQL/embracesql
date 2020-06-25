@@ -1,4 +1,5 @@
 import { JWTPayload } from "@embracesql/identity";
+import { IncomingHttpHeaders } from "http";
 
 /**
  * This containes context types shared between the EmbraceSQL server
@@ -210,6 +211,7 @@ export type CommonDatabaseModule = {
  * since the do not have handlers.
  */
 export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
+
 /**
  * Each SQL found on disk has some data -- the SQL itself, and will
  * get additional metadata attached to it.
@@ -333,6 +335,11 @@ export type ContextAccessControl = {
  */
 export type GenericContext<ParameterType, ResultType> = ContextAccessControl & {
   /**
+   * Coming in from HTTP, this will be loaded up with headers.
+   */
+  headers: IncomingHttpHeaders;
+
+  /**
    * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
    * decoded and verified, it will be here.
    */
@@ -392,9 +399,13 @@ export type ContextualExecutors<T> = {
 
 /**
  * Entry points take parameters and generate results.
+ *
+ * @param parameters - parameter values that will be passed along to the underlying SQL
+ * @param headers - incomng http headers, but also can be used from embedded clients for metadata
  */
 export type EntryPointExecutor<ParameterType, ResultType> = (
-  parameters: ParameterType[]
+  parameters: ParameterType[],
+  headers?: IncomingHttpHeaders
 ) => Promise<ValueOrArray<ResultType>>;
 
 /**

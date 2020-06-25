@@ -49,7 +49,10 @@ export const createServer = async (
           const parameters = [httpContext.request.query];
           httpContext.body = await rootContext.entryPoints[
             contextName
-          ].executor((parameters as unknown) as SQLParameterSet[]);
+          ].executor(
+            (parameters as unknown) as SQLParameterSet[],
+            httpContext.request.headers
+          );
           httpContext.status = 200;
         } catch (e) {
           // this is the very far edge of the system, time for a log
@@ -70,7 +73,8 @@ export const createServer = async (
           ? httpContext.request.body
           : [httpContext.request.body];
         httpContext.body = await rootContext.entryPoints[contextName].executor(
-          (parameters as unknown) as SQLParameterSet[]
+          (parameters as unknown) as SQLParameterSet[],
+          httpContext.request.headers
         );
         httpContext.status = 200;
       } catch (e) {
