@@ -1,7 +1,7 @@
 import { cosmiconfig } from "cosmiconfig";
 import { generateFromTemplates } from "./generator";
 import path from "path";
-import { Configuration } from "./shared-context";
+import { Configuration, HasHeaders, HasToken } from "./shared-context";
 
 /**
  * Load up a configuration object.
@@ -26,6 +26,12 @@ export const loadConfiguration = async (
       databases: undefined,
       moduleExecutors: {},
       close: (): Promise<void> => {
+        return;
+      },
+      validateOpenIDAuthorization: async (
+        context: HasHeaders & HasToken
+      ): Promise<void> => {
+        console.assert(context);
         return;
       },
     },

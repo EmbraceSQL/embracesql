@@ -4,6 +4,9 @@ to: "{{configuration.embraceSQLRoot}}/validateToken.ts"
 
 import * as types from "./index";
 
-export const validateToken : types.FolderHandler = async (context) => {
-  console.log(context);
+export const validateToken : types.SystemHandler = async (root: types.InternalContext, context: types.Context) => {
+  // default action is to ask the root -- the core system and configuration
+  // to look for and parse OpenID tokens 
+  // you can of course change this to suit your needs
+  await root.validateOpenIDAuthorization(context);
 }

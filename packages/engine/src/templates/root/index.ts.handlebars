@@ -2,13 +2,16 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { HasHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
+import { CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
+
+export { Context, InternalContext };
 
 // Generation starts here
 
 // handle a folder, these use the base types for rows and parameters
 // to allow them to be maximally generic
 export type FolderHandler = (context: Context) => Promise<void>;
+export type SystemHandler = (root: InternalContext, context: Context) => Promise<void>;
 
 
 // parameters, result row, and context types
@@ -108,7 +111,7 @@ export type SQLModuleTree = {
 type EmbeddedEngine = HasEntryPoints &
   SQLModuleTree &
   HasConfiguration &
-  HasHeaders &
+  CanSetHeaders &
   Closeable;
 
 
@@ -194,7 +197,7 @@ import {validateToken} from "./validateToken";
 // this mapping deals with cardinality, treating arrays of 1 item as a single item on return
 // to 'match' the varargs input style
 export const decorateWithCardinality = (
-  rootContext: InternalContext,
+  rootContext: InternalContext, 
   innerExecutors: ExecutorMap) => {
     return {
     {{#eachInMap databases}}
@@ -203,7 +206,7 @@ export const decorateWithCardinality = (
           async (context: {{value.contextName}}Context) : Promise<ValueOrArray<{{value.contextName}}Row>> => {
               // token validation is early in the execution process
               // might as well except out early before wasting a lot of processing!
-              await validateToken(context);
+              await validateToken(rootContext, context);
               // token out of the way -- let's execute
               await innerExecutors.{{value.contextName}}(context);
               return context.results?.length === 1 ? (context.results as {{value.contextName}}Row[])[0] : context.results;
@@ -227,7 +230,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   // can run a query to the database, but doesn't have handlers yet
   const handlerWrappedExecutors = decorateWithHandlers(internalContext);
   const transactionWrappedExecutors = decorateWithTransactions(internalContext, handlerWrappedExecutors);
-  const typedExecutors = decorateWithCardinality(rootContext, transactionWrappedExecutors);
+  const typedExecutors = decorateWithCardinality(internalContext, transactionWrappedExecutors);
   // headers that will go through on requests
   let sendHeaders = {};
 

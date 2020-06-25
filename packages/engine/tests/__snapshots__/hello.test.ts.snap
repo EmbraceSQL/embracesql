@@ -511,5 +511,6 @@ Object {
       },
     },
   },
+  "validateOpenIDAuthorization": [Function],
 }
 `;

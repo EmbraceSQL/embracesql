@@ -55,6 +55,7 @@ export const createServer = async (
           );
           httpContext.status = 200;
         } catch (e) {
+          //TODO -- error event
           // send the full error to the client
           httpContext.status = 500;
           httpContext.body = restructure("error", e);
@@ -76,6 +77,7 @@ export const createServer = async (
         );
         httpContext.status = 200;
       } catch (e) {
+        //TODO -- error event
         httpContext.status = 500;
         httpContext.body = restructure("error", e);
       }

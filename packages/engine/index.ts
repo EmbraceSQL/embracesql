@@ -24,6 +24,7 @@ import {
   ValueOrArray,
   Headers,
   HasHeaders,
+  CanSetHeaders,
 } from "./src/shared-context";
 
 // re-export symbols as needed
@@ -50,4 +51,5 @@ export {
   ValueOrArray,
   Headers,
   HasHeaders,
+  CanSetHeaders,
 };

@@ -3,7 +3,11 @@ import { Issuer } from "openid-client";
 import urlParse from "url-parse";
 import fs from "fs-extra";
 import path from "path";
-import { IncomingHttpHeaders } from "http";
+
+/**
+ * String name value pairs as headers.
+ */
+export type Headers = { [key: string]: string };
 
 /**
  * Original encoded string, pass this in from a header.
@@ -61,6 +65,10 @@ export type JWTPayload = {
    * Standard claim -- audience of the token.
    */
   aud?: string;
+  /**
+   * Non standard, but common claim.
+   */
+  email?: string;
 };
 
 /**
@@ -191,7 +199,7 @@ export const validate = async (
 /**
  * Pull out the bearer token from a bag of headers.
  */
-export const parseBearerToken = (headers: IncomingHttpHeaders): string => {
+export const parseBearerToken = (headers: Headers): string => {
   const auth = headers?.Authorization || headers?.authorization || undefined;
   if (!auth) {
     throw new Error(`Missing Authorization header: ${auth}`);

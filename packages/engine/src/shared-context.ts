@@ -337,51 +337,42 @@ export type ContextAccessControl = {
  * that will be generated will be noted in comments.
  *
  */
-export type GenericContext<ParameterType, ResultType> = ContextAccessControl & {
-  /**
-   * Coming in from HTTP, this will be loaded up with headers.
-   */
-  headers: Headers;
+export type GenericContext<ParameterType, ResultType> = HasHeaders &
+  HasToken &
+  ContextAccessControl & {
+    /**
+     * Put the current user identifier string here in order to integrate with database
+     * user level secruity features. For exampe, in PostgreSQL, this property will be used as:
+     *
+     * `SET LOCAL SESSION AUTHORIZATION ${context.current_user}`
+     */
+    current_user?: string;
 
-  /**
-   * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
-   * decoded and verified, it will be here.
-   */
-  token?: JWTPayload;
+    /**
+     * Put the current role identifier string here in order to integrate with database
+     * role level secruity features. For exampe, in PostgreSQL, this property will be used as:
+     *
+     * `SET LOCAL ROLE ${context.role}`
+     */
+    role?: string;
 
-  /**
-   * Put the current user identifier string here in order to integrate with database
-   * user level secruity features. For exampe, in PostgreSQL, this property will be used as:
-   *
-   * `SET LOCAL SESSION AUTHORIZATION ${context.current_user}`
-   */
-  current_user?: string;
+    /**
+     * The current unhandled exception error.
+     */
+    error?: Error;
 
-  /**
-   * Put the current role identifier string here in order to integrate with database
-   * role level secruity features. For exampe, in PostgreSQL, this property will be used as:
-   *
-   * `SET LOCAL ROLE ${context.role}`
-   */
-  role?: string;
+    /**
+     * Parameters may be on here for the default context. This will get
+     * generated and specified with specific named parameters per SQLModule.
+     */
+    parameters: ParameterType[];
 
-  /**
-   * The current unhandled exception error.
-   */
-  error?: Error;
-
-  /**
-   * Parameters may be on here for the default context. This will get
-   * generated and specified with specific named parameters per SQLModule.
-   */
-  parameters: ParameterType[];
-
-  /**
-   * Results may be on here for the default context. This will get generated
-   * and specified per SQLModule.
-   */
-  results: ValueOrArray<ResultType>;
-};
+    /**
+     * Results may be on here for the default context. This will get generated
+     * and specified per SQLModule.
+     */
+    results: ValueOrArray<ResultType>;
+  };
 
 /**
  * This is our generic context type -- bound to the generic parameter and reult types.
@@ -465,6 +456,14 @@ export type Configuration = {
    * Optional name used in bootsrap code generation.
    */
   name?: string;
+  /**
+   * It's pretty normal to allow a perma-login, so you can totally
+   * ignore token expiration.
+   *
+   * Note that you will still need to have the key from when the token
+   * was created cached.
+   */
+  ignoreExp?: boolean;
 };
 
 /**
@@ -490,9 +489,30 @@ export type Closeable = {
 /**
  * Can hold on to headers.
  */
-export type HasHeaders = {
+export interface HasHeaders {
+  /**
+   * Coming in from HTTP, this will be loaded up with headers.
+   */
+  headers: Headers;
+}
+
+/**
+ * Can hold on to headers.
+ */
+export interface CanSetHeaders {
   /**
    * Set these as default headers.
    */
   setHeaders: (headers: Headers) => void;
-};
+}
+
+/**
+ * Can hold a parsed up JWT.
+ */
+export interface HasToken {
+  /**
+   * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
+   * decoded and verified, it will be here.
+   */
+  token?: JWTPayload;
+}

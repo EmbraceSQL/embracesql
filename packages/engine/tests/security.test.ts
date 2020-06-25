@@ -21,6 +21,7 @@ describe("security", () => {
   let nodeHttpClient;
   const clients = {};
   const port = 45678;
+  const originalLog = console.log;
   beforeAll(async () => {
     // clean up
     await fs.ensureDir(root);
@@ -60,6 +61,13 @@ describe("security", () => {
     // reset to blank headers
     clients["engine"].setHeaders({});
     clients["http"].setHeaders({});
+    // log is an assertion
+    console.log = (...args) => {
+      expect(args).toMatchSnapshot();
+    };
+  });
+  afterEach(() => {
+    console.log = originalLog;
   });
   it("has clients", () => {
     expect(engine).toBeTruthy();
@@ -85,12 +93,7 @@ describe("security", () => {
       it("will allow access with an SQL call", async () => {
         const client = clients[clientName];
         client.setHeaders({ authorization: `bearer ${token}` });
-        expect(
-          await client.databases.default.hello(
-            { stuff: "nodey thing" },
-            { Authorization: `Bearer ${token}` }
-          )
-        ).toMatchSnapshot();
+        expect(await client.databases.default.hello()).toMatchSnapshot();
       });
     });
   });

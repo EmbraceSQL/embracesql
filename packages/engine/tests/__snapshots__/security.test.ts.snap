@@ -1,5 +1,63 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `Promise {}`;
+exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `
+Array [
+  "108322100248409852275",
+  1592843699,
+]
+`;
 
-exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `Promise {}`;
+exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 2`] = `
+Array [
+  Object {
+    "aud": "658951992485-jonsfr5p173prn5dr71c0l8vvc8tnkre.apps.googleusercontent.com",
+    "azp": "658951992485-jonsfr5p173prn5dr71c0l8vvc8tnkre.apps.googleusercontent.com",
+    "email": "test@hence.com",
+    "email_verified": true,
+    "exp": 1592847299,
+    "hd": "hence.com",
+    "iat": 1592843699,
+    "iss": "accounts.google.com",
+    "jti": "609473caf30eb0a963028cc2492622f5160b8992",
+    "nonce": "1592843696717",
+    "sub": "108322100248409852275",
+  },
+]
+`;
+
+exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 3`] = `
+Object {
+  "\\"hello world\\"": "hello world",
+}
+`;
+
+exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `
+Array [
+  "108322100248409852275",
+  1592843699,
+]
+`;
+
+exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 2`] = `
+Array [
+  Object {
+    "aud": "658951992485-jonsfr5p173prn5dr71c0l8vvc8tnkre.apps.googleusercontent.com",
+    "azp": "658951992485-jonsfr5p173prn5dr71c0l8vvc8tnkre.apps.googleusercontent.com",
+    "email": "test@hence.com",
+    "email_verified": true,
+    "exp": 1592847299,
+    "hd": "hence.com",
+    "iat": 1592843699,
+    "iss": "accounts.google.com",
+    "jti": "609473caf30eb0a963028cc2492622f5160b8992",
+    "nonce": "1592843696717",
+    "sub": "108322100248409852275",
+  },
+]
+`;
+
+exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 3`] = `
+Object {
+  "\\"hello world\\"": "hello world",
+}
+`;
