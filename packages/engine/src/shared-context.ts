@@ -1,3 +1,5 @@
+import { JWTPayload } from "@embracesql/identity";
+
 /**
  * This containes context types shared between the EmbraceSQL server
  * and any generated code used by clients.
@@ -334,7 +336,7 @@ export type GenericContext<ParameterType, ResultType> = ContextAccessControl & {
    * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
    * decoded and verified, it will be here.
    */
-  token?: Record<string, unknown>;
+  token?: JWTPayload;
 
   /**
    * Put the current user identifier string here in order to integrate with database

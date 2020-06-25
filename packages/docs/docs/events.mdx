@@ -17,7 +17,6 @@ Commands - INSERT/UPDATE/DELETE -- can be twinned to a Kafka topic, so that any 
 - When: total ordering of events in Kafka
 - Why: the originating request and paramters resulting from an API call or REST
 
-
 There is actually a bit more than that -- EmbraceSQL internally runs off message streams, when you call an API, the inputs are enqueued, and run through each handler, as well as for the database query itself.
 EmbraceSQL is itself a SQL EventSourcing system -- where the events _are_ the SQL modules, and the handlers are handling events.
 
@@ -95,14 +94,6 @@ While data events fire in response to SQL module invocations, system events can 
 ### `validateToken`
 
 OpenID Connect authorization tokens are decoded and validated by default. But you can provide your own event handler that does your own token validation.
-
-### `resolveSQL`
-
-SQL module inovcations resovle to chain of event handlers and associated SQL. The `resolve` event lets you tap into this and replace any handler or SQL you like, running _before_ the first `before` handler.
-
-### `beforeStreamMessage`
-
-When connected to an external message stream, just before a message is to be sent to an external message stream, you have a chance to intercept it.
 
 ### `beforeMigration`
 

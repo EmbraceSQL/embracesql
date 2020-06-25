@@ -5,7 +5,7 @@
   "author": "Will Ballard <wballard@mailframe.net>",
   "homepage": "https://github.com/EmbraceSQL/embracesql#readme",
   "license": "MIT",
-  "main": "src/index.ts",
+  "main": "index.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EmbraceSQL/embracesql.git"

@@ -1,4 +1,4 @@
-import { validate, FileCache } from "../src/index";
+import { validate, FileCache, parseBearerToken } from "../index";
 import nock from "nock";
 import path from "path";
 import fs from "fs-extra";
@@ -52,6 +52,14 @@ describe("@embracesql/identity", () => {
       });
       it("blows up on gibberish", async () => {
         expect(validate(token.slice(10))).rejects.toThrow();
+      });
+      it("parses as a header", () => {
+        expect(parseBearerToken({ Authorization: `Bearer ${token}` })).toMatch(
+          token
+        );
+        expect(parseBearerToken({ authorization: `bearer ${token}` })).toMatch(
+          token
+        );
       });
     });
 

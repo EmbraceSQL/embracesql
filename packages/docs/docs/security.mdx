@@ -52,12 +52,7 @@ This is the complete, original token, decoded from JSON into an object, with all
 
 For example:
 
-```javascript title="${EMBRACESQL_ROOT}/default/things/all.before.js"
-export const before = async (context) => {
-  // destructure the token if you like
-  const { sub, iat } = context.token;
-  console.log(sub, iat);
-};
+```typescript title="${EMBRACESQL_ROOT}/default/hello.before.ts" file=../../engine/tests/configs/security/default/hello.before.ts
 ```
 
 ### `allow` and `deny` Access
@@ -82,7 +77,7 @@ So rather than devise a 'security markup language', EmbraceSQL just has you deci
 To set up a secure by default system, you just create one root handler:
 
 ```typescript title="${EMBRACESQL_ROOT}/before.ts" file=../../engine/tests/configs/security/before.ts
-``
+```
 
 And that is it -- no query will run.
 
