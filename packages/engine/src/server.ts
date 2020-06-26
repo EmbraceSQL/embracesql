@@ -11,6 +11,7 @@ import {
 } from "./shared-context";
 import { restructure } from "../../console/src/structured";
 import fs from "fs-extra";
+import { CanSetHeaders } from "..";
 
 /**
  * Create a HTTP server exposing an OpenAPI style set of endpoints for each Database
@@ -23,7 +24,7 @@ import fs from "fs-extra";
  * @param executionMap - context name to execution function mapping to actually 'run' a query
  */
 export const createServer = async (
-  rootContext: HasConfiguration & HasEntryPoints
+  rootContext: HasConfiguration & HasEntryPoints & CanSetHeaders
 ): Promise<Koa<Koa.DefaultState, Koa.DefaultContext>> => {
   const server = new Koa();
 
@@ -34,6 +35,8 @@ export const createServer = async (
       "utf8"
     )
   );
+
+  //TODO -- need a per request context
 
   // the handlers that wrap modules -- for GET and POST
   const handlers = {};
@@ -48,6 +51,7 @@ export const createServer = async (
         try {
           // parameters from the query
           const parameters = [httpContext.request.query];
+          rootContext.setHeaders(httpContext.request.headers);
           httpContext.body = await rootContext.entryPoints[
             contextName
           ].executor(
@@ -72,6 +76,7 @@ export const createServer = async (
         const parameters = Array.isArray(httpContext.request.body)
           ? httpContext.request.body
           : [httpContext.request.body];
+        rootContext.setHeaders(httpContext.request.headers);
         httpContext.body = await rootContext.entryPoints[contextName].executor(
           (parameters as unknown) as CanBatchSet<SQLParameterSet>,
           httpContext.request.headers

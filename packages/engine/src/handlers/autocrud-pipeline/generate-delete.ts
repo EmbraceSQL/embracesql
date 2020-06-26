@@ -47,13 +47,15 @@ export default async (
         // make the row -- nothing to read here
         const validatedParameters = validParameters(module, parameters);
         await database.execute(
-          deleteByKeys,
+          { sql: deleteByKeys, namedParameters: module.namedParameters },
           validParameters(module, parameters)
         );
         return validatedParameters;
       };
       if (context.parameters.length) {
-        context.results = await Promise.all([...context.parameters].map(doOne));
+        context.addResults(
+          await Promise.all([...context.parameters].map(doOne))
+        );
       } else {
         throw new Error("no parameters");
       }

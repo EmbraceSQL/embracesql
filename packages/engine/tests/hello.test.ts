@@ -112,7 +112,7 @@ describe("hello world configuration!", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      (rootContext.databases["default"].modules["hello"] as SQLModule).sql
+      rootContext.databases["default"].modules["hello"] as SQLModule
     );
     expect(results).toMatchSnapshot();
   });

@@ -13,9 +13,14 @@ import { CanBatchSet } from "./shared-context";
 export const polyArray = <T extends object, K>(
   target: Iterable<T>
 ): CanBatchSet<T> => {
+  const valueBuffer = {};
   const spreader = {
-    // setting sets them all
+    // setting sets them all, and on the root so we can be both an
+    // array and a value
     set: (target: Iterable<T>, prop: PropertyKey, value: K): boolean => {
+      // stash a scalar
+      valueBuffer[prop] = value;
+      // spread the array
       [...target].forEach((t) => (t[prop] = value));
       return true;
     },
@@ -24,9 +29,15 @@ export const polyArray = <T extends object, K>(
     get: (target: Iterable<T>, prop: PropertyKey): K => {
       // -- get at array members, like .length
       if (prop in target) return target[prop];
+      // promise trap -- I'm a value, not a promise
+      if (prop === "then") return null;
       // otherwise peek into the elements of the array and read the first
-      const buffer = [...target];
-      return buffer.length ? buffer[0][prop] : undefined;
+      const array = [...target];
+      // look at the first element of the array, or failing that -- in the buffer
+      const fromArray = array.length ? array[0][prop] : undefined;
+      // but try really hard and if we didn't have array parameters, look in the
+      // root scalar stash
+      return fromArray || valueBuffer[prop];
     },
   };
   return (new Proxy<Iterable<T>>(target, spreader) as unknown) as CanBatchSet<

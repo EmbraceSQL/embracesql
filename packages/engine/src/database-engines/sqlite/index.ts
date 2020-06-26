@@ -10,14 +10,15 @@ import {
   SQLTableMetadata,
   AutocrudModule,
   SQLParameterSet,
+  ParameterizedSQL,
 } from "../../shared-context";
 import { DatabaseInternal, MigrationFile } from "../../internal-context";
 import { Parser, AST } from "node-sql-parser";
 import { identifier } from "../../handlers";
-import { SQLModuleInternal } from "../../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
 import pLimit from "p-limit";
 import { buildReferentialGraph } from "..";
+import { SQLModuleInternal } from "../../handlers/sqlmodule-pipeline";
 const atomic = pLimit(1);
 
 /**
@@ -173,17 +174,17 @@ export default async (
       return parsed;
     },
     execute: async (
-      sql: string,
+      sqlModule: ParameterizedSQL,
       parameters?: SQLParameterSet
     ): Promise<SQLRow[]> => {
       // execution wrapper to get transaction support
       const execute = async (): Promise<SQLRow[]> => {
-        const statement = await database.prepare(sql);
+        const statement = await database.prepare(sqlModule.sql);
         try {
-          if (parameters && Object.keys(parameters).length) {
-            // map to SQLite names
+          if (sqlModule.namedParameters.length) {
+            // map to SQLite names -- pull in from expected parameters
             const withParameters = Object.fromEntries(
-              Object.keys(parameters).map((name) => [
+              sqlModule.namedParameters.map(({ name }) => [
                 `:${name}`,
                 parameters[name],
               ])

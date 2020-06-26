@@ -19,7 +19,7 @@
         "--coverage",
         "false",
         "-t",
-        "parameter"
+        "autocrud"
       ],
       "internalConsoleOptions": "openOnSessionStart"
     },

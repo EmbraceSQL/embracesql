@@ -26,12 +26,21 @@ Array [
 `;
 
 exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 3`] = `
-Object {
-  "\\"hello world\\"": "hello world",
-}
+Array [
+  Object {
+    "\\"hello world\\"": "hello world",
+  },
+]
 `;
 
-exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will limit rows based on tenancy 1`] = `Array []`;
+exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will limit rows based on tenancy 1`] = `
+Array [
+  Object {
+    "thing_id": 1,
+    "thing_value": "for hence",
+  },
+]
+`;
 
 exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `
 Array [
@@ -59,9 +68,18 @@ Array [
 `;
 
 exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 3`] = `
-Object {
-  "\\"hello world\\"": "hello world",
-}
+Array [
+  Object {
+    "\\"hello world\\"": "hello world",
+  },
+]
 `;
 
-exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will limit rows based on tenancy 1`] = `Array []`;
+exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will limit rows based on tenancy 1`] = `
+Array [
+  Object {
+    "thing_id": 1,
+    "thing_value": "for hence",
+  },
+]
+`;

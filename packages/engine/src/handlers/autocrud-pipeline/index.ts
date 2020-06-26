@@ -68,6 +68,7 @@ export default async (
           namedParameters: [],
           resultsetMetadata: [],
           canModifyData: false,
+          sql: "",
         };
         // expand this in effect 'template' module -- into modules for operations
         await autocrudModulePipeline(rootContext, database, module);

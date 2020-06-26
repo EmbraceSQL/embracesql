@@ -18,8 +18,13 @@ import { JWTPayload } from "@embracesql/identity";
  * in arrays, it's handy to be able to batch set.
  *
  * This is intended to be used with a JS proxy that will intercept the set
- * and spread it across each array memeber.
+ * and spread it across each array memeber, or let you get at the first
+ * record as if it was the only record.
  */
+export interface CanBatchSet<T> extends Iterable<T> {
+  [P in keyof T]: T[P];
+}
+// merged declaration
 export interface CanBatchSet<T> extends Iterable<T> {
   [key: string]: SQLScalarType;
 }
@@ -28,11 +33,6 @@ export interface CanBatchSet<T> extends Iterable<T> {
  * String name value pairs as headers.
  */
 export type Headers = { [key: string]: string };
-
-/**
- * Parameters and results can be single items, or array batches.
- */
-export type ValueOrArray<T> = Array<T> | T;
 
 /**
  * A message, passed for security and logging.
@@ -180,9 +180,25 @@ export type SQLTableMetadata = {
 };
 
 /**
+ * The SQL we can run - and the parameters it takes to run it.
+ */
+export type ParameterizedSQL = {
+  /**
+   * All the parameters we found by looking at the query. These are in an array
+   * to facilitate conversion of named to positional parameters.
+   */
+  namedParameters: SQLColumnMetadata[];
+  /**
+   * Actual SQL text source, unmodified, read from disk
+   */
+  readonly sql: string;
+
+};
+
+/**
  * Common across autocrud and sqlmodules.
  */
-export type CommonDatabaseModule = {
+export type CommonDatabaseModule = ParameterizedSQL & {
   /**
    * Relative path useful for REST.
    */
@@ -196,11 +212,6 @@ export type CommonDatabaseModule = {
    * Module safe name for the context.
    */
   readonly contextName: string;
-  /**
-   * All the parameters we found by looking at the query. These are in an array
-   * to facilitate conversion of named to positional parameters.
-   */
-  namedParameters: SQLColumnMetadata[];
   /**
    * Result set metadata, one entry for each column coming back.
    */
@@ -221,6 +232,7 @@ export type CommonDatabaseModule = {
   readonly afterHandlerPaths: string[];
 };
 
+
 /**
  * Auto crud module data. These are simpler than from disk sql modules
  * since the do not have handlers.
@@ -237,10 +249,7 @@ export type SQLModule = CommonDatabaseModule & {
    */
   readonly fullPath: string;
 
-  /**
-   * Actual SQL text source, unmodified, read from disk
-   */
-  readonly sql: string;
+
 };
 
 /**
@@ -250,7 +259,7 @@ export type SQLModule = CommonDatabaseModule & {
  * SQL or API calls to the underlying database and deal with issues such
  * as nested transactions.
  */
-export type DatabaseTransactions = {
+export interface DatabaseTransactions  {
   /**
    * Start up a new transaction, or if in a transaction, a nested
    * transaction.
@@ -313,7 +322,7 @@ export type Database = {
  * This provides a notion of allow/deny/grant logging, so
  * is authorization and audit data.
  */
-export type ContextAccessControl = {
+export interface ContextAccessControl  {
   /**
    * Set the current state of security to allow SQL execution against the database.
    *
@@ -383,7 +392,12 @@ export type GenericContext<ParameterType, ResultType> = HasHeaders &
      * Results may be on here for the default context. This will get generated
      * and specified per SQLModule.
      */
-    results: ValueOrArray<ResultType>;
+    readonly results?: CanBatchSet<ResultType>;
+
+    /**
+     * And we need a way to get results 'in' this, so add as few or as many as you like.
+     */
+    addResults: (toAdd: Iterable<ResultType>) => void;
   };
 
 /**
@@ -413,7 +427,7 @@ export type ContextualExecutors<T> = {
 export type EntryPointExecutor<ParameterType, ResultType> = (
   parameters: CanBatchSet<ParameterType>,
   headers: Headers
-) => Promise<ValueOrArray<ResultType>>;
+) => Promise<CanBatchSet<ResultType>>;
 
 /**
  * A single sql module entry point. This is wrapped in an outer function call

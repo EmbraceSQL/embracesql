@@ -11,7 +11,11 @@ export const before: types.FolderHandler = async (context) => {
     // issue a query to get the tenant
     // and add it to the context parameters -- matching the named parameter in my_things.sql
     // notice you don't need to tell it a row, or iterate rows here -- just a little convenience!
-    const { tenant_id } = await context.databases.default.multitenant.tenant({
+    // note that the tenant query is a folder *up* from here -- if this handler is in the
+    // same folder as the query itself you'll end up with an infinite loop as the hander
+    // is before the query, calls, query, with the handler... before the query...
+    debugger;
+    const { tenant_id } = await context.databases.default.tenant({
       domain,
     });
     // parameters are array valued -- but there is a convenience built in

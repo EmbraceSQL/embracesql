@@ -2,7 +2,7 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { SQLScalarType, polyArray, CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray, validateOpenIDAuthorization } from "@embracesql/engine";
+import { SQLScalarType, polyArray, CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, validateOpenIDAuthorization } from "@embracesql/engine";
 
 export { Context, InternalContext, validateOpenIDAuthorization };
 
@@ -105,7 +105,7 @@ export type SQLModuleTree = {
   },
   {{else}}
   {{name}}:(...parameters: {{value.contextName}}ParameterSet[]) => 
-    Promise<ValueOrArray<{{value.contextName}}Row>>;
+    Promise<{{value.contextName}}Context["results"]>;
   {{/if}}
 {{/inline}}
 
@@ -149,8 +149,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
           await {{value.contextName}}before(context);
           {{/if}}
           const executor = rootContext.moduleExecutors.{{value.contextName}}.executor;
-          const results = executor ? (await executor(context)).results : [];
-          context.results = results as {{value.contextName}}Row[];
+          await executor(context);
           {{#if value.afterHandlerPaths}}
           await {{value.contextName}}after(context);
           {{#each value.afterHandlerPaths}}
@@ -194,11 +193,8 @@ export const decorateWithTransactions = (
 
 
 import {validateToken} from "./validateToken";
-// EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
-// which can result in a result set -- an array or rows -- or a single record / row
-// this mapping deals with cardinality, treating arrays of 1 item as a single item on return
-// to 'match' the varargs input style
-export const decorateWithCardinality = (
+// EmbraceSQL supports root level system handlers that happen 'on the way in'
+export const decorateWithSystemHandlers = (
   rootContext: InternalContext, 
   innerExecutors: ExecutorMap) => {
     console.assert(rootContext);
@@ -206,13 +202,13 @@ export const decorateWithCardinality = (
     {{#eachInMap databases}}
     {{#eachInMap value.modules database=@key}}
       {{value.contextName}}:  
-          async (context: {{value.contextName}}Context) : Promise<ValueOrArray<{{value.contextName}}Row>> => {
+          async (context: {{value.contextName}}Context) : Promise<{{value.contextName}}Context["results"]> => {
               // token validation is early in the execution process
               // might as well except out early before wasting a lot of processing!
               await validateToken(context);
               // token out of the way -- let's execute
               await innerExecutors.{{value.contextName}}(context);
-              return context.results?.length === 1 ? (context.results as {{value.contextName}}Row[])[0] : context.results;
+              return context.results;
           },
     {{/eachInMap}}
     {{/eachInMap}}
@@ -233,7 +229,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   // can run a query to the database, but doesn't have handlers yet
   const handlerWrappedExecutors = decorateWithHandlers(internalContext);
   const transactionWrappedExecutors = decorateWithTransactions(internalContext, handlerWrappedExecutors);
-  const typedExecutors = decorateWithCardinality(internalContext, transactionWrappedExecutors);
+  const typedExecutors = decorateWithSystemHandlers(internalContext, transactionWrappedExecutors);
   // headers that will go through on requests
   let sendHeaders = {};
 
@@ -273,8 +269,9 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
     {{#eachInMap moduleExecutors}}
       {{value.module.contextName}}:  {
         executor:
-          async (parameters: {{value.module.contextName}}Context["parameters"], headers = {} as Headers) : Promise<ValueOrArray<{{value.module.contextName}}Row>> => {
+          async (parameters: {{value.module.contextName}}Context["parameters"], headers = {} as Headers) : Promise<{{value.module.contextName}}Context["results"]> => {
             const grants = new Array<Grant>();
+            const results = new Array<{{value.module.contextName}}Row>();
             return typedExecutors.{{value.module.contextName}}(
                  {
                   configuration: internalContext.configuration,
@@ -285,7 +282,12 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
                   },
                   databases: entryPointCallableDatabases,
                   parameters: polyArray<{{value.module.contextName}}ParameterSet, SQLScalarType>(parameters),
-                  results: [],
+                  get results() {
+                    return polyArray(results);
+                  },
+                  addResults: (toAdd) => {
+                    for (const t of toAdd) results.push(t);
+                  },
                   grants,
                   allow: (message?: Message) => {
                     grants.push({ type: "allow", message });
@@ -321,7 +323,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   },
   {{else}}
   {{name}}: async (...parameters: {{value.contextName}}ParameterSet[]) 
-  : Promise<ValueOrArray<{{value.contextName}}Row>> => {
+  : Promise<{{value.contextName}}Context["results"]> => {
       return {{@handlerMap}}.{{value.contextName}}.executor([...parameters].flat() as unknown as {{value.contextName}}Context["parameters"]);
   },
   {{/if}}

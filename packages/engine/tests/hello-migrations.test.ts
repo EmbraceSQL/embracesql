@@ -30,7 +30,7 @@ describe("hello world of migrations", () => {
     await rootContext.close();
     rootContext = await buildInternalContext(configuration);
     const results = await rootContext.databases["default"].execute(
-      (rootContext.databases["default"].modules["hello"] as SQLModule).sql
+      rootContext.databases["default"].modules["hello"] as SQLModule
     );
     expect(results).toMatchSnapshot();
   });
