@@ -25,8 +25,10 @@ import {
   Headers,
   HasHeaders,
   CanSetHeaders,
+  SQLScalarType,
 } from "./src/shared-context";
 import { validateOpenIDAuthorization } from "./src/authorization";
+import { polyArray } from "./src/polys";
 
 // re-export symbols as needed
 export {
@@ -54,4 +56,6 @@ export {
   HasHeaders,
   CanSetHeaders,
   validateOpenIDAuthorization,
+  polyArray,
+  SQLScalarType
 };

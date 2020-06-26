@@ -64,7 +64,7 @@ export default async (
         });
       };
       if (context.parameters.length) {
-        const updates = context.parameters.map(doOne);
+        const updates = [...context.parameters].map(doOne);
         context.results = await Promise.all(updates);
       } else {
         throw new Error("no parameters");

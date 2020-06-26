@@ -14,6 +14,17 @@ import { JWTPayload } from "@embracesql/identity";
  */
 
 /**
+ * When you have a set of parameters -- and those are passed around
+ * in arrays, it's handy to be able to batch set.
+ *
+ * This is intended to be used with a JS proxy that will intercept the set
+ * and spread it across each array memeber.
+ */
+export interface CanBatchSet<T> extends Iterable<T> {
+  [key: string]: SQLScalarType;
+}
+
+/**
  * String name value pairs as headers.
  */
 export type Headers = { [key: string]: string };
@@ -93,7 +104,7 @@ export type SQLColumnMetadata = {
   readonly name: string;
 
   /**
-   * Type identifier.
+   * Type identifier, as a string -- gets used in code generation.
    */
   readonly type: SQLTypeName | SQLColumnMetadata[];
 };
@@ -366,7 +377,7 @@ export type GenericContext<ParameterType, ResultType> = HasHeaders &
      * Parameters may be on here for the default context. This will get
      * generated and specified with specific named parameters per SQLModule.
      */
-    parameters: ParameterType[];
+    parameters: CanBatchSet<ParameterType>;
 
     /**
      * Results may be on here for the default context. This will get generated
@@ -400,7 +411,7 @@ export type ContextualExecutors<T> = {
  * @param headers - incomng http headers, but also can be used from embedded clients for metadata
  */
 export type EntryPointExecutor<ParameterType, ResultType> = (
-  parameters: ParameterType[],
+  parameters: CanBatchSet<ParameterType>,
   headers: Headers
 ) => Promise<ValueOrArray<ResultType>>;
 

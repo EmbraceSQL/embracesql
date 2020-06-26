@@ -95,6 +95,13 @@ describe("security", () => {
         client.setHeaders({ authorization: `bearer ${token}` });
         expect(await client.databases.default.hello()).toMatchSnapshot();
       });
+      it("will limit rows based on tenancy", async () => {
+        const client = clients[clientName];
+        client.setHeaders({ authorization: `bearer ${token}` });
+        expect(
+          await client.databases.default.multitenant.my_things()
+        ).toMatchSnapshot();
+      });
     });
   });
 });

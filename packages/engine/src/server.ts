@@ -7,6 +7,7 @@ import {
   HasConfiguration,
   HasEntryPoints,
   SQLParameterSet,
+  CanBatchSet,
 } from "./shared-context";
 import { restructure } from "../../console/src/structured";
 import fs from "fs-extra";
@@ -50,7 +51,7 @@ export const createServer = async (
           httpContext.body = await rootContext.entryPoints[
             contextName
           ].executor(
-            (parameters as unknown) as SQLParameterSet[],
+            (parameters as unknown) as CanBatchSet<SQLParameterSet>,
             httpContext.request.headers
           );
           httpContext.status = 200;
@@ -72,7 +73,7 @@ export const createServer = async (
           ? httpContext.request.body
           : [httpContext.request.body];
         httpContext.body = await rootContext.entryPoints[contextName].executor(
-          (parameters as unknown) as SQLParameterSet[],
+          (parameters as unknown) as CanBatchSet<SQLParameterSet>,
           httpContext.request.headers
         );
         httpContext.status = 200;

@@ -20,7 +20,7 @@ export default async (
         return await database.execute(sqlModule.sql, parameters);
       };
       if (context.parameters.length) {
-        const updates = (context.parameters as SQLParameterSet[]).map(doOne);
+        const updates = [...context.parameters].map(doOne);
         context.results = (await Promise.all(updates)).flat(1);
       } else {
         // this is the undefined / empty case

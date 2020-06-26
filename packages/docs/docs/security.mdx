@@ -100,56 +100,25 @@ One way to do this -- but you have a lot of flexibility with code and handlers, 
 
 Here is a sample migration:
 
-```sql title="${EMBRACESQL_ROOT}/migrations/default/000_multitenant.sql"
--- SQLite style
-CREATE TABLE tenants (
-  tenant_id INTEGER PRIMARY KEY,
-  domain TEXT NOT NULL,
-  UNIQUE(domain)
-);
+```sql title="${EMBRACESQL_ROOT}/migrations/default/000_multitenant.sql" file=../../engine/tests/configs/security/migrations/default/000_multitenant.sql
 ```
 
-```sql title="${EMBRACESQL_ROOT}/migrations/default/001_multitenant.sql"
-CREATE TABLE multi_tenant_things (
-  thing_id INTEGER PRIMARY KEY,
-  thing_value TEXT NOT NULL,
-  tenant_id INTEGER NOT NULL,
-  FOREIGN KEY(tenant_id) REFERENCES tenants(tenant_id)
-)
+```sql title="${EMBRACESQL_ROOT}/migrations/default/001_multitenant.sql" file=../../engine/tests/configs/security/migrations/default/001_multitenant.sql
 ```
 
 Here is the SQL you need to make this work:
 
-```sql title="${EMBRACESQL_ROOT}/default/tenant.sql"
-SELECT tenant_id WHERE domain = :domain
+```sql title="${EMBRACESQL_ROOT}/default/multitenant/tenant.sql" file=../../engine/tests/configs/security/default/multitenant/tenant.sql
 ```
 
-```sql title="${EMBRACESQL_ROOT}/default/my_things.sql"
-SELECT thing_id, thing_value
-FROM multi_tenant_things
-WHERE tenant_id = :tenant_id
+```sql title="${EMBRACESQL_ROOT}/default/multitenant/my_things.sql" file=../../engine/tests/configs/security/default/multitenant/my_things.sql
 ```
 
 And some handlers, we'll limit access to known domains, and be secure by default.
 Remember you will need to pass a bearer token that will decode and validate.
 Remember that this is a root folder handler, so you only need to have this one time in your whole system.
 
-```javascript title="${EMBRACESQL_ROOT}/before.js"
-export const before = (context) => {
-  // secure by default, nobody can query
-  context.deny({});
-  // but if there is a token
-  if (context.token) {
-    // pick off the back half of the email, and throw an exception otherwise
-    const domain = context.token.email.split("@")[1];
-    // issue a query to get the tenant
-    // and add it to the context parameters -- matching the named parameter in my_things.sql
-    // notice you don't need to tell it a row, or iterate rows here -- just a little convenience!
-    const {tenant_id} = await context.databases.default.tenant({domain}).tenant_id;
-    context.parameters.tenant_id = tenant_id;
-    context.allow({ domain, tenant_id });
-  }
-};
+```typescript title="${EMBRACESQL_ROOT}/default/multitenant/before.ts" file=../../engine/tests/configs/security/default/multitenant/before.ts
 ```
 
 And that is it -- now every query will be passed a `tenant_id` parameter, validated against a control table of known domains, authenticated by a third party OpenID Connect provider.

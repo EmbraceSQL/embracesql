@@ -31,6 +31,8 @@ Object {
 }
 `;
 
+exports[`security engine with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will limit rows based on tenancy 1`] = `Array []`;
+
 exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will allow access with an SQL call 1`] = `
 Array [
   "108322100248409852275",
@@ -61,3 +63,5 @@ Object {
   "\\"hello world\\"": "hello world",
 }
 `;
+
+exports[`security http with token /Users/wballard/embracesql/embracesql/packages/engine/tests/tokens/jwt/test@hence.com will limit rows based on tenancy 1`] = `Array []`;

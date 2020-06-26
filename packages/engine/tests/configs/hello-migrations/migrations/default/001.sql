@@ -1,3 +1,3 @@
-      CREATE TABLE strings(
-        string text PRIMARY KEY
-      );
+CREATE TABLE strings(
+  string text PRIMARY KEY
+);

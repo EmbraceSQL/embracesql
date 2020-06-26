@@ -213,7 +213,7 @@ export default async (
       };
       if (context.parameters.length) {
         // lots of ways to implement this, let's do the naive one for the moment
-        const resultSets = context.parameters.map(doOne);
+        const resultSets = [...context.parameters].map(doOne);
         // flatten out a bit so this looks like a result set
         context.results = (await Promise.all(resultSets)).flat(2);
       } else {

@@ -59,7 +59,7 @@ export default async (
         return validatedParameters;
       };
       if (context.parameters.length) {
-        const updates = context.parameters.map(updateOne);
+        const updates = [...context.parameters].map(updateOne);
         context.results = await Promise.all(updates);
       } else {
         throw new Error("no parameters");

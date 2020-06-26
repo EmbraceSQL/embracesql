@@ -19,7 +19,7 @@
         "--coverage",
         "false",
         "-t",
-        "security"
+        "parameter"
       ],
       "internalConsoleOptions": "openOnSessionStart"
     },

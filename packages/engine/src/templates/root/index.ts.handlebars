@@ -2,7 +2,7 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray, validateOpenIDAuthorization } from "@embracesql/engine";
+import { SQLScalarType, polyArray, CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray, validateOpenIDAuthorization } from "@embracesql/engine";
 
 export { Context, InternalContext, validateOpenIDAuthorization };
 
@@ -10,8 +10,9 @@ export { Context, InternalContext, validateOpenIDAuthorization };
 
 // handle a folder, these use the base types for rows and parameters
 // to allow them to be maximally generic
-export type FolderHandler = (context: Context) => Promise<void>;
-export type SystemHandler = (context: Context) => Promise<void>;
+export type FolderContext = SQLModuleTree & Context;
+export type FolderHandler = (context: FolderContext) => Promise<void>;
+export type SystemHandler = (context: FolderContext) => Promise<void>;
 
 
 // parameters, result row, and context types
@@ -31,6 +32,7 @@ export type {{module.contextName}}Context =
   SQLModuleTree & GenericContext<{{module.contextName}}ParameterSet, {{module.contextName}}Row>;
 export type {{module.contextName}}Handler = (context: {{module.contextName}}Context) => Promise<void>;
 {{/inline}}
+
 
 {{#*inline "resultsetMetadata"}}
 export type {{contextName}}Row = SQLRow &
@@ -282,7 +284,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
                     ...headers
                   },
                   databases: entryPointCallableDatabases,
-                  parameters,
+                  parameters: polyArray<{{value.module.contextName}}ParameterSet, SQLScalarType>(parameters),
                   results: [],
                   grants,
                   allow: (message?: Message) => {
@@ -320,7 +322,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
   {{else}}
   {{name}}: async (...parameters: {{value.contextName}}ParameterSet[]) 
   : Promise<ValueOrArray<{{value.contextName}}Row>> => {
-      return {{@handlerMap}}.{{value.contextName}}.executor(parameters.flat());
+      return {{@handlerMap}}.{{value.contextName}}.executor([...parameters].flat() as unknown as {{value.contextName}}Context["parameters"]);
   },
   {{/if}}
 {{/inline}}
