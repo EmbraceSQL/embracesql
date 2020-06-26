@@ -13,13 +13,9 @@ import {
   SQLParameterSet,
   CommonDatabaseModule,
   ContextualExecutor,
-  HasHeaders,
-  HasToken,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
-import { parseBearerToken, validate, FileCache } from "@embracesql/identity";
-import path from "path";
 
 /**
  * Keep track of individual migration files with this type.
@@ -139,12 +135,6 @@ export type InternalContext = HasConfiguration &
     moduleExecutors: {
       [index: string]: ContextualExecutableModule;
     };
-    /**
-     * Built intoken validation capability for OpenID
-     */
-    validateOpenIDAuthorization: (
-      context: HasHeaders & HasToken
-    ) => Promise<void>;
   };
 
 /**
@@ -169,23 +159,6 @@ export const buildInternalContext = async (
         database.close()
       );
       await Promise.all(waitForThem);
-    },
-    validateOpenIDAuthorization: async (
-      context: HasHeaders & HasToken
-    ): Promise<void> => {
-      // we will eat errors, validation isn't mandatory.
-      try {
-        context.token = await validate(parseBearerToken(context.headers), {
-          cache: FileCache(
-            path.resolve(configuration.embraceSQLRoot, ".embracesql", "jwk")
-          ),
-          ignoreExp: configuration.ignoreExp,
-        });
-        return;
-      } catch (e) {
-        console.assert(e);
-        //TODO -- error event
-      }
     },
   };
   // need the database first, their connections are used

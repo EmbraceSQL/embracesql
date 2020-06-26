@@ -26,6 +26,7 @@ import {
   HasHeaders,
   CanSetHeaders,
 } from "./src/shared-context";
+import { validateOpenIDAuthorization } from "./src/authorization";
 
 // re-export symbols as needed
 export {
@@ -52,4 +53,5 @@ export {
   Headers,
   HasHeaders,
   CanSetHeaders,
+  validateOpenIDAuthorization,
 };

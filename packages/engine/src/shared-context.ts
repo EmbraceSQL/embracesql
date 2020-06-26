@@ -339,6 +339,7 @@ export type ContextAccessControl = {
  */
 export type GenericContext<ParameterType, ResultType> = HasHeaders &
   HasToken &
+  HasConfiguration &
   ContextAccessControl & {
     /**
      * Put the current user identifier string here in order to integrate with database
@@ -469,22 +470,22 @@ export type Configuration = {
 /**
  * Use this to get at the EmbraceSQL configuration.
  */
-export type HasConfiguration = {
+export interface HasConfiguration {
   /**
    * The configuration used to build a running EmbraceSQL engine.
    */
   configuration: Configuration;
-};
+}
 
 /**
  * Can -- and should -- be closed.
  */
-export type Closeable = {
+export interface Closeable {
   /**
    * Close down all resourcs.
    */
   close: () => Promise<void>;
-};
+}
 
 /**
  * Can hold on to headers.

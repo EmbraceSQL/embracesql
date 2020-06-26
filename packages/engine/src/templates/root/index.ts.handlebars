@@ -2,16 +2,16 @@
 to: "{{configuration.embraceSQLRoot}}/index.ts"
 ---
 
-import { CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray } from "@embracesql/engine";
+import { CanSetHeaders, Headers, buildInternalContext, loadConfiguration, InternalContext, withTransaction, SQLRow, Context, GenericContext, Closeable, HasConfiguration, HasEntryPoints, SQLParameterSet, DatabaseTransactions, Grant, Message, ValueOrArray, validateOpenIDAuthorization } from "@embracesql/engine";
 
-export { Context, InternalContext };
+export { Context, InternalContext, validateOpenIDAuthorization };
 
 // Generation starts here
 
 // handle a folder, these use the base types for rows and parameters
 // to allow them to be maximally generic
 export type FolderHandler = (context: Context) => Promise<void>;
-export type SystemHandler = (root: InternalContext, context: Context) => Promise<void>;
+export type SystemHandler = (context: Context) => Promise<void>;
 
 
 // parameters, result row, and context types
@@ -199,6 +199,7 @@ import {validateToken} from "./validateToken";
 export const decorateWithCardinality = (
   rootContext: InternalContext, 
   innerExecutors: ExecutorMap) => {
+    console.assert(rootContext);
     return {
     {{#eachInMap databases}}
     {{#eachInMap value.modules database=@key}}
@@ -206,7 +207,7 @@ export const decorateWithCardinality = (
           async (context: {{value.contextName}}Context) : Promise<ValueOrArray<{{value.contextName}}Row>> => {
               // token validation is early in the execution process
               // might as well except out early before wasting a lot of processing!
-              await validateToken(rootContext, context);
+              await validateToken(context);
               // token out of the way -- let's execute
               await innerExecutors.{{value.contextName}}(context);
               return context.results?.length === 1 ? (context.results as {{value.contextName}}Row[])[0] : context.results;
@@ -274,6 +275,7 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
             const grants = new Array<Grant>();
             return typedExecutors.{{value.module.contextName}}(
                  {
+                  configuration: internalContext.configuration,
                   //base and override header concept
                   headers: {
                     ...sendHeaders,
