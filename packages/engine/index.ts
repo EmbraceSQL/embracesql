@@ -28,6 +28,7 @@ import {
 } from "./src/shared-context";
 import { validateOpenIDAuthorization } from "./src/authorization";
 import { polyArray } from "./src/polys";
+import { nodePost } from "./src/transport";
 
 // re-export symbols as needed
 export {
@@ -55,5 +56,6 @@ export {
   CanSetHeaders,
   validateOpenIDAuthorization,
   polyArray,
-  SQLScalarType
+  SQLScalarType,
+  nodePost,
 };

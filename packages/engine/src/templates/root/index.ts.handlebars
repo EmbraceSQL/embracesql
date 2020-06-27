@@ -286,7 +286,9 @@ export const EmbraceSQLEmbedded = async (rootContext?: InternalContext) : Promis
                     return polyArray(results);
                   },
                   addResults: (toAdd) => {
-                    for (const t of toAdd) results.push(t);
+                    // snapshot in case you try to add to yourself
+                    // and end up in an infinite add loop
+                    for (const t of [...toAdd]) results.push(t);
                   },
                   grants,
                   allow: (message?: Message) => {

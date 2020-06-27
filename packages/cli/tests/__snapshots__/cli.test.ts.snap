@@ -1,8 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`CLI generates an embedded client 1`] = `
-"import { IncomingHttpHeaders } from \\"http\\";
-import {
+"import {
+  SQLScalarType,
+  polyArray,
+  CanSetHeaders,
+  Headers,
   buildInternalContext,
   loadConfiguration,
   InternalContext,
@@ -17,14 +20,18 @@ import {
   DatabaseTransactions,
   Grant,
   Message,
-  ValueOrArray,
+  validateOpenIDAuthorization,
 } from \\"@embracesql/engine\\";
+
+export { Context, InternalContext, validateOpenIDAuthorization };
 
 // Generation starts here
 
 // handle a folder, these use the base types for rows and parameters
 // to allow them to be maximally generic
-export type FolderHandler = (context: Context) => Promise<void>;
+export type FolderContext = SQLModuleTree & Context;
+export type FolderHandler = (context: FolderContext) => Promise<void>;
+export type SystemHandler = (context: FolderContext) => Promise<void>;
 
 // parameters, result row, and context types
 // database default
@@ -57,7 +64,7 @@ export type SQLModuleTree = {
       transactions: DatabaseTransactions;
       hello: (
         ...parameters: default_helloParameterSet[]
-      ) => Promise<ValueOrArray<default_helloRow>>;
+      ) => Promise<default_helloContext[\\"results\\"]>;
     };
   };
 };
@@ -66,6 +73,7 @@ export type SQLModuleTree = {
 type EmbeddedEngine = HasEntryPoints &
   SQLModuleTree &
   HasConfiguration &
+  CanSetHeaders &
   Closeable;
 
 // each SQL Module has a direct execution decorator  -- this just talks to the database
@@ -91,8 +99,7 @@ export const decorateWithHandlers = (rootContext: InternalContext) => {
         await default_hellobefore1(context);
         await default_hellobefore(context);
         const executor = rootContext.moduleExecutors.default_hello.executor;
-        const results = executor ? (await executor(context)).results : [];
-        context.results = results as default_helloRow[];
+        await executor(context);
         await default_helloafter(context);
         await default_helloafter0(context);
         await default_helloafter1(context);
@@ -116,7 +123,6 @@ export const decorateWithTransactions = (
   innerExecutors: ExecutorMap
 ) => {
   return {
-    // database default
     default_hello: async (
       context: default_helloContext
     ): Promise<default_helloContext> => {
@@ -129,20 +135,23 @@ export const decorateWithTransactions = (
   };
 };
 
-// EmbraceSQL supports array valued parameter sets, as well as single sets of parameters
-// which can result in a result set -- an array or rows -- or a single record / row
-// this mapping deals with cardinality, treating arrays of 1 item as a single item on return
-// to 'match' the varargs input style
-export const decorateWithCardinality = (innerExecutors: ExecutorMap) => {
+import { validateToken } from \\"./validateToken\\";
+// EmbraceSQL supports root level system handlers that happen 'on the way in'
+export const decorateWithSystemHandlers = (
+  rootContext: InternalContext,
+  innerExecutors: ExecutorMap
+) => {
+  console.assert(rootContext);
   return {
-    // database default
     default_hello: async (
       context: default_helloContext
-    ): Promise<ValueOrArray<default_helloRow>> => {
+    ): Promise<default_helloContext[\\"results\\"]> => {
+      // token validation is early in the execution process
+      // might as well except out early before wasting a lot of processing!
+      await validateToken(context);
+      // token out of the way -- let's execute
       await innerExecutors.default_hello(context);
-      return context.results?.length === 1
-        ? (context.results as default_helloRow[])[0]
-        : context.results;
+      return context.results;
     },
   };
 };
@@ -166,7 +175,12 @@ export const EmbraceSQLEmbedded = async (
     internalContext,
     handlerWrappedExecutors
   );
-  const typedExecutors = decorateWithCardinality(transactionWrappedExecutors);
+  const typedExecutors = decorateWithSystemHandlers(
+    internalContext,
+    transactionWrappedExecutors
+  );
+  // headers that will go through on requests
+  let sendHeaders = {};
 
   // outermost shell of calls in sql tree format -- this is for the embedded client .database.folder.module.sql syntax
   // and lets you call in a parameters --> results style, rather than the context --> context style
@@ -188,8 +202,12 @@ export const EmbraceSQLEmbedded = async (
       },
       hello: async (
         ...parameters: default_helloParameterSet[]
-      ): Promise<ValueOrArray<default_helloRow>> => {
-        return entryPoints.default_hello.executor(parameters.flat());
+      ): Promise<default_helloContext[\\"results\\"]> => {
+        return entryPoints.default_hello.executor(
+          ([
+            ...parameters,
+          ].flat() as unknown) as default_helloContext[\\"parameters\\"]
+        );
       },
     },
   };
@@ -201,14 +219,29 @@ export const EmbraceSQLEmbedded = async (
     default_hello: {
       executor: async (
         parameters: default_helloContext[\\"parameters\\"],
-        headers?: IncomingHttpHeaders
-      ): Promise<ValueOrArray<default_helloRow>> => {
+        headers = {} as Headers
+      ): Promise<default_helloContext[\\"results\\"]> => {
         const grants = new Array<Grant>();
+        const results = new Array<default_helloRow>();
         return typedExecutors.default_hello({
-          headers: headers || {},
+          configuration: internalContext.configuration,
+          //base and override header concept
+          headers: {
+            ...sendHeaders,
+            ...headers,
+          },
           databases: entryPointCallableDatabases,
-          parameters,
-          results: [],
+          parameters: polyArray<default_helloParameterSet, SQLScalarType>(
+            parameters
+          ),
+          get results() {
+            return polyArray(results);
+          },
+          addResults: (toAdd) => {
+            // snapshot in case you try to add to yourself
+            // and end up in an infinite add loop
+            for (const t of [...toAdd]) results.push(t);
+          },
           grants,
           allow: (message?: Message) => {
             grants.push({ type: \\"allow\\", message });
@@ -223,6 +256,7 @@ export const EmbraceSQLEmbedded = async (
   };
 
   return {
+    setHeaders: (headers: Headers) => (sendHeaders = headers),
     configuration: internalContext.configuration,
     databases: entryPointCallableDatabases,
     entryPoints,

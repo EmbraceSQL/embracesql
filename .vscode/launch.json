@@ -19,7 +19,7 @@
         "--coverage",
         "false",
         "-t",
-        "autocrud"
+        "hello world with a handler"
       ],
       "internalConsoleOptions": "openOnSessionStart"
     },

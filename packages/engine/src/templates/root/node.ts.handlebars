@@ -3,6 +3,9 @@ to: "{{configuration.embraceSQLRoot}}/node.ts"
 ---
 
 import * as context from "./index";
+import { nodePost, Headers } from "@embracesql/engine";
 
-{{> shared-node-client.ts }}
+// alias to use with generated code
+const post = nodePost;
+
 {{> partials/fetch-client.handlebars }}
