@@ -38,19 +38,25 @@ export default async (
   const allRows = `SELECT * FROM ${autocrudModule.name};`;
   const byKey = `SELECT * FROM ${autocrudModule.name} WHERE ${keyWhere};`;
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
-        return database.execute(byKey, parameters);
+        return database.execute(
+          { sql: byKey, namedParameters: module.namedParameters },
+          parameters
+        );
       };
       if (context.parameters.length) {
         // lots of ways to implement this, let's do the naive one for the moment
-        const resultSets = context.parameters.map(doOne);
+        const resultSets = [...context.parameters].map(doOne);
         // flatten out a bit so this looks like a result set
-        context.results = (await Promise.all(resultSets)).flat(2);
+        context.addResults((await Promise.all(resultSets)).flat(2));
       } else {
         // without parameters, just run a query to get all rows
-        context.results = await database.execute(allRows);
+        context.addResults(
+          await database.execute({ sql: allRows, namedParameters: [] })
+        );
       }
       return context;
     },

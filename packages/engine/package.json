@@ -52,6 +52,7 @@
     "@types/rmfr": "^2.0.0",
     "@types/sinon": "^9.0.4",
     "@types/std-mocks": "^1.0.0",
+    "@types/supertest": "^2.0.9",
     "@types/url-parse": "^1.4.3",
     "@types/watchpack": "^1.1.5",
     "@types/whatwg-fetch": "^0.0.33",

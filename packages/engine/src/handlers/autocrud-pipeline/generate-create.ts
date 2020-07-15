@@ -47,6 +47,7 @@ export default async (
   const readBack = await database.readLastKeySQL(module);
   // and with an executor to run the thing
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
@@ -55,16 +56,22 @@ export default async (
         return await database.atomic(async () => {
           // make the row -- nothing to read here
           const immediateParameters = validParameters(module, parameters);
-          await database.execute(create, immediateParameters);
+          await database.execute(
+            { sql: create, namedParameters: module.namedParameters },
+            immediateParameters
+          );
           // and the keys come back -- no parameters needed -- use the DB 'last inserted row' capability
           // take advantage of the fact we are in the same transaction and connection
-          const readBackKeys = await database.execute(readBack);
+          const readBackKeys = await database.execute({
+            sql: readBack,
+            namedParameters: [],
+          });
           return readBackKeys[0];
         });
       };
       if (context.parameters.length) {
-        const updates = context.parameters.map(doOne);
-        context.results = await Promise.all(updates);
+        const updates = [...context.parameters].map(doOne);
+        context.addResults(await Promise.all(updates));
       } else {
         throw new Error("no parameters");
       }

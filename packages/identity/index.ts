@@ -5,6 +5,11 @@ import fs from "fs-extra";
 import path from "path";
 
 /**
+ * String name value pairs as headers.
+ */
+export type Headers = { [key: string]: string };
+
+/**
  * Original encoded string, pass this in from a header.
  */
 export type JWTString = string;
@@ -52,6 +57,18 @@ export type JWTPayload = {
    * Standard claim -- expiration in ticks.
    */
   exp?: number;
+  /**
+   * Standard claim -- subject of the token.
+   */
+  sub?: string;
+  /**
+   * Standard claim -- audience of the token.
+   */
+  aud?: string;
+  /**
+   * Non standard, but common claim.
+   */
+  email?: string;
 };
 
 /**
@@ -177,4 +194,28 @@ export const validate = async (
     // and the failure of last resort
     throw new Error("No key could be found to validate this token");
   }
+};
+
+/**
+ * Pull out the bearer token from a bag of headers.
+ */
+export const parseBearerToken = (headers: Headers): string => {
+  const auth = headers?.Authorization || headers?.authorization || undefined;
+  if (!auth) {
+    throw new Error(`Missing Authorization header: ${auth}`);
+  }
+
+  const parts = auth.toString().split(" ");
+  // Malformed header.
+  if (parts.length < 2) {
+    throw new Error(`Authorization header does not contain two parts: ${auth}`);
+  }
+
+  const schema = (parts.shift() as string).toLowerCase();
+  const token = parts.join(" ");
+  if (schema !== "bearer") {
+    throw new Error(`Authorization header is not a bearer token: ${auth}`);
+  }
+
+  return token;
 };

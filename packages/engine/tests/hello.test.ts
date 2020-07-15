@@ -80,10 +80,10 @@ describe("hello world configuration!", () => {
   });
   it("makes empty handlers for you", async () => {
     expect("default/before.ts").toExist();
-    expect("default/hello.sql.before.ts").toExist();
-    expect("default/hello.sql.after.ts").toExist();
+    expect("default/hello.before.ts").toExist();
+    expect("default/hello.after.ts").toExist();
     expect("default/after.ts").toExist();
-    expect("default/hello.sql.afterError.ts").toExist();
+    expect("default/hello.afterError.ts").toExist();
   });
   it("knows hello sql is read only", async () => {
     expect(
@@ -104,7 +104,7 @@ describe("hello world configuration!", () => {
     expect(content).toMatchSnapshot();
   });
   it("generates a typed context object", async () => {
-    expect("context.ts").toExist();
+    expect("index.ts").toExist();
   });
   it("generates client library for you", async () => {
     expect("node.ts").toExist();
@@ -112,7 +112,7 @@ describe("hello world configuration!", () => {
   });
   it("will run a query in context", async () => {
     const results = await rootContext.databases["default"].execute(
-      (rootContext.databases["default"].modules["hello"] as SQLModule).sql
+      rootContext.databases["default"].modules["hello"] as SQLModule
     );
     expect(results).toMatchSnapshot();
   });

@@ -1,3 +1,5 @@
+import { JWTPayload } from "@embracesql/identity";
+
 /**
  * This containes context types shared between the EmbraceSQL server
  * and any generated code used by clients.
@@ -12,14 +14,30 @@
  */
 
 /**
- * Parameters and results can be single items, or array batches.
+ * When you have a set of parameters -- and those are passed around
+ * in arrays, it's handy to be able to batch set.
+ *
+ * This is intended to be used with a JS proxy that will intercept the set
+ * and spread it across each array memeber, or let you get at the first
+ * record as if it was the only record.
  */
-type ValueOrArray<T> = Array<T> | T;
+export interface CanBatchSet<T> extends Iterable<T> {
+  [P in keyof T]: T[P];
+}
+// merged declaration
+export interface CanBatchSet<T> extends Iterable<T> {
+  [key: string]: SQLScalarType;
+}
+
+/**
+ * String name value pairs as headers.
+ */
+export type Headers = { [key: string]: string };
 
 /**
  * A message, passed for security and logging.
  */
-export type Message = string | Record<string, unknown>;
+export type Message = string | Record<string, unknown> | undefined;
 
 /**
  * Security types.
@@ -86,7 +104,7 @@ export type SQLColumnMetadata = {
   readonly name: string;
 
   /**
-   * Type identifier.
+   * Type identifier, as a string -- gets used in code generation.
    */
   readonly type: SQLTypeName | SQLColumnMetadata[];
 };
@@ -162,9 +180,25 @@ export type SQLTableMetadata = {
 };
 
 /**
+ * The SQL we can run - and the parameters it takes to run it.
+ */
+export type ParameterizedSQL = {
+  /**
+   * All the parameters we found by looking at the query. These are in an array
+   * to facilitate conversion of named to positional parameters.
+   */
+  namedParameters: SQLColumnMetadata[];
+  /**
+   * Actual SQL text source, unmodified, read from disk
+   */
+  readonly sql: string;
+
+};
+
+/**
  * Common across autocrud and sqlmodules.
  */
-export type CommonDatabaseModule = {
+export type CommonDatabaseModule = ParameterizedSQL & {
   /**
    * Relative path useful for REST.
    */
@@ -179,11 +213,6 @@ export type CommonDatabaseModule = {
    */
   readonly contextName: string;
   /**
-   * All the parameters we found by looking at the query. These are in an array
-   * to facilitate conversion of named to positional parameters.
-   */
-  namedParameters: SQLColumnMetadata[];
-  /**
    * Result set metadata, one entry for each column coming back.
    */
   resultsetMetadata: SQLColumnMetadata[];
@@ -191,22 +220,6 @@ export type CommonDatabaseModule = {
    * When true, this module may modify data.
    */
   canModifyData: boolean;
-};
-
-/**
- * Auto crud module data. These are simpler than from disk sql modules
- * since the do not have handlers.
- */
-export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
-/**
- * Each SQL found on disk has some data -- the SQL itself, and will
- * get additional metadata attached to it.
- */
-export type SQLModule = CommonDatabaseModule & {
-  /**
-   * Fully qualified file name on disk.
-   */
-  readonly fullPath: string;
   /**
    * Chain of relative to EmbraceSQLRoot folder paths, shallow to deep,
    * that is used to build up handler chains.
@@ -217,10 +230,26 @@ export type SQLModule = CommonDatabaseModule & {
    * that is used to build up handler chains.
    */
   readonly afterHandlerPaths: string[];
+};
+
+
+/**
+ * Auto crud module data. These are simpler than from disk sql modules
+ * since the do not have handlers.
+ */
+export type AutocrudModule = CommonDatabaseModule & SQLTableMetadata;
+
+/**
+ * Each SQL found on disk has some data -- the SQL itself, and will
+ * get additional metadata attached to it.
+ */
+export type SQLModule = CommonDatabaseModule & {
   /**
-   * Actual SQL text source, unmodified, read from disk
+   * Fully qualified file name on disk.
    */
-  readonly sql: string;
+  readonly fullPath: string;
+
+
 };
 
 /**
@@ -230,7 +259,7 @@ export type SQLModule = CommonDatabaseModule & {
  * SQL or API calls to the underlying database and deal with issues such
  * as nested transactions.
  */
-export type DatabaseTransactions = {
+export interface DatabaseTransactions  {
   /**
    * Start up a new transaction, or if in a transaction, a nested
    * transaction.
@@ -288,6 +317,33 @@ export type Database = {
 };
 
 /**
+ * The access control section of the context.
+ *
+ * This provides a notion of allow/deny/grant logging, so
+ * is authorization and audit data.
+ */
+export interface ContextAccessControl  {
+  /**
+   * Set the current state of security to allow SQL execution against the database.
+   *
+   * @param message - Any helpful message you see fit, will be appended to [[grants]].
+   */
+  allow: (message?: Message) => void;
+
+  /**
+   * Set the current start of security to deny SQL execution against the database.
+   *
+   * @param message - Any helpful message you see fit, will be appended to [[grants]].
+   */
+  deny: (message?: Message) => void;
+
+  /**
+   * View all the reasons security might have been [[allow]] or [[deny]].
+   */
+  grants: Array<Grant>;
+};
+
+/**
  * This context is the 'one true parameter' passed to every Embrace SQL
  * event handler. It is created by EmbraceSQL at the start of each API
  * request, and serves as a shared state allowing handlers broad access
@@ -301,65 +357,48 @@ export type Database = {
  * that will be generated will be noted in comments.
  *
  */
-export type GenericContext<ParameterType, ResultType> = {
-  /**
-   * Set the current state of security to allow SQL execution against the database.
-   *
-   * @param message - Any helpful message you see fit, will be appended to [[grants]].
-   */
-  allow?: (message: Message) => void;
+export type GenericContext<ParameterType, ResultType> = HasHeaders &
+  HasToken &
+  HasConfiguration &
+  ContextAccessControl & {
+    /**
+     * Put the current user identifier string here in order to integrate with database
+     * user level secruity features. For exampe, in PostgreSQL, this property will be used as:
+     *
+     * `SET LOCAL SESSION AUTHORIZATION ${context.current_user}`
+     */
+    current_user?: string;
 
-  /**
-   * Set the current start of security to deny SQL execution against the database.
-   *
-   * @param message - Any helpful message you see fit, will be appended to [[grants]].
-   */
-  deny?: (message: Message) => void;
+    /**
+     * Put the current role identifier string here in order to integrate with database
+     * role level secruity features. For exampe, in PostgreSQL, this property will be used as:
+     *
+     * `SET LOCAL ROLE ${context.role}`
+     */
+    role?: string;
 
-  /**
-   * View all the reasons security might have been [[allow]] or [[deny]].
-   */
-  grants?: Array<Grant>;
+    /**
+     * The current unhandled exception error.
+     */
+    error?: Error;
 
-  /**
-   * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
-   * decoded and verified, it will be here.
-   */
-  token?: Record<string, unknown>;
+    /**
+     * Parameters may be on here for the default context. This will get
+     * generated and specified with specific named parameters per SQLModule.
+     */
+    parameters: CanBatchSet<ParameterType>;
 
-  /**
-   * Put the current user identifier string here in order to integrate with database
-   * user level secruity features. For exampe, in PostgreSQL, this property will be used as:
-   *
-   * `SET LOCAL SESSION AUTHORIZATION ${context.current_user}`
-   */
-  current_user?: string;
+    /**
+     * Results may be on here for the default context. This will get generated
+     * and specified per SQLModule.
+     */
+    readonly results?: CanBatchSet<ResultType>;
 
-  /**
-   * Put the current role identifier string here in order to integrate with database
-   * role level secruity features. For exampe, in PostgreSQL, this property will be used as:
-   *
-   * `SET LOCAL ROLE ${context.role}`
-   */
-  role?: string;
-
-  /**
-   * The current unhandled exception error.
-   */
-  error?: Error;
-
-  /**
-   * Parameters may be on here for the default context. This will get
-   * generated and specified with specific named parameters per SQLModule.
-   */
-  parameters: ParameterType[];
-
-  /**
-   * Results may be on here for the default context. This will get generated
-   * and specified per SQLModule.
-   */
-  results: ValueOrArray<ResultType>;
-};
+    /**
+     * And we need a way to get results 'in' this, so add as few or as many as you like.
+     */
+    addResults: (toAdd: Iterable<ResultType>) => void;
+  };
 
 /**
  * This is our generic context type -- bound to the generic parameter and reult types.
@@ -380,15 +419,27 @@ export type ContextualExecutors<T> = {
 };
 
 /**
+ * Entry points take parameters and generate results.
+ *
+ * @param parameters - parameter values that will be passed along to the underlying SQL
+ * @param headers - incomng http headers, but also can be used from embedded clients for metadata
+ */
+export type EntryPointExecutor<ParameterType, ResultType> = (
+  parameters: CanBatchSet<ParameterType>,
+  headers: Headers
+) => Promise<CanBatchSet<ResultType>>;
+
+/**
  * A single sql module entry point. This is wrapped in an outer function call
  * or HTTP to provide actual EmbraceSQL service. An EntryPoint is a full featured
  * EmbraceSQL call.
  *
  * This is using the DefaultContext -- at this layer executors are fairly generic.
- * The client library wrapper or OpenAPI provides specific typeing.
+ * The client library wrapper or OpenAPI provides specific typeing and call this
+ * entry point.
  */
 export type EntryPoint = {
-  readonly executor: ContextualExecutor<Context>;
+  readonly executor: EntryPointExecutor<SQLParameterSet, SQLRow>;
   readonly module: CommonDatabaseModule;
 };
 
@@ -431,24 +482,63 @@ export type Configuration = {
    * Optional name used in bootsrap code generation.
    */
   name?: string;
+  /**
+   * It's pretty normal to allow a perma-login, so you can totally
+   * ignore token expiration.
+   *
+   * Note that you will still need to have the key from when the token
+   * was created cached.
+   */
+  ignoreExp?: boolean;
 };
 
 /**
  * Use this to get at the EmbraceSQL configuration.
  */
-export type HasConfiguration = {
+export interface HasConfiguration {
   /**
    * The configuration used to build a running EmbraceSQL engine.
    */
   configuration: Configuration;
-};
+}
 
 /**
  * Can -- and should -- be closed.
  */
-export type Closeable = {
+export interface Closeable {
   /**
    * Close down all resourcs.
    */
   close: () => Promise<void>;
-};
+}
+
+/**
+ * Can hold on to headers.
+ */
+export interface HasHeaders {
+  /**
+   * Coming in from HTTP, this will be loaded up with headers.
+   */
+  headers: Headers;
+}
+
+/**
+ * Can hold on to headers.
+ */
+export interface CanSetHeaders {
+  /**
+   * Set these as default headers.
+   */
+  setHeaders: (headers: Headers) => void;
+}
+
+/**
+ * Can hold a parsed up JWT.
+ */
+export interface HasToken {
+  /**
+   * If a JWT token from an `Authorization: Bearer <token>` header has been successfully
+   * decoded and verified, it will be here.
+   */
+  token?: JWTPayload;
+}

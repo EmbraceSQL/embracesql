@@ -1,4 +1,4 @@
-import { validate, FileCache } from "../src/index";
+import { validate, FileCache, parseBearerToken } from "../index";
 import nock from "nock";
 import path from "path";
 import fs from "fs-extra";
@@ -15,8 +15,8 @@ nockBack.fixtures = path.join(__dirname, "__nock-fixtures__");
 
 describe("@embracesql/identity", () => {
   const tokens = fs
-    .readdirSync(path.join(__dirname, "tokens"))
-    .map((name) => path.resolve(__dirname, "tokens", name));
+    .readdirSync(path.join(__dirname, "tokens", "jwt"))
+    .map((name) => path.resolve(__dirname, "tokens", "jwt", name));
 
   it("will not validate a blank token", async () => {
     expect(validate("")).rejects.toThrowError("JWT must be a string");
@@ -52,6 +52,19 @@ describe("@embracesql/identity", () => {
       });
       it("blows up on gibberish", async () => {
         expect(validate(token.slice(10))).rejects.toThrow();
+      });
+      it("parses as a header", () => {
+        expect(parseBearerToken({ Authorization: `Bearer ${token}` })).toMatch(
+          token
+        );
+        expect(parseBearerToken({ authorization: `bearer ${token}` })).toMatch(
+          token
+        );
+      });
+      it("blows up on gibberish headers", () => {
+        expect(() =>
+          parseBearerToken({ Authorization: `SHIELD` })
+        ).toThrowError(Error);
       });
     });
 

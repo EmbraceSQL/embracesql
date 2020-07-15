@@ -1,9 +1,10 @@
 /**
 * Create an EmbraceSQL client bound to a specific URL.
 */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const EmbraceSQL = (serverUrl: string) => {
+export const EmbraceSQL = (serverUrl: string, headers = {} as Headers) => {
+  let sendHeaders = headers;
   const DatabaseMap = {
+    setHeaders: (headers: Headers) => sendHeaders = headers,
     databases: {
     {{#eachInMap databases}}
       {{@key}}: {
@@ -30,11 +31,11 @@ export const EmbraceSQL = (serverUrl: string) => {
   {{name}}:
     {{#if value.namedParameters.length}}
     async (...parameters: context.{{value.contextName}}ParameterSet[]) : Promise<context.{{value.contextName}}Row[]> => {
-      return post(serverUrl, "/{{value.restPath}}", parameters.flat()) as unknown as context.{{value.contextName}}Row[];
+      return post(serverUrl, "/{{value.restPath}}", parameters.flat(), sendHeaders) as unknown as context.{{value.contextName}}Row[];
     },
     {{else}}
     async () : Promise<context.{{value.contextName}}Row[]> => {
-      return post(serverUrl, "/{{value.restPath}}", {}) as unknown as context.{{value.contextName}}Row[];
+      return post(serverUrl, "/{{value.restPath}}", {}, sendHeaders) as unknown as context.{{value.contextName}}Row[];
     },
     {{/if}}
   {{/if}}

@@ -40,19 +40,22 @@ export default async (
   const deleteByKeys = `DELETE FROM ${module.name} WHERE ${keyFilter}`;
   // and with an executor to run the thing
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow> => {
         // make the row -- nothing to read here
         const validatedParameters = validParameters(module, parameters);
         await database.execute(
-          deleteByKeys,
+          { sql: deleteByKeys, namedParameters: module.namedParameters },
           validParameters(module, parameters)
         );
         return validatedParameters;
       };
       if (context.parameters.length) {
-        context.results = await Promise.all(context.parameters.map(doOne));
+        context.addResults(
+          await Promise.all([...context.parameters].map(doOne))
+        );
       } else {
         throw new Error("no parameters");
       }

@@ -1,6 +1,7 @@
 import { InternalContext } from "../../internal-context";
 import generateCombined from "./generate-combined";
 import generateMigrations from "./generate-migrations";
+import transformAccessControl from "./transform-access-control";
 
 /**
  * After each SQLModule is run through a pipeline, combine the results for an
@@ -12,5 +13,6 @@ export default async (
 ): Promise<InternalContext> => {
   await generateCombined(rootContext);
   await generateMigrations(rootContext);
+  await transformAccessControl(rootContext);
   return rootContext;
 };

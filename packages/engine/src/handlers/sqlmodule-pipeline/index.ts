@@ -2,7 +2,6 @@ import { SQLModule } from "../../shared-context";
 import parseSQL from "./parse-sql";
 import transformResultTypes from "./transform-result-types";
 import transformParameterTypes from "./transform-parameter-types";
-import generateDefaultHandlers from "./generate-default-handlers";
 import bindExecutors from "./bind-executors";
 import type { AST } from "node-sql-parser";
 import walk from "ignore-walk";
@@ -38,7 +37,6 @@ const sqlModulePipeline = async (
     await parseSQL(rootContext, database, sqlModuleInternal);
     await transformParameterTypes(rootContext, database, sqlModuleInternal);
     await transformResultTypes(rootContext, database, sqlModuleInternal);
-    await generateDefaultHandlers(rootContext, sqlModuleInternal);
     await bindExecutors(rootContext, database, sqlModuleInternal);
   } catch (e) {
     // a single module failing isn't fatal, it's gonna happen all the type with typos
@@ -91,9 +89,11 @@ export default async (
       SQLFileName
     );
     const restPath = SQLFileName.replace(/\.sql$/, "");
-    // take the path segments and build up a path list
-    const handlerPaths = segments.map((_segment, index, array) => {
-      return path.join(...array.slice(0, index + 1));
+    // take the path segments and build up a path list all the
+    // way from the root
+    const handlerPaths = [".", ...segments].map((_segment, index, array) => {
+      // path join isn't handling leading "."
+      return array.slice(0, index + 1).join(path.sep);
     });
     // get all the 'read' IO done
     const sql = await fs.readFile(fullPath, "utf8");

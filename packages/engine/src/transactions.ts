@@ -3,6 +3,8 @@ import { Database, ContextualExecutor } from "./shared-context";
 /**
  * Execute wrapped in a transaction. Roll back on any leaking exception, commit if the depth only went
  * up by one -- i.e. is this the 'only' transaction.
+ *
+ * This is where we really start talking to the database.
  */
 export const withTransaction = async <T>(
   database: Database,

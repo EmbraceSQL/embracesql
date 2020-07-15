@@ -66,13 +66,8 @@ Data Handlers are an opportunity for you to add bits of code to handle events in
 
 Back in the local directory do `ls default` -- notice a few new files:
 
-```
-all.sql.before.ts
-all.sql.after.ts
-all.sql.afterError.ts
-add.sql.before.ts
-add.sql.after.ts
-add.sql.afterError.ts
+```bash
+TODO: make this a dynamic ls
 ```
 
 Take a look inside -- these are data handlers, generated in TypeScript. `before` provides the ability to intercept a query on the way in, and `after` results on the way out.
@@ -119,13 +114,13 @@ stateDiagram
 
 Let’s look inside the `add` handlers, and tweak some parameters.
 
-```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules/default/add.sql.before.ts
+```typescript title="${EMBRACESQL_ROOT}/add.before.js" file=../../engine/tests/configs/sqlmodules/default/add.before.ts
 ```
 
 And after the query -- let's read back the rows.
 This pretty handy as a general trick by the way to read back a lookup table.
 
-```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules/default/add.sql.after.ts
+```typescript title="${EMBRACESQL_ROOT}/add.before.js" file=../../engine/tests/configs/sqlmodules/default/add.after.ts
 ```
 
 And now -- give it a try, not only will you have a slightly different name than what you sent in -- you will get rows back as well, with one API call, instead of the two we previously ran.
@@ -174,10 +169,10 @@ This is a handy trick for database testing, where you can let transactions ‘un
 
 For example, let's modify a previous handler:
 
-```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql.before.ts
+```typescript title="${EMBRACESQL_ROOT}/add.before.ts" file=../../engine/tests/configs/sqlmodules-transactions/default/add.before.ts
 ```
 
-```typescript title="./add.sql.before.js" file=../../engine/tests/configs/sqlmodules-transactions/default/add.sql.after.ts
+```typescript title="${EMBRACESQL_ROOT}/add.before.ts" file=../../engine/tests/configs/sqlmodules-transactions/default/add.after.ts
 ```
 
 And behold the rollback, which you can see in your shell.
@@ -196,15 +191,15 @@ It's great to be able to have the full power of SQL when you need it -- but some
 
 Let's set up some tables for a really vanilla shopping cart, in our default testing SQLite database and see how this works. We'll have a pretty normal set or orders, items to order, and an association table to put items in an order.
 
-```sql title="./migrations/003.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/003.sql
+```sql title="${EMBRACESQL_ROOT}/migrations/003.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/003.sql
 
 ```
 
-```sql title="./migrations/004.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/004.sql
+```sql title="${EMBRACESQL_ROOT}/migrations/004.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/004.sql
 
 ```
 
-```sql title="./migrations/005.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/005.sql
+```sql title="${EMBRACESQL_ROOT}/migrations/005.sql" file=../../engine/tests/configs/sqlmodules-autocrud/migrations/default/005.sql
 
 ```
 
@@ -241,7 +236,7 @@ example(client);
 
 Some errors are more critical than others. Sometimes you want to keep going, sometimes you want to abort. EmbraceSQL is a bit of a perfectionist, and aborts the entire request on any unhandled error. You can be more forgiving though, and decide to keep going by creating an error handler:
 
-```typescript title="./default/hello.sql.afterError.ts" file=../../engine/tests/configs/hello-handler/default/hello.sql.afterError.ts
+```typescript title="${EMBRACESQL_ROOT}/default/hello.afterError.ts" file=../../engine/tests/configs/hello-handler/default/hello.afterError.ts
 ```
 
 You can also `try/catch` in your handler code, so in practice the `error` event handlers are useful to capture errors coming back from your database engine.

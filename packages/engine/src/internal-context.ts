@@ -9,8 +9,11 @@ import {
   Configuration,
   AutocrudModule,
   Closeable,
-  EntryPoint,
+  Context,
   SQLParameterSet,
+  CommonDatabaseModule,
+  ContextualExecutor,
+  ParameterizedSQL,
 } from "./shared-context";
 import { AST } from "node-sql-parser";
 import { SQLModuleInternal } from "./handlers/sqlmodule-pipeline";
@@ -52,10 +55,12 @@ export type DatabaseInternal = Database & {
    * Execute the sql module query on this database, and
    * promise some result.
    *
-   * @param sql - sql string in the dialect of the target database, can include :name style paramters
-   * @param parameters - name value pairs are the passed parameters
+   * @param parameters - name value pairs are the passed parameters to use
    */
-  execute: (sql: string, parameters?: SQLParameterSet) => Promise<SQLRow[]>;
+  execute: (
+    sqlModule: ParameterizedSQL,
+    parameters?: SQLParameterSet
+  ) => Promise<SQLRow[]>;
   /**
    * Analyze the passed module and determine the resultset type(s).
    */
@@ -107,6 +112,15 @@ export type AllDatabasesInternal = {
 };
 
 /**
+ * Module, paired up with an actual execution functtion that works on a context.
+ */
+export type ContextualExecutableModule = {
+  readonly database: DatabaseInternal;
+  readonly module: CommonDatabaseModule;
+  executor: ContextualExecutor<Context>;
+};
+
+/**
  * The root context is the context of configuration, databases, and sql modules and is
  * used to drive code generation and runtime execution 'in the engine' of EmbraceSQL
  *
@@ -122,7 +136,7 @@ export type InternalContext = HasConfiguration &
      * Ability to execute sql modules.
      */
     moduleExecutors: {
-      [index: string]: EntryPoint;
+      [index: string]: ContextualExecutableModule;
     };
   };
 

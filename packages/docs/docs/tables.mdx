@@ -12,17 +12,12 @@ EmbraceSQL supports SQL script based migrations, against multiple databases, man
 
 Create your first migration, which can actually be any SQL script you like, using the native syntax for your database. We’re working on our embracesql.db demo, which is SQLite, so we’ll create a file example for it. Copy and paste this:
 
-```sql title="migrations/default/001.sql"
-CREATE TABLE things(
-  id integer PRIMARY KEY,
-  name text NOT NULL
-);
+```sql title="${EMBRACESQL_ROOT}/migrations/default/001.sql"  file=../../engine/tests/configs/hello-migrations/migrations/default/001.sql
 ```
 
-```sql title="migrations/default/002.sql"
-INSERT INTO things(id, name) values(1, "planes");
-INSERT INTO things(id, name) values(2, "trains");
+```sql title="${EMBRACESQL_ROOT}/migrations/default/002.sql"  file=../../engine/tests/configs/hello-migrations/migrations/default/002.sql
 ```
+
 
 Notice the 001 -- that’s just one way of doing it, but know that EmbraceSQL runs migrations in file name order, per named database. To run a migration, run this in your shell.
 
@@ -34,21 +29,18 @@ docker run -v ${PWD}:/var/embracesql embracesql/server migrate
 
 You can have database specific migrations by simply making a folder for each database, with sql inside. Let’s have our `other` database be different.
 
-```yml title="embracesql.yaml"
+```yml title="${EMBRACESQL_ROOT}/embracesql.yaml"
 databases:
   default: sqlite:embracesql.db
   other: sqlite:other.db
 ```
 
-```sql title="migrations/other/001.sql:"
-CREATE TABLE strings(
-  string text PRIMARY KEY
-);
+```sql title="${EMBRACESQL_ROOT}/migrations/other/001.sql"  file=../../engine/tests/configs/hello-migrations/migrations/other/001.sql
 ```
 
-```sql title="migrations/other/002.sql:"
-INSERT INTO strings(string) VALUES("hello world");
+```sql title="${EMBRACESQL_ROOT}/migrations/other/002.sql"  file=../../engine/tests/configs/hello-migrations/migrations/other/002.sql
 ```
+
 
 Run the migration. Note that you'll need to have an `other` database set up as described in [Databases](./databases).
 

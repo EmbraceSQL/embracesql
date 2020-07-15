@@ -47,6 +47,7 @@ export default async (
   const updateByKey = `UPDATE ${module.name} SET ${columnUpdates} WHERE ${keyFilter}`;
   // and with an executor to run the thing
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const updateOne = async (
@@ -54,12 +55,15 @@ export default async (
       ): Promise<SQLRow> => {
         // make the row -- nothing to read here
         const validatedParameters = validParameters(module, parameters);
-        await database.execute(updateByKey, validatedParameters);
+        await database.execute(
+          { sql: updateByKey, namedParameters: module.namedParameters },
+          validatedParameters
+        );
         return validatedParameters;
       };
       if (context.parameters.length) {
-        const updates = context.parameters.map(updateOne);
-        context.results = await Promise.all(updates);
+        const updates = [...context.parameters].map(updateOne);
+        context.addResults(await Promise.all(updates));
       } else {
         throw new Error("no parameters");
       }

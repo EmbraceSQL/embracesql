@@ -10,6 +10,7 @@ import {
   SQLTableMetadata,
   SQLParameterSet,
   SQLTableReference,
+  ParameterizedSQL,
 } from "../shared-context";
 import { SQLModuleInternal } from "../handlers/sqlmodule-pipeline";
 import Url from "url-parse";
@@ -182,10 +183,10 @@ export const embraceDatabases = async (
       // with a throttled promise limit -- since we have only one connection
       // these are not re-entrant
       execute: async (
-        sql: string,
+        sqlModule: ParameterizedSQL,
         parameters?: SQLParameterSet
       ): Promise<SQLRow[]> => {
-        return oneAtATime(() => database.execute(sql, parameters));
+        return oneAtATime(() => database.execute(sqlModule, parameters));
       },
       analyze: async (
         sqlModule: SQLModuleInternal

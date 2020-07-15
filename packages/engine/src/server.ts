@@ -3,9 +3,15 @@ import bodyparser from "koa-bodyparser";
 import OpenAPIBackend from "openapi-backend";
 import YAML from "yaml";
 import path from "path";
-import { HasConfiguration, HasEntryPoints } from "./shared-context";
+import {
+  HasConfiguration,
+  HasEntryPoints,
+  SQLParameterSet,
+  CanBatchSet,
+} from "./shared-context";
 import { restructure } from "../../console/src/structured";
 import fs from "fs-extra";
+import { CanSetHeaders } from "..";
 
 /**
  * Create a HTTP server exposing an OpenAPI style set of endpoints for each Database
@@ -18,7 +24,7 @@ import fs from "fs-extra";
  * @param executionMap - context name to execution function mapping to actually 'run' a query
  */
 export const createServer = async (
-  rootContext: HasConfiguration & HasEntryPoints
+  rootContext: HasConfiguration & HasEntryPoints & CanSetHeaders
 ): Promise<Koa<Koa.DefaultState, Koa.DefaultContext>> => {
   const server = new Koa();
 
@@ -29,6 +35,8 @@ export const createServer = async (
       "utf8"
     )
   );
+
+  //TODO -- need a per request context
 
   // the handlers that wrap modules -- for GET and POST
   const handlers = {};
@@ -42,16 +50,17 @@ export const createServer = async (
       ): Promise<void> => {
         try {
           // parameters from the query
-          const context = {
-            parameters: [httpContext.request.query],
-            results: [],
-          };
-          await rootContext.entryPoints[contextName].executor(context);
-          httpContext.body = context.results;
+          const parameters = [httpContext.request.query];
+          rootContext.setHeaders(httpContext.request.headers);
+          httpContext.body = await rootContext.entryPoints[
+            contextName
+          ].executor(
+            (parameters as unknown) as CanBatchSet<SQLParameterSet>,
+            httpContext.request.headers
+          );
           httpContext.status = 200;
         } catch (e) {
-          // this is the very far edge of the system, time for a log
-          console.error(e);
+          //TODO -- error event
           // send the full error to the client
           httpContext.status = 500;
           httpContext.body = restructure("error", e);
@@ -64,17 +73,17 @@ export const createServer = async (
     ): Promise<void> => {
       try {
         // parameters from the body
-        const context = {
-          parameters: Array.isArray(httpContext.request.body)
-            ? httpContext.request.body
-            : [httpContext.request.body],
-          results: [],
-        };
-        await rootContext.entryPoints[contextName].executor(context);
-        httpContext.body = context.results;
+        const parameters = Array.isArray(httpContext.request.body)
+          ? httpContext.request.body
+          : [httpContext.request.body];
+        rootContext.setHeaders(httpContext.request.headers);
+        httpContext.body = await rootContext.entryPoints[contextName].executor(
+          (parameters as unknown) as CanBatchSet<SQLParameterSet>,
+          httpContext.request.headers
+        );
         httpContext.status = 200;
       } catch (e) {
-        console.error(e);
+        //TODO -- error event
         httpContext.status = 500;
         httpContext.body = restructure("error", e);
       }

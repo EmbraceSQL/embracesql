@@ -8,7 +8,25 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Jest Tests",
+      "name": "Jest Tests Engine",
+      "skipFiles": ["<node_internals>/**"],
+      "cwd": "${workspaceFolder}/packages/engine",
+      "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+      "args": [
+        "--testTimeout",
+        "500000",
+        "--runInBand",
+        "--coverage",
+        "false",
+        "-t",
+        "hello world with a handler"
+      ],
+      "internalConsoleOptions": "openOnSessionStart"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Tests Identity",
       "skipFiles": ["<node_internals>/**"],
       "cwd": "${workspaceFolder}/packages/identity",
       "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",

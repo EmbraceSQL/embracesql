@@ -81,6 +81,7 @@ export default async (
   });
   // build up the execution function
   rootContext.moduleExecutors[module.contextName] = {
+    database,
     module,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
@@ -102,7 +103,10 @@ export default async (
           const coreRecordSQL = `CREATE TEMPORARY TABLE ${coreRecordTable} AS SELECT * FROM ${schemaQualifiedName(
             module
           )} WHERE ${keyWhere};`;
-          await database.execute(coreRecordSQL, parameters);
+          await database.execute(
+            { sql: coreRecordSQL, namedParameters: module.namedParameters },
+            parameters
+          );
 
           const followTheGraph = async (
             table: SQLTableMetadata
@@ -116,7 +120,7 @@ export default async (
 
             // and the actual data
             const coreRecords = await database.execute(
-              `SELECT * FROM ${coreRecordTable}`,
+              { sql: `SELECT * FROM ${coreRecordTable}`, namedParameters: [] },
               {}
             );
 
@@ -152,7 +156,10 @@ export default async (
                 INNER JOIN ${coreRecordTable} 
                 ON ${joinClause}
               `;
-                await database.execute(relatedRecordSQL, {});
+                await database.execute(
+                  { sql: relatedRecordSQL, namedParameters: [] },
+                  {}
+                );
                 // temp is created, this is a level deeper, but in the same state -- temp created
                 // and not yet selected out so it is time to recurse
                 const relatedRecords = await followTheGraph(related.toTable);
@@ -205,16 +212,19 @@ export default async (
           const joinedUp = await followTheGraph(module);
           // and clean up after ourselves
           for (const drop of drops) {
-            await database.execute(`DROP TABLE ${drop};`);
+            await database.execute({
+              sql: `DROP TABLE ${drop};`,
+              namedParameters: [],
+            });
           }
           return joinedUp;
         });
       };
       if (context.parameters.length) {
         // lots of ways to implement this, let's do the naive one for the moment
-        const resultSets = context.parameters.map(doOne);
+        const resultSets = [...context.parameters].map(doOne);
         // flatten out a bit so this looks like a result set
-        context.results = (await Promise.all(resultSets)).flat(2);
+        context.addResults((await Promise.all(resultSets)).flat(2));
       } else {
         throw new Error("no parameters");
       }

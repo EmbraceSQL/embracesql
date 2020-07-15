@@ -1,8 +1,8 @@
-import * as types from "../context";
+import * as types from "../index";
 
 export const after: types.default_addHandler = async (context) => {
   // run a SQL module inline, no parameters
-  context.results = await context.databases.default.all({});
+  context.addResults(await context.databases.default.all({}));
   // do not commit, as this is commented out
   // note that by this time we have already done the insert
   // and queried the database

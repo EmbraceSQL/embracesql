@@ -13,17 +13,18 @@ export default async (
   sqlModule: SQLModuleInternal
 ): Promise<InternalContext> => {
   rootContext.moduleExecutors[sqlModule.contextName] = {
+    database,
     module: sqlModule,
     executor: async (context: Context): Promise<Context> => {
       const doOne = async (parameters: SQLParameterSet): Promise<SQLRow[]> => {
-        return await database.execute(sqlModule.sql, parameters);
+        return await database.execute(sqlModule, parameters);
       };
       if (context.parameters.length) {
-        const updates = (context.parameters as SQLParameterSet[]).map(doOne);
-        context.results = (await Promise.all(updates)).flat(1);
+        const updates = [...context.parameters].map(doOne);
+        context.addResults((await Promise.all(updates)).flat(1));
       } else {
         // this is the undefined / empty case
-        context.results = await doOne({});
+        context.addResults(await doOne(context.parameters));
       }
       return context;
     },

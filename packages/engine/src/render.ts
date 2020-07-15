@@ -126,10 +126,7 @@ export const renderTemplates = async (
   // this is a bit of a trick to allow creating as much code for the templating
   // as possible as just plain code with syntax highlighting and autocomplete
   // generated code takes these as a starting point and adds on generated types
-  const waitForCodePartials = [
-    "shared-browser-client.ts",
-    "shared-node-client.ts",
-  ].map(
+  const waitForCodePartials = ["shared-browser-client.ts"].map(
     async (fileName): Promise<void> => {
       const fileContent = await fs.readFile(
         path.join(__dirname, fileName),

@@ -1,8 +1,8 @@
 ---
-to: "{{module.fullPath}}.before.ts"
+to: "{{configuration.embraceSQLRoot}}/{{module.restPath}}.before.ts"
 ---
 
-import * as types from "{{relativeToRoot}}/context";
+import * as types from "{{relativeToRoot}}/index";
 
 export const before : types.{{module.contextName}}Handler = async (_context) => {
   // handle me!
